@@ -45,14 +45,17 @@
           <div v-if="loading" class="flex justify-center items-center h-64">
             <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
           </div>
-          <div v-else-if="error" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded" role="alert">
-            <p class="font-bold">Error</p>
-            <p>{{ error }}</p>
-          </div>
-  
-          <!-- Items Table -->
+
           <div v-else class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <div v-if="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded" role="alert">
+              <p class="font-bold">Success</p>
+              <p>{{ successMessage }}</p>
+            </div>
+            <div v-if="error" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded" role="alert">
+              <p class="font-bold">Error</p>
+              <p>{{ error }}</p>
+            </div>
+            <table v-else class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
                   <th v-for="header in visibleHeaders" 

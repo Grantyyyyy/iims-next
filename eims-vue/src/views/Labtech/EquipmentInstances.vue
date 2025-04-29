@@ -45,13 +45,6 @@
           <div v-if="loading" class="flex justify-center items-center h-64">
             <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
           </div>
-          <div v-if="instances.length === 0" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded" role="alert">
-            <p class="font-bold">No equipment instances found.</p>
-          </div>
-          <div v-else-if="error" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded" role="alert">
-            <p class="font-bold">Error</p>
-            <p>{{ error }}</p>
-          </div>
   
           <div class="overflow-x-auto">
             <div v-if="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded" role="alert">

@@ -54,7 +54,7 @@
             <p>{{ error }}</p>
           </div>
 
-          <table class="min-w-full divide-y divide-gray-200">
+          <table v-else class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
                 <th v-for="header in visibleHeaders" 
@@ -224,31 +224,87 @@ export default defineComponent({
     const token = computed(() => store.state.token);
     const userType = computed(() => store.state.userType);
 
-    const fetchApparatuses = async () => {
+    const currentPage = ref(1);
+    const totalPages = ref(0);
+    const pageSize = ref(10);
+
+    // const fetchApparatusesandCategories = async () => {
+    //   loading.value = true;
+    //   try {
+    //     const response = await axios.get('/api/apparatus/', {
+    //       headers: { 'Authorization': `Token ${token.value}` },
+    //       params: { search: searchQuery.value }
+    //     });
+    //     apparatuses.value = response.data.results || response.data;
+    //   } catch (err) {
+    //     console.error('Error fetching apparatuses:', err);
+    //     error.value = 'Failed to fetch apparatuses';
+    //   } finally {
+    //     loading.value = false;
+    //   }
+    // };
+
+    // const fetchCategories = async () => {
+    //   try {
+    //     const response = await axios.get('/api/labtech-category/', {
+    //       headers: { 'Authorization': `Token ${token.value}` }
+    //     });
+    //     categories.value = response.data;
+    //   } catch (err) {
+    //     console.error('Error fetching categories:', err);
+    //     error.value = 'Failed to fetch categories';
+    //   }
+    // };
+
+    const fetchApparatusAndCategories = async () => {
       loading.value = true;
+      error.value = null;
       try {
-        const response = await axios.get('/api/apparatus/', {
-          headers: { 'Authorization': `Token ${token.value}` },
-          params: { search: searchQuery.value }
-        });
-        apparatuses.value = response.data.results || response.data;
-      } catch (err) {
-        console.error('Error fetching apparatuses:', err);
-        error.value = 'Failed to fetch apparatuses';
-      } finally {
-        loading.value = false;
+      const [apparatusResponse, categoriesResponse] = await Promise.all([
+          axios.get('/api/apparatus/', {
+              headers: { 'Authorization': `Token ${token.value}` },
+              params: {
+                  search: searchQuery.value,
+                  page: currentPage.value,
+                  page_size: pageSize.value
+              }
+          }),
+          
+          axios.get('/api/labtech-category/', {
+              headers: { 'Authorization': `Token ${token.value}` }
+          })
+          ]);
+
+      apparatuses.value = apparatusResponse.data;
+      categories.value = categoriesResponse.data;
+
+      totalPages.value = Math.ceil(apparatusResponse.count / pageSize.value) || 1;
+
+
+    } catch (err) {
+        console.error('Error fetching data:', err);
+        error.value = err.response?.data?.message || "Failed to fetch data. Please try again.";
+        } finally {
+            loading.value = false;
+        }
+    };
+
+    watch(searchQuery, () => {
+      currentPage.value = 1;  
+      fetchApparatusAndCategories();
+    });
+
+    const nextPage = () => {
+      if (currentPage.value < totalPages.value) {
+        currentPage.value++;
+        fetchApparatusAndCategories();
       }
     };
 
-    const fetchCategories = async () => {
-      try {
-        const response = await axios.get('/api/labtech-category/', {
-          headers: { 'Authorization': `Token ${token.value}` }
-        });
-        categories.value = response.data;
-      } catch (err) {
-        console.error('Error fetching categories:', err);
-        error.value = 'Failed to fetch categories';
+    const prevPage = () => {
+      if (currentPage.value > 1) {
+        currentPage.value--;
+        fetchApparatusAndCategories();
       }
     };
 
@@ -265,7 +321,7 @@ export default defineComponent({
           headers: { 'Authorization': `Token ${token.value}` }
         });
         successMessage.value = 'Apparatus deleted successfully';
-        fetchApparatuses();
+        fetchApparatusAndCategories();
       } catch (err) {
         console.error('Error deleting apparatus:', err);
         error.value = 'Failed to delete apparatus';
@@ -286,13 +342,13 @@ export default defineComponent({
 
     const handleEquipmentAdded = () => {
       showAddForm.value = false;
-      fetchApparatuses();
+      fetchApparatusAndCategories();
     };
 
     const handleItemUpdated = () => {
       showUpdateForm.value = false;
       selectedApparatus.value = null;
-      fetchApparatuses();
+      fetchApparatusAndCategories();
     };
 
     const navigateToApparatusInstances = (apparatusId) => {
@@ -306,12 +362,11 @@ export default defineComponent({
     const goBack = () => router.back();
 
     watch(searchQuery, () => {
-      fetchApparatuses();
+      fetchApparatusAndCategories();
     });
 
     onMounted(() => {
-      fetchApparatuses();
-      fetchCategories();
+      fetchApparatusAndCategories();
       isSidebarOpen.value = window.innerWidth >= 1024;
     });
 
@@ -339,6 +394,12 @@ export default defineComponent({
       navigateToApparatusInstances,
       handleSidebarToggle,
       goBack,
+
+      currentPage,
+      totalPages,
+      pageSize,
+      nextPage,
+      prevPage
     };
   }
 });
