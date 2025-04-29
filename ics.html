@@ -1,0 +1,191 @@
+setup() {
+  const router = useRouter()
+  const store = useStore()
+  const borrowed = ref([])
+  const loading = ref(true)
+  const error = ref(null)
+  const successMessage = ref(null)
+  const errorMessage = ref(null)
+  const condition = ref('')
+  const remarks = ref('')
+  const userType = computed(() => store.state.userType)
+  const showReturnForm = ref(false)
+  const isSidebarOpen = ref(true)
+  const selectedInstanceId = ref(null)
+  const currentCondition = ref('')
+  const tableHeaders = ['Apparatus', 'Quantity',  'Borrower', 'Condition', 'Subject', 'Borrowed Date', 'Actions']
+  const visibleHeaders = computed(() => {
+      if(userType.value === 'Dean' || userType.value === 'Staff'){
+          return tableHeaders.filter(header => header !== 'Actions');
+      }else{
+          return tableHeaders;
+      }
+  })
+
+  const currentPage = ref(1)
+  const pageSize = ref(10)
+  const totalPages = ref(0)
+  const searchQuery = ref('')
+  const fetchBorrowedApparatus = async () => {
+    try {
+      const response = await axios.get('/api/borrowed-apparatus/', {
+        headers: {
+          Authorization: `Token ${store.state.token}`,
+        },
+        params: {
+          page: currentPage.value,
+          page_size: pageSize.value,
+          search: searchQuery.value
+        },
+      })
+      borrowed.value = response.data
+      totalPages.value = Math.ceil(response.data.count / pageSize.value) || 1;
+      loading.value = false
+    } catch (err) {
+      error.value = err.message
+      loading.value = false
+    }
+  }
+
+  watch(searchQuery, () => {
+    currentPage.value = 1;  
+    fetchBorrowedApparatus();
+  });
+
+  const nextPage = () => {
+    if (currentPage.value < totalPages.value) {
+      currentPage.value++;
+      fetchBorrowedApparatus();
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage.value > 1) {
+      currentPage.value--;
+      fetchBorrowedApparatus();
+    }
+  };
+
+
+  const submitReturn = async () => {
+    if (!condition.value) {
+        alert('Please select a condition before submitting.')
+        return
+    }
+
+    try {
+        await axios.post(`/api/apparatus-instances/${selectedInstanceId.value}/return/`, 
+        { 
+            remarks: remarks.value,
+            condition: condition.value
+        },
+        { headers: { 'Authorization': `Token ${store.state.token}` } }
+        )
+        successMessage.value = 'Apparatus returned successfully.'
+
+        setTimeout(() => {
+          successMessage.value = null
+        }, 3000)
+        showReturnForm.value = false
+        await fetchBorrowedApparatus()
+    } catch (err) {
+        console.error('Error returning item:', err)
+
+        errorMessage.value = 'An error occurred while returning the item.'
+        setTimeout(() => {
+          errorMessage.value = null
+        }, 3000)
+    }
+    }
+
+  const handleSidebarToggle = (isOpen) => {
+        isSidebarOpen.value = isOpen;
+    };
+
+  const goBack = () => {
+    router.back()
+  }
+
+  const openReturnForm = (instanceId) => {
+    selectedInstanceId.value = instanceId
+
+  const selectedApparatus = borrowed.value.find(item => 
+    item.apparatus_instance.id === instanceId)
+    
+    currentCondition.value = selectedApparatus.apparatus_instance.current_condition
+    condition.value = currentCondition.value // Set the default value
+    showReturnForm.value = true
+  }
+
+  const closeReturnForm = () => {
+    showReturnForm.value = false
+    selectedInstanceId.value = null
+  }
+
+  const getConditionClass = (condition) => {
+    switch (condition.toLowerCase()) {
+      case 'good':
+      return 'text-green-600';
+      case 'fair':
+      return 'text-yellow-600';
+      case 'poor':
+      return 'text-orange-600';
+      case 'damaged':
+      return 'text-red-600';
+      default:
+      return 'text-gray-600';
+  }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true  
+    };
+    return date.toLocaleString('en-US', options);  
+  };
+
+  onMounted(() => {
+    fetchBorrowedApparatus()
+
+    isSidebarOpen.value = window.innerWidth >= 1024;
+  })
+
+  return {
+    borrowed,
+    loading,
+    error,
+    submitReturn,
+    successMessage,
+    errorMessage,
+    condition,
+    remarks,
+    formatDate,
+    userType,
+    showReturnForm,
+    selectedInstanceId,
+    openReturnForm,
+    getConditionClass,
+    closeReturnForm,
+    tableHeaders,
+    visibleHeaders,
+    goBack,
+    isSidebarOpen,
+    handleSidebarToggle,
+
+    searchQuery,
+
+    currentPage,
+    totalPages,
+    pageSize,
+    nextPage,
+    prevPage
+    
+  }
+}
+})
