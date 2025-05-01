@@ -139,6 +139,28 @@
                 </tr>
               </tbody>
             </table>
+            <div class="flex items-center mt-4 space-x-4">
+                <button 
+                  @click="prevPage" 
+                  :disabled="currentPage === 1"
+                  class="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 focus:ring-2 focus:ring-blue-300"
+                  aria-label="Previous Page"
+                >
+                  Previous
+                </button>
+                <button 
+                  @click="nextPage" 
+                  :disabled="currentPage === totalPages"
+                  class="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 focus:ring-2 focus:ring-blue-300"
+                  aria-label="Next Page"
+                >
+                  Next
+                </button>
+    
+                <span class="text-gray-700 font-medium">
+                  Page <span class="font-bold">{{ currentPage }}</span> of <span class="font-bold">{{ totalPages }}</span>
+                </span>
+            </div>
           </div>
       </div>
       <div v-if="showAddForm" class="fixed inset-0 flex items-center justify-center bg-gray-600 bg-opacity-50 z-50">

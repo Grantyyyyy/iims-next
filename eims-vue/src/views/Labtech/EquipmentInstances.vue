@@ -185,6 +185,28 @@
                 </tr>
               </tbody>
             </table>
+            <div class="flex items-center mt-4 space-x-4">
+                <button 
+                  @click="prevPage" 
+                  :disabled="currentPage === 1"
+                  class="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 focus:ring-2 focus:ring-blue-300"
+                  aria-label="Previous Page"
+                >
+                  Previous
+                </button>
+                <button 
+                  @click="nextPage" 
+                  :disabled="currentPage === totalPages"
+                  class="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 focus:ring-2 focus:ring-blue-300"
+                  aria-label="Next Page"
+                >
+                  Next
+                </button>
+    
+                <span class="text-gray-700 font-medium">
+                  Page <span class="font-bold">{{ currentPage }}</span> of <span class="font-bold">{{ totalPages }}</span>
+                </span>
+            </div>
           </div>
         </div>
       </div>
@@ -380,6 +402,10 @@ import ConfirmButton from '@/components/buttons/ConfirmButton.vue';
       const currentUser = computed(() => store.getters.user);
       const latestStartNumber = ref(null);
 
+      const currentPage = ref(1);
+      const totalPages = ref(0);
+      const pageSize = ref(10);
+
       const goBack = () => {
         router.back();
       };
@@ -442,6 +468,8 @@ import ConfirmButton from '@/components/buttons/ConfirmButton.vue';
             users.value = usersResponse.data;;
             rooms.value = roomsResponse.data.results;
             subjects.value = subjectsResponse.data;
+
+            totalPages.value = Math.ceil(instancesResponse.data.count / pageSize.value) || 1;
         } catch (err) {
             error.value = `Failed to fetch instances. Please try again.`;
             console.error('Error fetching instances:', err);
@@ -451,8 +479,23 @@ import ConfirmButton from '@/components/buttons/ConfirmButton.vue';
       };
 
       watch(searchQuery, () => {
+        currentPage.value = 1;
         fetchInstancesAndUsersAndRoomsAndSubjects();
       });
+
+      const nextPage = () => {
+        if (currentPage.value < totalPages.value) {
+          currentPage.value++;
+          fetchInstancesAndUsersAndRoomsAndSubjects();
+        }
+      };
+
+      const prevPage = () => {
+        if (currentPage.value > 1) {
+          currentPage.value--;
+          fetchInstancesAndUsersAndRoomsAndSubjects();
+        }
+      };
 
       const editInstance = (equipment) => {
         selectedInstance.value = equipment.id;
@@ -747,7 +790,14 @@ import ConfirmButton from '@/components/buttons/ConfirmButton.vue';
         filteredUsers,
         currentUser,
         latestStartNumber,
-        printPage
+        printPage,
+        
+        
+        // Pagination
+        nextPage,
+        prevPage,
+        currentPage,
+        totalPages
 
   
   

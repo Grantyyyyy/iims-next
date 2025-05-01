@@ -3,7 +3,6 @@ import GlobalCart from '@/views/Ictc/Modals/GlobalCart.vue';
 import store from '../store';
 import LoginView from '../components/LoginView.vue';
 import Sidebar from '../components/UserType/Sidebar.vue';
-import ChemicalList from '@/views/Labtech/ChemicalList.vue'
 import ProfileView from '@/views/ProfileView.vue'
 
 import ChemicalDetails from '@/views/Labtech/ChemicalDetail.vue'
@@ -184,7 +183,7 @@ const routes = [
 
   { path: '/damaged-items', name: 'damaged-items', component: () => import('@/views/Secretary/DamagedItems.vue'), meta: { requiresAuth: true } },
 
-  { path: '/chemical', name: 'chemical-list', component: () => import('@/views/Secretary/ChemicalList.vue') },
+  { path: '/chemical', name: 'chemical-list', component: () => import('@/views/Labtech/ChemicalList.vue'), meta: { requiresAuth: true } },
   { path: '/chemical/:id/stocks', name: 'chemical-stocks', component: () => import('@/views/Labtech/ChemicalStock.vue'), props: route => ({ id: route.params.id, source: 'chemical' }) },
   { path: '/chemical-usage', name: 'chemical-usage', component: () => import('@/views/Labtech/ChemicalUsage.vue') },
 
@@ -363,12 +362,6 @@ const routes = [
     name: 'profile',
     component: ProfileView,
     meta: { requiresAuth: true }
-  },
-  {
-    path: '/chemicals',
-    name: 'chemicals',
-    component: ChemicalList,
-    meta: { requiresAuth: true, allowedUserTypes: ['Lab Technician'] }
   },
   {
     path: '/chemicals/:id',

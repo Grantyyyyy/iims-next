@@ -355,7 +355,8 @@ class EquipmentView(ListCreateAPIView):
             queryset = queryset.filter(
                 Q(name__icontains=search_query) |
                 Q(description__icontains=search_query) |
-                Q(category__name__icontains=search_query) 
+                Q(category__name__icontains=search_query) |
+                Q(model__icontains=search_query) 
             )
         return queryset.order_by('name')
     
@@ -888,14 +889,23 @@ class ChemicalUsageView(ListAPIView):
     
 class ChemicalView(ListCreateAPIView):
     serializer_class = ChemicalSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = Pagination
 
     def get_queryset(self):
+
+        queryset = Chemical.objects.all().order_by('name')
         search_query = self.request.query_params.get('search', '')
 
         if search_query:
-            return Chemical.objects.filter(name__icontains=search_query).order_by('-volume')
-
-        return Chemical.objects.all().order_by('-volume')
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(unit__name__icontains=search_query) |
+                Q(purchase_date__icontains=search_query) |
+                Q(expiry_date__icontains=search_query)
+            )
+        return queryset.order_by('name')
     
 class ChemicalDetailView(APIView):
     permission_classes = [IsAuthenticated]
@@ -1097,6 +1107,8 @@ class ChemicalRequestView(ListCreateAPIView):
 
 class ApparatusView(ListCreateAPIView):
     serializer_class = ApparatusSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = Pagination
 
     def get_queryset(self):
         queryset = Apparatus.objects.all().order_by('name')
@@ -1106,6 +1118,7 @@ class ApparatusView(ListCreateAPIView):
             queryset = queryset.filter(
                 Q(name__icontains=search_query) |
                 Q(description__icontains=search_query) |
+                Q(category__name__icontains=search_query) |
                 Q(apparatus_type__icontains=search_query)
             )
 
