@@ -381,7 +381,7 @@ export default defineComponent({
             'Authorization': `Token ${store.state.token}`
           },
         });
-        chemicals.value = response.data;
+        chemicals.value = response.data.results;
       } catch (err) {
         console.error('Error fetching chemicals:', err);
       } finally {

@@ -37,7 +37,7 @@
               class="mt-1 block w-full px-3 py-1.5 border rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
               id="model"
               type="text"
-              required
+              placeholder="Not set"
             >
           </div>
 
@@ -182,8 +182,12 @@ export default defineComponent({
           }, 1500)
         }
       } catch (err) {
+        if (err.response && err.response.data) {
+          error.value = err.response.data.name ? err.response.data.name[0] : 'Failed to update item.'
+        } else {
+          error.value = 'Failed to update item. Please try again.'
+        }
         console.error('Error updating item:', err)
-        error.value = 'Failed to update item. Please try again.'
       }
     }
 

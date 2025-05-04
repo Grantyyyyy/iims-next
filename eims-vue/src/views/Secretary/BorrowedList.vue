@@ -99,6 +99,11 @@
                 </td>
                 <td class="px-4 py-4">
                   <div class="text-sm font-medium text-gray-900">
+                    {{ borrow.duration }}
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="text-sm font-medium text-gray-900">
                     {{ borrow.purpose }}
                   </div>
                 </td>
@@ -232,7 +237,7 @@ export default defineComponent({
     const isSidebarOpen = ref(true)
     const selectedInstanceId = ref(null)
     const currentCondition = ref('')
-    const tableHeaders = ['Item',  'Borrower', 'Condition', 'Room', 'Borrowed At', 'Purpose', 'Actions']
+    const tableHeaders = ['Item',  'Borrower', 'Condition', 'Room', 'Borrowed At', 'Duration', 'Purpose', 'Actions']
     const visibleHeaders = computed(() => {
         if(userType.value === 'Dean' || userType.value === 'Staff'){
             return tableHeaders.filter(header => header !== 'Actions');

@@ -635,6 +635,7 @@ class ManualBorrowItemView(ListCreateAPIView):
         items_data = request.data.get('instances', []) 
         room_id = request.data.get('room_id')
         purpose = request.data.get('purpose')
+        duration = request.data.get('duration')
 
         # Input validation
         if not user_id and not custom_borrower:
@@ -667,6 +668,23 @@ class ManualBorrowItemView(ListCreateAPIView):
                 quantity = item_data.get('quantity', 1)
                 instance = ItemInstance.objects.select_for_update().get(id=item_id)
 
+                if instance.item.item_type == 'Non-consumables':
+                    if duration is not None:
+                        try:
+                            borrow_duration = int(duration)  # Convert to integer
+                            if borrow_duration <= 0:
+                                return Response(
+                                    {'error': 'Borrow duration must be a positive integer.'},
+                                    status=status.HTTP_400_BAD_REQUEST
+                                )
+                        except ValueError:
+                            return Response(
+                                {'error': 'Invalid borrow duration provided. It must be an integer.'},
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
+                    else:
+                        borrow_duration = 1
+
                 if instance.item.item_type == 'Consumables':
                     # Handle consumable items
                     if instance.quantity < quantity:
@@ -685,8 +703,8 @@ class ManualBorrowItemView(ListCreateAPIView):
                         borrower=borrower,
                         custom_borrower=custom_borrower,
                         room=room,
-                        borrow_date=borrow_date,
-                        return_date=borrow_date,  # Set return date immediately for consumables
+                        duration=duration,                        borrow_date=borrow_date,
+                        return_date=borrow_date,# Set return date immediately for consumables
                         quantity=quantity,
                         purpose=purpose
                     )
@@ -712,6 +730,7 @@ class ManualBorrowItemView(ListCreateAPIView):
                         borrower=borrower,
                         custom_borrower=custom_borrower,
                         room=room,
+                        duration=duration,
                         borrow_date=borrow_date,
                         quantity=quantity,
                         purpose=purpose

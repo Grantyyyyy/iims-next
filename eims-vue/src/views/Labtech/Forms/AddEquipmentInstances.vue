@@ -14,7 +14,7 @@
           </div>
           <div v-if="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4" role="alert">
             <p class="font-bold">Success</p>
-            <p>{{ successMessage }}</p>
+            <p>{{ successMessage }}</p> 
           </div>
   
           <div class="grid grid-cols-1 mb-6 gap-4">
@@ -88,9 +88,6 @@
                 >
               </div>
               <div class="border-t pt-2 mt-2"> </div>
-              <!-- <label v-if="latestStartNumber" class="block text-sm  items-center text-gray-700" for="inventory_date">
-                  Previous start number: {{ latestStartNumber }}
-                </label> -->
               <div class="grid grid-cols-3 gap-4">
 
                 <div>

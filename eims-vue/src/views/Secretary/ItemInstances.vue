@@ -271,6 +271,18 @@
               </select>
             </div>
             <div class="mb-5">
+              <label class="block text-gray-600 mb-2" for="date">
+                Borrow duration
+              </label>
+              <input
+                type="number"
+                v-model="borrowDuration"
+                id="duration"
+                placeholder="Enter number of days"
+                class="block w-full border border-gray-300 px-3 py-2 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div class="mb-5">
               <label class="block text-gray-600 mb-2" for="purpose">
                 Borrowing Purpose
               </label>
@@ -382,6 +394,7 @@ export default defineComponent({
     const selectedUser = ref('');
     const selectedRoom = ref('');
     const borrowingPurpose = ref('');
+    const borrowDuration = ref('');
     const users = ref([]);
     const items = ref([]);
     const rooms = ref([]);
@@ -747,6 +760,7 @@ export default defineComponent({
               custom_borrower: customBorrower.value,
               room_id: selectedRoom.value,
               purpose: borrowingPurpose.value,
+              duration: borrowDuration.value,
               instances: cartStore.cartItems.map(item => ({
                   id: item.id,
                   quantity: item.requested_quantity || 1,
@@ -833,6 +847,7 @@ export default defineComponent({
       selectedUser,
       selectedRoom,
       borrowingPurpose,
+      borrowDuration,
       customBorrower,
       userType,
       users,

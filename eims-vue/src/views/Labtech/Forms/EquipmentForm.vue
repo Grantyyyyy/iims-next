@@ -4,10 +4,13 @@
       <h2 class="text-2xl font-bold mb-4">Add New Equipment</h2>
       
       <form @submit.prevent="submitForm" class="space-y-6">
-      <!-- Basic Information Section -->
+        <div v-if="error" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
+          <p class="font-bold">Error</p>
+          <p>{{ error }}</p>
+        </div>
       <div class="grid grid-cols-2 gap-6">
         <div class="space-y-6">
-          <!-- Left Column -->
+          <!-- Left Column --> 
           <div class="flex flex-col space-y-2">
           <label class="text-sm font-semibold text-gray-700" for="name">Equipment Name</label>
           <input
@@ -205,6 +208,7 @@ export default defineComponent({
       suffix: '01',
     })
     const latestStartNumber = ref(null)
+    const error = ref('')
 
     const fetchLatestStartNumber = async () => {
       try {
@@ -250,7 +254,12 @@ export default defineComponent({
         emit('equipment-added')
         emit('close')
       } catch (error) {
-        console.error('Error adding equipment:', error)
+        if (err.response && err.response.data) {
+          error.value = err.response.data.name ? err.response.data.name[0] : 'Failed to add equipment.'
+        } else {
+          error.value = 'Failed to add equipment. Please try again.'
+        }
+        console.error('Error adding equipment:', err)
       }
     }
 
@@ -272,6 +281,7 @@ export default defineComponent({
 
     return {
       addEquipment,
+      error,
       submitForm,
       resetForm,
       latestStartNumber

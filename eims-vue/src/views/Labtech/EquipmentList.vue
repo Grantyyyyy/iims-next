@@ -201,8 +201,8 @@ import axios from 'axios'
 import Sidebar from '@/components/UserType/Sidebar.vue'
 import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
 import ConfirmButton from '@/components/buttons/ConfirmButton.vue'
-import EquipmentForm from '../Supply/Forms/EquipmentForm.vue'
-import UpdateEquipmentForm from './Forms/UpdateEquipmentForm.vue'
+import EquipmentForm from './Forms/EquipmentForm.vue'
+import UpdateEquipmentForm from './Forms/UpdateEquipment.vue'
 
 export default defineComponent({
   name: 'EquipmentList',

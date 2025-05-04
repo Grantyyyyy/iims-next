@@ -4,6 +4,10 @@
         <h2 class="text-2xl font-bold mb-4">Add New Apparatus</h2>
         
         <form @submit.prevent="submitForm" class="space-y-6">
+          <div v-if="error" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
+            <p class="font-bold">Error</p>
+            <p>{{ error }}</p>
+          </div>
           <div class="flex flex-col space-y-2">
             <label class="text-sm font-semibold text-gray-700" for="name">Apparatus Name</label>
             <input
@@ -148,7 +152,12 @@
           emit('equipment-added')
           emit('close')
         } catch (error) {
-          console.error('Error adding equipment:', error)
+            if (err.response && err.response.data) {
+            error.value = err.response.data.name ? err.response.data.name[0] : 'Failed to add apparatus.'
+          } else {
+            error.value = 'Failed to add apparatus. Please try again.'
+          }
+          console.error('Error adding apparatus:', err)
         }
       }
   

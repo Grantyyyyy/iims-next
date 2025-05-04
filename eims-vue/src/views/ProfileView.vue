@@ -35,6 +35,15 @@
           </nav>
         </div>
 
+        <div v-if="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded" role="alert">
+          <p class="font-bold">Success</p>
+          <p>{{ successMessage }}</p>
+        </div>
+        <div v-if="error" class="bg-red-100 border-l-4 mb-4 border-red-500 text-red-700 p-4 rounded" role="alert">
+          <p class="font-bold">Error</p>
+          <p>{{ error }}</p>
+        </div>
+
         <!-- User Information Tab -->
         <div v-if="currentTab === 'Information'" class="flex flex-col md:flex-row gap-8">
           <div class="md:w-1/3">
@@ -84,17 +93,10 @@
           </div>
         </div>
 
-        <div v-if="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded" role="alert">
-          <p class="font-bold">Success</p>
-          <p>{{ successMessage }}</p>
-        </div>
-        <div v-if="errorMessage" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded" role="alert">
-          <p class="font-bold">Error</p>
-          <p>{{ errorMessage }}</p>
-        </div>
 
         <!-- Update Profile Tab -->
         <div v-if="currentTab === 'Update Profile'" class="flex flex-col mb-4 md:flex-row gap-8">
+
           <div class="md:w-1/3">
             <div class="flex flex-col items-center">
               <div class="relative w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -184,6 +186,7 @@
 
         <!-- Change Password Tab -->
         <div v-if="currentTab === 'Change Password'" class="flex flex-col md:flex-row gap-8">
+          
           <div class="md:w-1/3">
             <div class="flex flex-col items-center">
               <div class="relative w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -335,6 +338,8 @@ export default {
     const origanlPassword = ref({});
 
     watch(currentTab, (newTab) => {
+      error.value = null;
+      successMessage.value = null;
       localStorage.setItem('currentTab', newTab);
       fetchUser();
     });
@@ -403,11 +408,17 @@ export default {
           }, 3000);
           originalUser.value = { ...data };
           updateOriginalValues();
-        } catch (error) {
-          console.error('Error updating profile:', error);
-          alert('Failed to update profile. Please try again.');
+        } catch (err) {
+          if (err.response && err.response.data) {
+            const errors = err.response.data;
+            const firstError = Object.values(errors)[0]?.[0];
+            error.value = firstError || 'Failed to update profile.';
+            fetchUser();
+          } else {
+            error.value = 'Failed to update profile. Please try again.';
+          }
         }
-    };
+      };
 
     const onFileChange = async (e) => {
       const file = e.target.files[0];
@@ -448,7 +459,9 @@ export default {
               fetchUser();
           } catch (error) {
               console.error('Error uploading image:', error);
-              alert('Failed to upload image. Please try again.');
+              error.value = 'Failed to upload image. Please try again.';
+          } finally {
+              loading.value = false;
           }
         }
     };
@@ -650,10 +663,8 @@ export default {
         });
       }
 
-      if (!localStorage.getItem('currentTab')) {
-        currentTab.value = 'Information';
-        localStorage.setItem('currentTab', 'Information');
-      }
+      const savedTab = localStorage.getItem('currentTab');
+      currentTab.value = savedTab || 'Information';
 
       axios.defaults.xsrfCookieName = 'csrftoken';
       axios.defaults.xsrfHeaderName = 'X-CSRFToken';

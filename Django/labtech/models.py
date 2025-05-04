@@ -76,20 +76,6 @@ class Equipment(models.Model):
         return self.equipment_instances.exclude(
             id__in=borrowed_instance_ids
         ).count()
-    
-    def get_latest_start_number(self):
-        latest_instance = EquipmentInstance.objects.filter(
-            equipment=self
-        ).order_by('-inventory_number').first()
-        
-        if latest_instance:
-            # Extract the start number from inventory_number (YYYY-MM-DD-####-##)
-            try:
-                start_number = int(latest_instance.inventory_number.split('-')[3])
-                return start_number
-            except (IndexError, ValueError):
-                return 0
-        return 0
 
 
     def calculate_total_quantity(self):
@@ -294,8 +280,6 @@ class Apparatus(models.Model):
         
         # For Non-Consumables, count the number of instances
         return available.count()
-
-
     
 class ApparatusInstance(models.Model):
 

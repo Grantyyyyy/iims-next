@@ -53,6 +53,13 @@ class EquipmentSerializer(serializers.ModelSerializer):
     def get_available_instances(self, obj):
         return obj.available_instances()
     
+    def validate_name(self, value):
+        if Equipment.objects.filter(name__iexact=value).exists():
+            raise serializers.ValidationError("Equipment name already exists.")
+        return value
+
+    
+
 class EquipmentInstanceCreateSerializer(serializers.ModelSerializer):
     inventory_date = serializers.DateField(format='%Y-%m-%d')
     
@@ -159,6 +166,8 @@ class EquipmentReturnRecordSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ChemicalSerializer(serializers.ModelSerializer):
+    active_volume = serializers.SerializerMethodField()
+    
     class Meta:
         model = Chemical
         fields = '__all__'
@@ -167,6 +176,17 @@ class ChemicalSerializer(serializers.ModelSerializer):
         if Chemical.objects.filter(name__iexact=value).exists():
             raise serializers.ValidationError("Chemical name already exists.")
         return value
+    
+    def get_active_volume(self, obj):
+        today = timezone.now().date()
+        total = ChemicalStock.objects.filter(
+            chemical=obj,
+            expiry_date__gt=today,
+        ).aggregate(
+            total_volume=models.Sum('volume')
+        )['total_volume'] or 0
+        
+        return total
 
 class ChemicalStockSerializer(serializers.ModelSerializer):
     chemical = ChemicalSerializer(read_only=True)
@@ -217,6 +237,11 @@ class ApparatusSerializer(serializers.ModelSerializer):
     
     def get_available_instances(self, obj):
         return obj.available_instances()
+    
+    def validate_name(self, value):
+        if Apparatus.objects.filter(name__iexact=value).exists():
+            raise serializers.ValidationError("Apparatus name already exists.")
+        return value
 
 
 class ApparatusInstanceSerializer(serializers.ModelSerializer):

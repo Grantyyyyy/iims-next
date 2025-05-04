@@ -29,6 +29,12 @@ class ItemSerializer(serializers.ModelSerializer):
     def get_available_instances(self, obj):
         return obj.available_instances()
     
+    def validate_name(self, value):
+        if Item.objects.filter(name__iexact=value).exists():
+            raise serializers.ValidationError("Item with this name already exists.")
+        return value
+
+    
 
 class ItemInstanceSerializer(serializers.ModelSerializer):
     item = serializers.SerializerMethodField()
@@ -82,7 +88,7 @@ class BorrowRecordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BorrowRecord
-        fields = ['id', 'item_instance', 'quantity', 'borrower', 'room', 'custom_borrower' ,'borrow_date', 'return_date', 'purpose']
+        fields = ['id', 'item_instance', 'quantity', 'borrower', 'room', 'custom_borrower' ,'borrow_date', 'duration', 'return_date', 'purpose']
         extra_kwargs = {
             'borrow_date': {'default': serializers.CreateOnlyDefault(timezone.now)},
             'borrower': {'required': False},

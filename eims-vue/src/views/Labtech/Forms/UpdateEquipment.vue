@@ -133,11 +133,8 @@
             useful_life: equipment.useful_life
           }
         } catch (err) {
-          console.error('Error fetching equipment details:', err)
-          errorMessages.value = 'Failed to fetch equipment details. Please try again.'
-          setTimeout(() => {
-            errorMessages.value = null
-          }, 1500)
+          console.error('Error fetching equipment details:', err);
+          error.value = err.response?.data?.message || 'Failed to  fetch equipment details. Please try again.';
         }
       }
   
@@ -162,11 +159,12 @@
             }, 1500)
           }
         } catch (err) {
+          if (err.response && err.response.data) {
+            error.value = err.response.data.name ? err.response.data.name[0] : 'Failed to update equipment.'
+          } else {
+            error.value = 'Failed to update equipment. Please try again.'
+          }
           console.error('Error updating equipment:', err)
-          errorMessages.value = 'Failed to update equipment. Please try again.'
-          setTimeout(() => {
-            errorMessages.value = null
-          }, 1500)
         }
       }
   

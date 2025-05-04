@@ -4,7 +4,7 @@ from decimal import Decimal
 import uuid
 from django.utils import timezone
 from django.db.models.functions import TruncDate
-from django.db.models import Count, Q, Sum, F, Exists, OuterRef, Subquery, Q
+from django.db.models import Count, Q, Sum, F, Exists, OuterRef, Subquery, Q, BooleanField, ExpressionWrapper
 
 
 from rest_framework.permissions import IsAuthenticated
@@ -356,45 +356,42 @@ class EquipmentView(ListCreateAPIView):
                 Q(name__icontains=search_query) |
                 Q(description__icontains=search_query) |
                 Q(category__name__icontains=search_query) |
-                Q(model__icontains=search_query) 
+                Q(model__icontains=search_query)
             )
         return queryset.order_by('name')
-    
 
-    
-    def post(self, request):
-        serializer = EquipmentSerializer(data=request.data)
-        if serializer.is_valid():
-            equipment = serializer.save()
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-            quantity_to_add = int(request.data.get('quantity', 0))
-            unit_cost = request.data.get('unit_cost')
-            inventory_date = request.data.get('inventory_date')
-            start_number = int(request.data.get('start_number', 1))
-            suffix = request.data.get('suffix', "01")
-            purchase_date = request.data.get('purchase_date')
-            useful_life = request.data.get('useful_life')
+    def perform_create(self, serializer):
+        equipment = serializer.save()
 
-            if quantity_to_add > 0 and inventory_date:
-                instances = []
-                for i in range(quantity_to_add):
-                    current_number = str(start_number + i).zfill(4)  
-                    inventory_number = f"{inventory_date}-{current_number}-{suffix}"
-                    instance = EquipmentInstance.objects.create(
-                        equipment=equipment,
-                        inventory_number=inventory_number,
-                        quantity=1,
-                        unit_cost=unit_cost,
-                        purchase_date=purchase_date,
-                        useful_life=useful_life
-                    )
-                    instance.generate_barcode()  
-                    instances.append(instance)
-                    instance.save()
+        # Custom instance creation logic
+        quantity_to_add = int(self.request.data.get('quantity', 0))
+        unit_cost = self.request.data.get('unit_cost')
+        inventory_date = self.request.data.get('inventory_date')
+        start_number = int(self.request.data.get('start_number', 1))
+        suffix = self.request.data.get('suffix', "01")
+        purchase_date = self.request.data.get('purchase_date')
+        useful_life = self.request.data.get('useful_life')
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if quantity_to_add > 0 and inventory_date:
+            for i in range(quantity_to_add):
+                current_number = str(start_number + i).zfill(4)
+                inventory_number = f"{inventory_date}-{current_number}-{suffix}"
+                instance = EquipmentInstance.objects.create(
+                    equipment=equipment,
+                    inventory_number=inventory_number,
+                    quantity=1,
+                    unit_cost=unit_cost,
+                    purchase_date=purchase_date,
+                    useful_life=useful_life
+                )
+                instance.generate_barcode()
+                instance.save()
 
 class EquipmentDetailView(APIView):
     permission_classes = [IsAuthenticated,]
@@ -940,7 +937,15 @@ class ChemicalStockView(ListAPIView):
     serializer_class = ChemicalStockSerializer
 
     def get_queryset(self):
-        queryset = ChemicalStock.objects.filter(chemical_id=self.kwargs['pk'])
+        today = timezone.now()
+
+
+        queryset = ChemicalStock.objects.filter(chemical_id=self.kwargs['pk']).annotate(
+            is_expired=ExpressionWrapper(
+                Q(expiry_date__lt=today),
+                output_field=BooleanField()
+            )
+        )
         search_query = self.request.query_params.get('search', '')
 
         if search_query:
@@ -954,7 +959,7 @@ class ChemicalStockView(ListAPIView):
                 Q(expiry_date__icontains=search_query)
             )
 
-        return queryset.order_by('-volume')
+        return queryset.order_by('is_expired', '-volume')
     
     @transaction.atomic
     def post(self, request, pk):

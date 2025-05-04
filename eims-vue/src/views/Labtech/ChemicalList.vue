@@ -70,12 +70,12 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               <tr 
-                v-for="chemical in filteredChemicals" 
+                v-for="chemical in chemicals" 
                 :key="chemical.id" 
                 @click="navigateToChemicalStocks(chemical.id)"
                 :class="[
                   'transition-colors duration-150 cursor-pointer',
-                  chemical.volume === '0.00' ? 'bg-red-50' : 'hover:bg-gray-50'
+                  chemical.active_volume === '0.00' ? 'bg-red-50' : 'hover:bg-gray-50'
                 ]"
               >
                 <td class="px-4 py-4">
@@ -88,10 +88,10 @@
                   >
                     {{ chemical.description }}
                   </div>
-                  <div v-if="parseFloat(chemical.volume) === 0" class="text-xs text-red-500 font-medium mt-1">
+                  <div v-if="parseFloat(chemical.active_volume) === 0" class="text-xs text-red-500 font-medium mt-1">
                     Out of Stock
                   </div>
-                  <div v-else-if="parseFloat(chemical.volume) === chemical.reorder_level" class="text-xs text-yellow-500 font-medium mt-1">
+                  <div v-else-if="parseFloat(chemical.active_volume) < chemical.reorder_level" class="text-xs text-yellow-500 font-medium mt-1">
                     Low Stock
                   </div>
                   <div v-else-if="isNew(chemical)" class="text-xs text-green-500 font-medium mt-1">
@@ -110,11 +110,11 @@
                         class="h-2 rounded transition-all duration-300"
                         :class="getVolumeBarColor(chemical)"
                         :style="{ width: `${getBarWidth(chemical)}%` }"
-                        :title="`Volume: ${chemical.volume}${chemical.unit}`"
+                        :title="`Volume: ${chemical.active_volume}${chemical.unit}`"
                       ></div>
                     </div>
                     <span class="text-sm text-gray-500">
-                      {{ chemical.volume }} {{ chemical.unit }} 
+                      {{ chemical.active_volume }} {{ chemical.unit }} 
                     </span>
                   </div>
                 </td>
@@ -337,7 +337,7 @@ export default defineComponent({
     };
 
     const getBarWidth = (chemical) => {
-      const volume = parseFloat(chemical.volume);
+      const volume = parseFloat(chemical.active_volume);
       if (volume <= 0) return 0;
       if (volume < 100) return 33;
       if (volume < 500) return 66;
@@ -345,7 +345,7 @@ export default defineComponent({
     };
 
     const getVolumeBarColor = (chemical) => {
-      const volume = parseFloat(chemical.volume);
+      const volume = parseFloat(chemical.active_volume);
       if (volume < 100) return 'bg-red-500';
       if (volume < 500) return 'bg-yellow-500';
       return 'bg-green-500';
@@ -374,18 +374,6 @@ export default defineComponent({
       showAddForm.value = false;
     };
 
-    const filteredChemicals = computed(() => {
-      if (!searchQuery.value) return chemicals.value;
-      
-      const query = searchQuery.value.toLowerCase();
-      return chemicals.value.filter(chemical => 
-        chemical.name.toLowerCase().includes(query) ||
-        chemical.unit.toLowerCase().includes(query) ||
-        chemical.description.toLowerCase().includes(query) ||
-        chemical.volume.toString().toLowerCase().includes(query)
-      );
-    });
-
     const handleSidebarToggle = (isOpen) => {
       isSidebarOpen.value = isOpen;
     };
@@ -411,7 +399,6 @@ export default defineComponent({
       closeUpdateForm,
       tableHeaders,
       visibleHeaders,
-      filteredChemicals,
       searchQuery,
       showAddForm,
       showUpdateForm,

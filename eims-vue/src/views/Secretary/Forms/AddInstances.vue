@@ -25,6 +25,7 @@
                 id="item"
                 required
                 :disabled="!!preselectedItem"
+                @change="handleItemChange"
               >
                 <option value="">Select an item</option>
                 <option v-for="item in items" :key="item.id" :value="item.id">
@@ -34,7 +35,7 @@
             </div>
 
             <!-- Always show these fields -->
-            <div class="grid grid-cols-2 gap-4">
+
               <div>
                 <label class="block text-sm font-semibold text-gray-700" for="quantity">
                   Quantity
@@ -62,7 +63,6 @@
                   :disabled="isSubmitting"
                 >
               </div>
-            </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
@@ -92,7 +92,7 @@
               </div>
             </div>
 
-            <!-- Only show for non-consumable items -->
+            <div class="border-t pt-2 mt-2"> </div>
             <div v-if="!isConsumableItem" class="grid grid-cols-3 gap-4">
               <div>
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="inventory_date">
@@ -120,8 +120,12 @@
                   placeholder="e.g., 0001"
                   required
                 />
-                <div v-if="latestStartNumber" class="text-xs text-gray-600 mt-1">
-                  Previous start number: {{ latestStartNumber }}
+                <div class="text-sm text-gray-600 mt-1">
+                  <span v-if="latestNumberInfo">
+                    Latest: {{ latestNumberInfo.latest_start_number }} | 
+                    Next: <span class="font-medium">{{ latestNumberInfo.formatted_next_number }}</span>
+                  </span>
+                  <span v-else>Loading...</span>
                 </div>
               </div>
 
@@ -197,7 +201,7 @@ export default defineComponent({
     const loading = ref(false);
     const error = ref('');
     const successMessage = ref('');
-    const latestStartNumber = ref(null);
+    const latestNumberInfo = ref(null);
 
     // Computed property to determine if current item is consumable
     const isConsumableItem = computed(() => {
@@ -212,11 +216,44 @@ export default defineComponent({
     const formData = ref({
       quantity: null,
       unit_cost: '',
-      purchase_date: '',
+      purchase_date: new Date().toISOString().split('T')[0],
       useful_life: '',
       inventory_date: new Date().toISOString().split('T')[0],
       start_number: '',
       suffix: '01',
+    });
+
+    // Fetch latest start number on component mount
+    const fetchLatestStartNumber = async () => {
+      try {
+        const response = await axios.get(
+          'api/item-instances/latest-number/',
+          {
+            headers: {
+              'Authorization': `Token ${store.state.token}`
+            }
+          }
+        );
+        latestNumberInfo.value = response.data;
+        
+        // If non-consumable item, auto-fill the start number with the next formatted number
+        if (!isConsumableItem.value) {
+          formData.value.start_number = response.data.formatted_next_number;
+        }
+      } catch (error) {
+        console.error('Error fetching latest start number:', error);
+      }
+    };
+
+    onMounted(() => {
+      // Fetch latest number on component mount
+      fetchLatestStartNumber();
+      
+      // If preselected item is provided, set up the form accordingly
+      if (props.preselectedItem) {
+        selectedItemId.value = props.preselectedItem;
+        handleItemChange();
+      }
     });
 
     // Watch for changes in selected item type
@@ -229,32 +266,50 @@ export default defineComponent({
       } else {
         // Set default values for non-consumables
         formData.value.inventory_date = new Date().toISOString().split('T')[0];
+        
+        // Auto-fill the start number with the next formatted number if available
+        if (latestNumberInfo.value && latestNumberInfo.value.formatted_next_number) {
+          formData.value.start_number = latestNumberInfo.value.formatted_next_number;
+        } else {
+          formData.value.start_number = '0001';
+        }
+        
         formData.value.suffix = '01';
       }
     });
 
-    // Only fetch start number for non-consumables
-    watch(() => selectedItemId.value, async (newValue) => {
-      if (newValue && !isConsumableItem.value) {
-        await fetchLatestStartNumber();
-      }
-    });
-
-    const fetchLatestStartNumber = async () => {
-      if (isConsumableItem.value) return;
+    const handleItemChange = async () => {
+      // If a new item is selected, handle the form updates based on item type
+      const selectedItem = props.items.find(item => item.id === selectedItemId.value);
       
-      try {
-        const response = await axios.get(
-          'api/item-instances/latest-number/',
-          {
-            headers: {
-              'Authorization': `Token ${store.state.token}`
-            }
+      if (selectedItem) {
+        // Reset form data for a new item selection
+        formData.value = {
+          ...formData.value,
+          quantity: null,
+          unit_cost: '',
+          purchase_date: new Date().toISOString().split('T')[0],
+          useful_life: '',
+        };
+        
+        if (selectedItem.item_type === 'Consumables') {
+          // For consumables, clear inventory-related fields
+          formData.value.inventory_date = '';
+          formData.value.start_number = '';
+          formData.value.suffix = '';
+        } else {
+          // For non-consumables, set default values and fetch latest number
+          formData.value.inventory_date = new Date().toISOString().split('T')[0];
+          formData.value.suffix = '01';
+          
+          // Ensure we have the latest number information
+          if (!latestNumberInfo.value) {
+            await fetchLatestStartNumber();
+          } else {
+            // Auto-fill the start number with the next formatted number
+            formData.value.start_number = latestNumberInfo.value.formatted_next_number;
           }
-        );
-        latestStartNumber.value = response.data.latest_start_number;
-      } catch (error) {
-        console.error('Error fetching latest start number:', error);
+        }
       }
     };
 
@@ -303,8 +358,9 @@ export default defineComponent({
       loading,
       error,
       successMessage,
-      latestStartNumber,
+      latestNumberInfo,
       isConsumableItem,
+      handleItemChange,
       submitForm
     };
   }

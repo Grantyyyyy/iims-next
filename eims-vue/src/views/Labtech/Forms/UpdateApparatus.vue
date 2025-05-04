@@ -155,12 +155,13 @@
             headers: { 'Authorization': `Token ${store.state.token}` }
           });
           
+          const apparatus = response.data;
           formData.value = {
-            name: response.data.name,
-            description: response.data.description,
-            category_id: response.data.category_id,
-            apparatus_type: response.data.apparatus_type,
-            quantity: response.data.quantity
+            name: apparatus.name,
+            description: apparatus.description,
+            category_id: apparatus.category.id,
+            apparatus_type: apparatus.apparatus_type,
+            quantity: apparatus.quantity
           };
         } catch (err) {
           console.error('Error fetching apparatus details:', err);
@@ -191,10 +192,13 @@
             emit('close');
           }, 1500);
         } catch (err) {
-          console.error('Error updating apparatus:', err);
-          error.value = err.response?.data?.message || 'Failed to update apparatus';
-        } finally {
-          isSubmitting.value = false;
+            if (err.response && err.response.data) {
+              error.value = err.response.data.name ? err.response.data.name[0] : 'Failed to update apparatus.';
+            } else {
+              error.value = 'Failed to update apparatus. Please try again.';
+            }
+          } finally {
+            isSubmitting.value = false;
         }
       };
   

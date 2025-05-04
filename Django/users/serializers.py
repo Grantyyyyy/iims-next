@@ -43,6 +43,7 @@ class UserSerializer(serializers.ModelSerializer):
             validated_data.pop('department')
         
         return super().update(instance, validated_data)
+    
 
 
 

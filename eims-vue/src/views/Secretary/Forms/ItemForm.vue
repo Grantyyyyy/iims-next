@@ -289,7 +289,12 @@ export default defineComponent({
         emit('item-added')
         emit('close')
       } catch (error) {
-        console.error('Error adding item:', error)
+        if (err.response && err.response.data) {
+          error.value = err.response.data.name ? err.response.data.name[0] : 'Failed to update item.'
+        } else {
+          error.value = 'Failed to update item. Please try again.'
+        }
+        console.error('Error updating item:', err)
       }
     }
 
