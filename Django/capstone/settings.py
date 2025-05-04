@@ -1,5 +1,12 @@
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+# print(f"USE_CLOUDINARY: {os.getenv('USE_CLOUDINARY')}")
+# print(f"CLOUDINARY_CLOUD_NAME: {os.getenv('CLOUDINARY_CLOUD_NAME')}")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -9,17 +16,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-knd%f@mbf#*v2i-^*w%q9qdqzz($nbh68*3+uw#@8psh3m$$$)'
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = 'django-insecure-knd%f@mbf#*v2i-^*w%q9qdqzz($nbh68*3+uw#@8psh3m$$$)'
+#SECRET_KEY = os.environ.get('SECRET_KEY')
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-#DEBUG = True
-DEBUG = os.environ.get('DEBUG') == 'True'
+DEBUG = True
+#DEBUG = os.environ.get('DEBUG') == 'True'
 
 
-#ALLOWED_HOSTS = []
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 
 
@@ -32,7 +39,21 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+if os.getenv('USE_CLOUDINARY') == 'True':
+    print("Using Cloudinary: cloudinary_storage.storage.MediaCloudinaryStorage")
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    # MEDIA_URL = f'https://res.cloudinary.com/{os.getenv("CLOUDINARY_CLOUD_NAME")}/'
+else:
+    print("Using Local Media Storage")
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+
+
+
 
 
 INSTALLED_APPS = [
@@ -183,9 +204,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
 FRONTEND_DOMAIN = 'http://localhost:8080'
 
 CORS_ALLOW_CREDENTIALS = True
@@ -198,6 +216,8 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
+
+
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8080",

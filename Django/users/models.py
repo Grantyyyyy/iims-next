@@ -6,6 +6,7 @@ from barcode.writer import ImageWriter
 from io import BytesIO
 from django.core.files import File
 from PIL import Image, ImageOps
+from cloudinary.models import CloudinaryField
 
 
 class Department(models.Model):
@@ -27,7 +28,7 @@ class User(AbstractUser):
     contact_number = models.CharField(max_length=20, blank=True, null=True)
     custom_id = models.IntegerField(unique=True, null=True, blank=True)
     barcode = models.ImageField(upload_to='user_barcodes', blank=True, null=True)
-    profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
+    profile_picture = CloudinaryField('image', null=True, blank=True)
     barcode_value = models.CharField(max_length=100, unique=True, blank=True, null=True)
     REQUIRED_FIELDS = []
 

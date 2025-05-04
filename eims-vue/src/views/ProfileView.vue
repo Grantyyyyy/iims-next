@@ -328,7 +328,8 @@ export default {
     });
     const tabs = ref(['Information', 'Update Profile', 'Change Password']);
     const currentTab = ref(tabs.value[0]);
-    const apiURL =  'https://iims-django.onrender.com';
+    // const apiURL =  'https://iims-django.onrender.com';
+    const apiURL = 'http://localhost:8000';
     const token = computed(() => store.state.token);
     const showCropper = ref(false);
     const imageUrl = ref('');
