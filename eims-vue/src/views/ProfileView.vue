@@ -51,7 +51,7 @@
               <div class="relative w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                 <img 
                   v-if="user.profile_picture"
-                  :src="`${apiURL}${user.profile_picture}`" 
+                  :src="getProfileImageUrl(user.profile_picture)" 
                   :alt="`${user.first_name}'s profile`"
                   class="w-full h-full object-cover"
                 />
@@ -102,7 +102,7 @@
               <div class="relative w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                 <img 
                   v-if="user.profile_picture"
-                  :src="`${apiURL}${user.profile_picture}`" 
+                  :src="getProfileImageUrl(user.profile_picture)" 
                   :alt="`${user.first_name}'s profile`"
                   class="w-full h-full object-cover"
                 />
@@ -192,7 +192,7 @@
               <div class="relative w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                 <img 
                   v-if="user.profile_picture"
-                  :src="`${apiURL}${user.profile_picture}`" 
+                  :src="getProfileImageUrl(user.profile_picture)" 
                   :alt="`${user.first_name}'s profile`"
                   class="w-full h-full object-cover"
                 />
@@ -274,7 +274,7 @@
               <div class="flex justify-end">
                 <button 
                   type="submit" 
-                  :disabled="!hasChanges"
+                  :disabled="!passwords.current || !passwords.new || !passwords.confirm"
                   class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
                 >
                   Update Password
@@ -328,7 +328,7 @@ export default {
     });
     const tabs = ref(['Information', 'Update Profile', 'Change Password']);
     const currentTab = ref(tabs.value[0]);
-    const apiURL = 'http://localhost:8000';
+    const apiURL =  'https://iims-django.onrender.com';
     const token = computed(() => store.state.token);
     const showCropper = ref(false);
     const imageUrl = ref('');
@@ -351,8 +351,17 @@ export default {
     });
 
     const getInitials = (firstName, lastName) => {
-        return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
-      };
+      return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+    };
+
+    const getProfileImageUrl = (profilePath) => {
+      // Check if the path already includes the full URL
+      if (profilePath && profilePath.startsWith('http')) {
+        return profilePath;
+      }
+      // Otherwise, prepend the API URL
+      return profilePath ? `${apiURL}${profilePath}` : defaultImageUrl;
+    };
 
     const togglePassword = (field) => {
       showPasswords.value[field] = !showPasswords.value[field];
@@ -376,7 +385,7 @@ export default {
     // Efficient change detection
     const hasChanges = computed(() => {
       const userChanged = Object.entries(originalValues.value).some(([key, value]) => value !== user[key]);
-      const passwordChanged = Object.entries(origanlPassword.value).some(([key, value]) => value !== passwords[key]);
+      const passwordChanged = passwords.current || passwords.new || passwords.confirm;
       return userChanged || passwordChanged;
     });
 
@@ -386,9 +395,7 @@ export default {
         Object.assign(user, data);
         originalUser.value = { ...user };
         updateOriginalValues();
-        if (data.profile_image) {
-          profileImage.value = data.profile_image;
-        }
+        console.log('Fetched user data:', data);
       } catch (error) {
         console.error('Error fetching user:', error);
       }
@@ -420,50 +427,36 @@ export default {
         }
       };
 
-    const onFileChange = async (e) => {
+    const onFileSelected = (e) => {
       const file = e.target.files[0];
       if (file) {
-          const formData = new FormData();
-          formData.append('profile', file);
+        imageUrl.value = URL.createObjectURL(file);
+        showCropper.value = true;
+      }
+    };
 
-          try {
-              // Get CSRF token from cookie
-              function getCookie(name) {
-                  let cookieValue = null;
-                  if (document.cookie && document.cookie !== '') {
-                      const cookies = document.cookie.split(';');
-                      for (let i = 0; i < cookies.length; i++) {
-                          const cookie = cookies[i].trim();
-                          if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                              break;
-                          }
-                      }
-                  }
-                  return cookieValue;
-              }
+    const cancelCrop = () => {
+      if (cropper.value) {
+        cropper.value.destroy();
+        cropper.value = null;
+      }
+      showCropper.value = false;
+      imageUrl.value = '';
+    };
 
-            const { data } = await axios.put('/api/profile-upload/', formData, {
-                  headers: {
-                      'Authorization': `Token ${token.value}`,
-                      'X-CSRFToken': getCookie('csrftoken'),  // Add CSRF token
-                  },
-                  withCredentials: true  
-              });
-              
-              profileImage.value = data.profile_picture;
-              successMessage.value = 'Profile picture uploaded successfully!';
-              setTimeout(() => {
-                successMessage.value = '';
-              }, 3000);
-              fetchUser();
-          } catch (error) {
-              console.error('Error uploading image:', error);
-              error.value = 'Failed to upload image. Please try again.';
-          } finally {
-              loading.value = false;
+    const getCookie = (name) => {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
           }
         }
+      }
+      return cookieValue;
     };
 
     const initializeCropper = () => {
@@ -499,146 +492,99 @@ export default {
       }
     });
 
-    const onFileSelected = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        imageUrl.value = URL.createObjectURL(file);
-        showCropper.value = true;
-      }
-    };
-
-    const cancelCrop = () => {
-      if (cropper.value) {
-        cropper.value.destroy();
-        cropper.value = null;
-      }
-      showCropper.value = false;
-      imageUrl.value = '';
-    };
-
-    const getCookie = (name) => {
-      let cookieValue = null;
-      if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-          const cookie = cookies[i].trim();
-          if (cookie.substring(0, name.length + 1) === (name + '=')) {
-            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-            break;
-          }
-        }
-      }
-      return cookieValue;
-    };
-
     const cropImage = async () => {
-        if (!cropper.value) {
-          error.value = 'Cropper not initialized';
-          return;
-        }
+      if (!cropper.value) {
+        error.value = 'Cropper not initialized';
+        return;
+      }
 
-        try {
-          loading.value = true;
-          const canvas = cropper.value.getCroppedCanvas({
-            width: 300,
-            height: 300,
-            imageSmoothingEnabled: true,
-            imageSmoothingQuality: 'high',
-          });
+      try {
+        loading.value = true;
+        const canvas = cropper.value.getCroppedCanvas({
+          width: 300,
+          height: 300,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high',
+        });
 
-          const blob = await new Promise(resolve => {
-            canvas.toBlob(resolve, 'image/jpeg', 0.9);
-          });
+        const blob = await new Promise(resolve => {
+          canvas.toBlob(resolve, 'image/jpeg', 0.9);
+        });
 
-          const formData = new FormData();
-          formData.append('profile', blob, 'profile.jpg');
+        const formData = new FormData();
+        formData.append('profile', blob, 'profile.jpg');
 
-          const response = await axios.put('/api/profile-upload/', formData, {
-            headers: {
-              'Authorization': `Token ${token.value}`,
-              'X-CSRFToken': getCookie('csrftoken'),
-              'Content-Type': 'multipart/form-data'
-            },
-            withCredentials: true
-          });
+        const response = await axios.put('/api/profile-upload/', formData, {
+          headers: {
+            'Authorization': `Token ${token.value}`,
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'multipart/form-data'
+          },
+          withCredentials: true
+        });
 
-          user.profile_picture = response.data.profile_picture;
-          successMessage.value = 'Profile picture updated successfully!';
-          setTimeout(() => {
-            successMessage.value = '';
-          }, 3000);
-          showCropper.value = false;
-          cancelCrop();
-          await fetchUser();
-        } catch (err) {
-          error.value = 'Failed to upload image. Please try again.';
-          console.error('Error uploading image:', err);
-        } finally {
-          loading.value = false;
-        }
-      };
+        user.profile_picture = response.data.profile_picture;
+        successMessage.value = 'Profile picture updated successfully!';
+        setTimeout(() => {
+          successMessage.value = '';
+        }, 3000);
+        showCropper.value = false;
+        cancelCrop();
+        await fetchUser();
+      } catch (err) {
+        error.value = 'Failed to upload image. Please try again.';
+        console.error('Error uploading image:', err);
+      } finally {
+        loading.value = false;
+      }
+    };
 
-
-
-      const updatePassword = async () => {
+    const updatePassword = async () => {
       // Validate current password
       if (!passwords.current) {
-        errorMessage.value = 'Please enter your current password.';
-        setTimeout(() => {
-          errorMessage.value = '';
-        }, 3000);
+        error.value = 'Please enter your current password.';
         return;
       }
 
       // Validate new password length
       if (!passwords.new || passwords.new.length < 5) {
-        errorMessage.value = 'New password must be at least 5 characters long.';
-        setTimeout(() => {
-          errorMessage.value = '';
-        }, 3000);
+        error.value = 'New password must be at least 5 characters long.';
         return;
       }
 
       // Validate password confirmation
       if (passwords.new !== passwords.confirm) {
-        errorMessage.value = 'The new password and confirm password do not match.';
-        setTimeout(() => {
-          errorMessage.value = '';
-        }, 3000);
+        error.value = 'The new password and confirm password do not match.';
         return;
       }
 
       // Check if new password is same as current password
       if (passwords.new === passwords.current) {
-        errorMessage.value = 'New password cannot be the same as the current password.';
-        setTimeout(() => {
-          errorMessage.value = '';
-        }, 3000);
+        error.value = 'New password cannot be the same as the current password.';
         return;
       }
 
       loading.value = true;
 
       try {
-        const response = await axios.post('/api/user/change_password/', passwords);
+        const response = await axios.post('/api/user/change_password/', {
+          current: passwords.current,
+          new: passwords.new,
+          confirm: passwords.confirm
+        });
+        
         successMessage.value = response.data.message || 'Password updated successfully!';
-        setTimeout(() => {
-          successMessage.value = '';
-        }, 3000);
         Object.assign(passwords, { current: '', new: '', confirm: '' });
         updateOriginalValues();
-      } catch (error) {
-        console.error('Error updating password:', error);
-        if (error.response?.data?.error) {
-          errorMessage.value = error.response.data.error;
-        } else if (error.response?.status === 400) {
-          errorMessage.value = 'Failed to update password. The current password may be incorrect.';
+      } catch (err) {
+        console.error('Error updating password:', err);
+        if (err.response?.data?.error) {
+          error.value = err.response.data.error;
+        } else if (err.response?.status === 400) {
+          error.value = 'Failed to update password. The current password may be incorrect.';
         } else {
-          errorMessage.value = 'Failed to update password. Please try again.';
+          error.value = 'Failed to update password. Please try again.';
         }
-        setTimeout(() => {
-          errorMessage.value = '';
-        }, 3000);
       } finally {
         loading.value = false;
       }
@@ -655,20 +601,21 @@ export default {
     onMounted(() => {
       fetchUser();
 
-      if (imageUrl.value) {
-        cropper.value = new Cropper(document.getElementById('image-preview'), {
-          aspectRatio: 1,
-          viewMode: 1,
-          autoCropArea: 1,
-        });
-      }
+      // Add debug log to check API URL
+      console.log('API URL:', apiURL);
 
-      const savedTab = localStorage.getItem('currentTab');
-      currentTab.value = savedTab || 'Information';
-
+      // Set up axios defaults
       axios.defaults.xsrfCookieName = 'csrftoken';
       axios.defaults.xsrfHeaderName = 'X-CSRFToken';
+      
+      // Initialize sidebar based on screen size
       isSidebarOpen.value = window.innerWidth >= 1024;
+      
+      // Restore saved tab if available
+      const savedTab = localStorage.getItem('currentTab');
+      if (savedTab && tabs.value.includes(savedTab)) {
+        currentTab.value = savedTab;
+      }
     });
 
     return {
@@ -681,6 +628,7 @@ export default {
       togglePassword,
       showPasswords,
       getInitials,
+      getProfileImageUrl,
       store,
       router,
       apiURL,
@@ -701,9 +649,7 @@ export default {
       imageUrl,
       showCropper,
       cropper,
-      cropperImage,
-      onFileChange
-
+      cropperImage
     };
   },
 };
