@@ -13,6 +13,7 @@ from django.core.files import File
 from django.db.models.signals import post_save, post_delete
 from users.models import Room
 from django.contrib.auth import get_user_model
+from cloudinary.models import CloudinaryField
 
 User = get_user_model()
 
@@ -116,7 +117,7 @@ class ItemInstance(models.Model):
     current_condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, blank=True, null=True, default='Good')
     last_condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, blank=True, null=True)
 
-    barcode = models.ImageField(upload_to='barcode/item_barcodes', null=True, blank=True)
+    barcode = CloudinaryField('barcode', folder='barcode/item_barcodes', null=True, blank=True)
     useful_life = models.PositiveIntegerField(null=True, blank=True)
     
     def __str__(self):
