@@ -75,6 +75,7 @@ class ItemInstanceSerializer(serializers.ModelSerializer):
             return {
                 'id': last_record.id,
                 'borrower': last_record.borrower.first_name + ' ' + last_record.borrower.last_name if last_record.borrower else last_record.custom_borrower,
+                'borrow_date': last_record.borrow_date,
                 'return_date': last_record.return_date,
                 'room': last_record.room.name if last_record.room else None
             }

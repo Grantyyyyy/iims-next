@@ -35,10 +35,11 @@
             <div class="relative">
               <div class="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                 <img 
-                  v-if="user.profile_picture" 
-                  :src="`${apiURL}${user.profile_picture}`"
+                  v-if="showImage && user.profile_picture_url" 
+                  :src="user.profile_picture_url"
                   :alt="`${user.first_name}'s profile`"
                   class="w-full h-full object-cover"
+                  @error="onImageError"
                 />
                 <span v-else class="text-4xl text-gray-600">
                   {{ getInitials(user.first_name, user.last_name) }}
@@ -99,14 +100,6 @@
                   </span>
                 </p>
               </div>
-              <!-- <div>
-                <label class="text-sm font-medium text-gray-500">Join Date</label>
-                <p class="text-gray-900">{{ formatDate(user.join_date) }}</p>
-              </div>
-              <div>
-                <label class="text-sm font-medium text-gray-500">Last Login</label>
-                <p class="text-gray-900">{{ formatDate(user.last_login) || 'Never' }}</p>
-              </div> -->
             </div>
           </div>
 
@@ -164,8 +157,15 @@
       const userDetails = ref({});
       const error = ref(null);
       const isSidebarOpen = ref(true);
-      const apiURL = 'http://localhost:8000';
-  
+      const apiURL = 'https://iims-django.onrender.com';
+      const showImage = ref(true);
+
+
+
+      const onImageError = (event) => {
+        showImage.value = false;
+      }
+
       const fetchUserDetails = async () => {
         loading.value = true
         error.value = null
@@ -183,6 +183,7 @@
           loading.value = false
         }
       }
+
   
       const getInitials = (firstName, lastName) => {
         return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
@@ -248,6 +249,8 @@
       return {
         user,
         loading,
+        onImageError,
+        showImage,
         userDetails,
         isSidebarOpen,
         error,

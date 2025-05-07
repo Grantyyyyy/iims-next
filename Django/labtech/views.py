@@ -1403,7 +1403,6 @@ class ApparatusBorrowView(ListCreateAPIView):
                     ApparatusReturnRecord.objects.create(
                         apparatus_instance=instance,
                         borrow_record=borrow_record,
-                        returned_date=timezone.now()
                     )
 
                 else:
@@ -1413,15 +1412,15 @@ class ApparatusBorrowView(ListCreateAPIView):
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
-                borrow_record = ApparatusBorrowRecord.objects.create(
-                    apparatus_instance=instance,
-                    quantity=quantity,
-                    room=room,
-                    subject=subject,
-                    purpose=purpose,
-                    custom_borrower=custom_borrower,
-                    borrower=borrower
-                )
+                    borrow_record = ApparatusBorrowRecord.objects.create(
+                        apparatus_instance=instance,
+                        quantity=quantity,
+                        room=room,
+                        subject=subject,
+                        purpose=purpose,
+                        custom_borrower=custom_borrower,
+                        borrower=borrower
+                    )
 
             return Response({'message': 'Apparatus borrowed successfully.'}, status=status.HTTP_201_CREATED)
         except ApparatusInstance.DoesNotExist:

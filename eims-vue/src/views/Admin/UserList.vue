@@ -57,16 +57,16 @@
               </select>
             </div>
 
-            <PrimaryButton 
-              class="inline-flex items-center w-full md:w-auto justify-center" 
-              @click="showAddForm = true"
-            >
-              <template #icon>
-                <i class="fas fa-plus mr-2"></i>
-              </template>
-              Add User
-            </PrimaryButton>
           </div>
+          <PrimaryButton 
+            class="inline-flex items-center md:w-auto"
+            @click="showAddForm = true"
+          >
+            <template #icon>
+              <i class="fas fa-plus mr-2"></i>
+            </template>
+            Add User
+          </PrimaryButton>
         </div>
 
         <div v-if="loading" class="flex justify-center items-center h-64">
@@ -121,21 +121,21 @@
                     {{ user.department?.name ? user.department?.name : '--' }}
                   </div>
                 </td>
-                <td @click.stop class="px-4 py-4">
-                  <div class="flex space-x-1">
+                <td @click.stop class="px-4 py-4" >
+                  <div class="flex space-x-1.5">
                     <button 
                       @click="viewUserDetails(user)" 
-                      class="p-2 hover:bg-gray-100 rounded-full" 
-                      title="View Details"
+                      class="text-black-500 hover:text-black-800 border border-black-300 rounded-full p-1 flex items-center justify-center w-7 h-7" 
+                      title="View User Details"
                     >
-                      <i class="fas fa-info-circle text-gray-600"></i>
+                      <i class="pi pi-id-card" style="font-size: 14px"></i>
                     </button>
                     <button 
                       @click="editUser(user)" 
-                      class="p-2 hover:bg-gray-100 rounded-full" 
+                      class="text-blue-500 hover:text-blue-800 border border-blue-300 rounded-full p-1 flex items-center justify-center w-7 h-7" 
                       title="Edit User"
                     >
-                      <i class="fas fa-edit text-gray-600"></i>
+                      <i class="pi pi-pencil" style="font-size: 14px"></i>
                     </button>
                   </div>
                 </td>

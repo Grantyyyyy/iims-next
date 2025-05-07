@@ -72,6 +72,7 @@ class EquipmentInstanceSerializer(serializers.ModelSerializer):
     equipment = serializers.SerializerMethodField()
     current_borrow_record = serializers.SerializerMethodField()
     last_borrow_record = serializers.SerializerMethodField()
+    barcode_url = serializers.SerializerMethodField()
     
     class Meta:
         model = EquipmentInstance
@@ -93,6 +94,7 @@ class EquipmentInstanceSerializer(serializers.ModelSerializer):
                 'id': current_record.id,
                 'borrower': current_record.borrower.first_name + ' ' + current_record.borrower.last_name if current_record.borrower else current_record.custom_borrower,
                 'borrowed_date': current_record.borrowed_date,
+                # 'condition': current_record.current_condition,
                 'subject': current_record.subject.name if current_record.subject else None,
                 'room': current_record.room.name if current_record.room else None
             }
@@ -104,11 +106,34 @@ class EquipmentInstanceSerializer(serializers.ModelSerializer):
             return {
                 'id': last_record.id,
                 'borrower': last_record.borrower.first_name + ' ' + last_record.borrower.last_name if last_record.borrower else last_record.custom_borrower,
+                # 'condition': last_record.last_condition,
                 'borrowed_date': last_record.borrowed_date,
                 'returned_date': last_record.returned_date,
                 'room': last_record.room.name if last_record.room else None
             }
         return None
+    
+    def get_barcode_url(self, obj):
+        """Return the proper URL for the barcode image"""
+        if not obj.barcode:
+            return None
+            
+        # If it's already a complete URL (like from Cloudinary)
+        if isinstance(obj.barcode, str) and (
+            obj.barcode.startswith('http://') or 
+            obj.barcode.startswith('https://')
+        ):
+            # Return the URL as is, without prefixing
+            return obj.barcode
+            
+        # For local file storage
+        request = self.context.get('request')
+        if request and hasattr(obj.barcode, 'url'):
+            return request.build_absolute_uri(obj.barcode.url)
+        return None
+    
+    
+
 
 class EquipmentAssignmentRecordSerializer(serializers.ModelSerializer):
     equipment_instance = EquipmentInstanceSerializer()
@@ -248,6 +273,7 @@ class ApparatusInstanceSerializer(serializers.ModelSerializer):
     apparatus = serializers.SerializerMethodField()
     current_borrow_record = serializers.SerializerMethodField()
     last_borrow_record = serializers.SerializerMethodField()
+    barcode_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ApparatusInstance
@@ -279,10 +305,31 @@ class ApparatusInstanceSerializer(serializers.ModelSerializer):
                 'id': last_record.id,
                 'borrower': last_record.borrower.first_name + ' ' + last_record.borrower.last_name if last_record.borrower else last_record.custom_borrower,
                 'borrowed_date': last_record.borrowed_date,
+                'returned_date': last_record.returned_date,
                 'subject': last_record.subject.name if last_record.subject else None,
                 'room': last_record.room.name if last_record.room else None
             }
         return None
+    
+    def get_barcode_url(self, obj):
+        """Return the proper URL for the barcode image"""
+        if not obj.barcode:
+            return None
+            
+        # If it's already a complete URL (like from Cloudinary)
+        if isinstance(obj.barcode, str) and (
+            obj.barcode.startswith('http://') or 
+            obj.barcode.startswith('https://')
+        ):
+            # Return the URL as is, without prefixing
+            return obj.barcode
+            
+        # For local file storage
+        request = self.context.get('request')
+        if request and hasattr(obj.barcode, 'url'):
+            return request.build_absolute_uri(obj.barcode.url)
+        return None
+    
     
 class ApparatusBorrowRecordSerializer(serializers.ModelSerializer):
     borrower = serializers.SerializerMethodField()

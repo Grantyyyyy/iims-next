@@ -123,7 +123,7 @@
                   <div class="flex items-center">
                     <span class="text-gray-600">Condition Before:</span>
                     <span class="ml-2">
-                      {{ instance.last_borrow_record?.condition }}
+                      {{ instance.last_condition }}
                     </span>
                   </div>
                   <div class="flex items-center">
@@ -143,11 +143,11 @@
 
           <!-- Barcode -->
           <div v-if="instance.barcode_url" class="bg-white rounded-lg shadow-sm border p-6">
-    <h3 class="text-xl font-semibold mb-4 text-gray-800">Barcode</h3>
-    <div class="flex justify-center">
-      <img :src="instance.barcode_url" alt="Item Barcode" class="h-24 border rounded" />
-    </div>
-  </div>
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">Barcode</h3>
+            <div class="flex justify-center">
+              <img :src="instance.barcode_url" alt="Item Barcode" class="h-24 border rounded" />
+            </div>
+          </div>
 
         </div>
       </div>

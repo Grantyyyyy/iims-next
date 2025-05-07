@@ -18,7 +18,7 @@
   
           <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
             <h1 class="text-3xl font-bold text-gray-800 flex-grow">
-              Item Instance Details
+              Equipment Details
             </h1>
   
             <div v-if="instance" class="flex space-x-4 items-center">
@@ -59,9 +59,9 @@
           <div v-else-if="instance" class="space-y-6">
             <!-- Quick Overview Card -->
             <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div class="flex flex-col">
-                  <span class="text-sm font-medium text-blue-600">Item Name</span>
+                  <span class="text-sm font-medium text-blue-600">Equipment Name</span>
                   <span class="text-lg font-semibold">{{ instance.equipment.name }}</span>
                 </div>
                 <div class="flex flex-col">
@@ -76,6 +76,10 @@
                   ]">
                     {{ instance.current_condition }}
                   </span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-sm font-medium text-blue-600">Serial No.</span>
+                  <span class="text-lg font-semibold">{{ instance.serial_number ? instance.serial_number : 'N/A' }}  </span>
                 </div>
               </div>
               <div class="mt-4">
@@ -101,7 +105,7 @@
                     </div>
                     <div class="flex items-center">
                       <span class="text-yellow-800">Since:</span>
-                      <span class="ml-2 font-semibold">{{ formatDate(instance.current_borrow_record?.borrow_date) }}</span>
+                      <span class="ml-2 font-semibold">{{ formatDate(instance.current_borrow_record?.borrowed_date) }}</span>
                     </div>
                   </div>
                 </div>
@@ -119,17 +123,17 @@
                     <div class="flex items-center">
                       <span class="text-gray-600">Condition Before:</span>
                       <span class="ml-2">
-                        {{ instance.last_borrow_record?.condition }}
+                        {{ instance.last_condition }}
                       </span>
                     </div>
                     <div class="flex items-center">
                       <span class="text-gray-600">Date Borrowed:</span>
-                      <span class="ml-2">{{ formatDate(instance.last_borrow_record?.borrow_date) }}</span>
+                      <span class="ml-2">{{ formatDate(instance.last_borrow_record?.borrowed_date) }}</span>
                     </div>
                     <div class="flex items-center">
                       <span class="text-gray-600">Date Returned:</span>
                       <span class="ml-2">
-                        {{ formatDate(instance.last_borrow_record?.return_date) }} 
+                        {{ formatDate(instance.last_borrow_record?.returned_date) }} 
                       </span>
                     </div>
                   </div>
@@ -137,13 +141,13 @@
               </div>
             </div>
   
-            <!-- Barcode -->
-            <div v-if="instance.barcode" class="bg-white rounded-lg shadow-sm border p-6">
+            <div v-if="instance.barcode_url" class="bg-white rounded-lg shadow-sm border p-6">
               <h3 class="text-xl font-semibold mb-4 text-gray-800">Barcode</h3>
               <div class="flex justify-center">
-                <img :src="instance.barcode" alt="Equipment Barcode" class="h-24 border rounded" />
+                <img :src="instance.barcode_url" alt="Equipment Barcode" class="h-24 border rounded" />
               </div>
             </div>
+
           </div>
         </div>
       </div>

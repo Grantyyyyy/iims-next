@@ -16,10 +16,11 @@ class DepartmentSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     department_id = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all(), source='department', write_only=True, required=False, allow_null=True)
     department = DepartmentSerializer(read_only=True)
+    profile_picture_url = serializers.SerializerMethodField()
     class Meta:
         model = User
         fields = ['id', 'custom_id', 'username', 'first_name', 'last_name', 'is_active', 'is_secretary', 'is_supply', 'is_dean', 'is_admin', 'is_staff', 'is_superuser', 
-                  'is_labtech', 'is_ictc', 'department', 'department_id', 'user_type', 'contact_number', 'barcode', 'email', 'profile_picture', 'barcode_value']
+                  'is_labtech', 'is_ictc', 'department', 'department_id', 'user_type', 'contact_number', 'barcode', 'email', 'profile_picture', 'barcode_value', 'profile_picture_url']
         read_only_fields = ['custom_id', 'barcode']
 
     def create(self, validated_data):
@@ -44,7 +45,23 @@ class UserSerializer(serializers.ModelSerializer):
         
         return super().update(instance, validated_data)
     
+    def get_profile_picture_url(self, obj):
+        if not obj.profile_picture:
+            return None
+        
+        if isinstance(obj.profile_picture, str) and (
+            obj.profile_picture.startswith('http://') or 
+            obj.profile_picture.startswith('https://')
+        ):
+            # Return the URL as is, without prefixing
+            return obj.profile_picture
+        # For local file storage
+        request = self.context.get('request')
+        if request and hasattr(obj.profile_picture, 'url'):
+            return request.build_absolute_uri(obj.profile_picture.url)
+        return None
 
+    
 
 
 

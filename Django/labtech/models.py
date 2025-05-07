@@ -1,4 +1,5 @@
 import re
+from django.conf import settings
 from django.forms import ValidationError
 from django.utils import timezone
 import random, string
@@ -16,6 +17,8 @@ from users.models import Room
 from django.db.models import Q
 from django.utils.timezone import now
 from django.utils import timezone
+from cloudinary.models import CloudinaryField
+import cloudinary.uploader
 
 
 User = get_user_model()
@@ -110,7 +113,7 @@ class EquipmentInstance(models.Model):
     current_condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, blank=True, null=True, default='Good')
     last_condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, blank=True, null=True)
 
-    barcode = models.ImageField(upload_to='barcode/equipment_barcodes', null=True, blank=True)
+    barcode = CloudinaryField('barcode', folder='barcode/equipment_barcodes', null=True, blank=True)
 
     
     def get_current_borrower(self):
@@ -129,19 +132,38 @@ class EquipmentInstance(models.Model):
         return self.borrow_count() >= threshold 
 
     def generate_barcode(self):
+        if not self.inventory_number:
+            raise ValueError("Inventory number must be set before generating barcode.")
         code = barcode.get('code128', str(self.inventory_number), writer=ImageWriter())
         buffer = BytesIO() 
         code.write(buffer)
 
         image = Image.open(buffer)
-        new_size = (400, 200)  
-        image = image.resize(new_size, Image.LANCZOS)
-        padding = 20
-        image = ImageOps.expand(image, border=padding, fill='white')
+        image = image.resize((400, 200), Image.LANCZOS)
+        image = ImageOps.expand(image, border=20, fill='white')
 
-        buffer = BytesIO()
-        image.save(buffer, format='PNG')
-        self.barcode.save(f'equipment_barcode_{self.inventory_number}.png', File(buffer), save=False)
+        final_buffer = BytesIO()
+        image.save(final_buffer, format='PNG')
+        final_buffer.seek(0)
+
+        if 'cloudinary' in settings.DEFAULT_FILE_STORAGE or hasattr(self.barcode, 'upload'):
+            # Upload to Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                final_buffer,
+                folder='barcode/equipment_barcodes',
+                public_id=f'{self.inventory_number}',
+                overwrite=True,
+                resource_type="image"
+            )
+            # Store just the secure URL
+            self.barcode = upload_result['secure_url']
+        else:
+            barcode_name = f'barcode/equipment_barcodes/{self.inventory_number}.png'
+            self.barcode.save(barcode_name, ContentFile(final_buffer.getvalue()), save=False)
+
+
+
+    
     
 @receiver(post_delete, sender=EquipmentInstance)
 def update_item_total_quantity_on_instance_delete(sender, instance, **kwargs):
@@ -299,7 +321,7 @@ class ApparatusInstance(models.Model):
     current_condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, blank=True, null=True, default='Good')
     last_condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, blank=True, null=True)
 
-    barcode = models.ImageField(upload_to='barcode/apparatus_barcode', null=True, blank=True)
+    barcode = CloudinaryField('barcode', folder='barcode/apparatus_barcode', null=True, blank=True)
     purchase_date = models.DateField(null=True, blank=True)
     useful_life = models.PositiveIntegerField(default=0)
     
@@ -312,22 +334,39 @@ class ApparatusInstance(models.Model):
     
     def get_last_borrow_record(self):
         return self.apparatusborrowrecords.filter(returned_date__isnull=False).order_by('-returned_date').first()
+    
 
     
     def generate_barcode(self):
+        if not self.inventory_number:
+            raise ValueError("Inventory number must be set before generating barcode.")
         code = barcode.get('code128', str(self.inventory_number), writer=ImageWriter())
         buffer = BytesIO() 
         code.write(buffer)
 
         image = Image.open(buffer)
-        new_size = (400, 200)  
-        image = image.resize(new_size, Image.LANCZOS)
-        padding = 20
-        image = ImageOps.expand(image, border=padding, fill='white')
+        image = image.resize((400, 200), Image.LANCZOS)
+        image = ImageOps.expand(image, border=20, fill='white')
 
-        buffer = BytesIO()
-        image.save(buffer, format='PNG')
-        self.barcode.save(f'apparatus_barcode_{self.inventory_number}.png', File(buffer), save=False)
+        final_buffer = BytesIO()
+        image.save(final_buffer, format='PNG')
+        final_buffer.seek(0)
+
+        if 'cloudinary' in settings.DEFAULT_FILE_STORAGE or hasattr(self.barcode, 'upload'):
+            # Upload to Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                final_buffer,
+                folder='barcode/apparatus_barcode',
+                public_id=f'{self.inventory_number}',
+                overwrite=True,
+                resource_type="image"
+            )
+            
+            # Store just the secure URL
+            self.barcode = upload_result['secure_url']
+        else:
+            barcode_name = f'barcode/apparatus_barcode/{self.inventory_number}.png'
+            self.barcode.save(barcode_name, File(final_buffer), save=False)
     
 class Chemical(models.Model):
     UNIT_CHOICES = (
@@ -373,7 +412,7 @@ class ChemicalStock(models.Model):
 
     volume = models.DecimalField(max_digits=10, decimal_places=5, default=0)
     expiry_date = models.DateField(null=True, blank=True)
-    barcode = models.ImageField(upload_to='barcodes/chemical_barcode', null=True, blank=True)
+    barcode = CloudinaryField('barcode', folder='barcodes/chemical_barcode', null=True, blank=True)
 
     def __str__(self):
         return f" - {self.chemical} ({self.inventory_number})"
@@ -401,19 +440,37 @@ class ChemicalStock(models.Model):
         self.chemical.update_total_volume()
 
     def generate_barcode(self):
+        if not self.inventory_number:
+            raise ValueError("Inventory number must be set before generating barcode.")
         code = barcode.get('code128', str(self.inventory_number), writer=ImageWriter())
         buffer = BytesIO() 
         code.write(buffer)
 
         image = Image.open(buffer)
-        new_size = (400, 200)  
-        image = image.resize(new_size, Image.LANCZOS)
-        padding = 20
-        image = ImageOps.expand(image, border=padding, fill='white')
+        image = image.resize((400, 200), Image.LANCZOS)
+        image = ImageOps.expand(image, border=20, fill='white')
 
-        buffer = BytesIO()
-        image.save(buffer, format='PNG')
-        self.barcode.save(f'chemical_barcode_{self.inventory_number}.png', File(buffer), save=False)
+        final_buffer = BytesIO()
+        image.save(final_buffer, format='PNG')
+        final_buffer.seek(0)
+
+        if 'cloudinary' in settings.DEFAULT_FILE_STORAGE or hasattr(self.barcode, 'upload'):
+            # Upload to Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                final_buffer,
+                folder='barcodes/chemical_barcode',
+                public_id=f'{self.inventory_number}',
+                overwrite=True,
+                resource_type="image"
+            )
+            
+            # Store just the secure URL
+            self.barcode = upload_result['secure_url']
+        else:
+            # For regular Django file storage
+            barcode_name = f'barcodes/chemical_barcode/{self.inventory_number}.png'
+            self.barcode.save(barcode_name, ContentFile(final_buffer.getvalue()), save=False)
+
 
 
 
@@ -468,7 +525,7 @@ class ApparatusBorrowRecord(models.Model):
     custom_borrower = models.TextField(blank=True, null=True)
     room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
     subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, blank=True)
-    borrowed_date = models.DateTimeField(auto_now=True)
+    borrowed_date = models.DateTimeField(auto_now_add=True)
     returned_date = models.DateTimeField(null=True, blank=True)
     purpose = models.TextField(null=True, blank=True)
     

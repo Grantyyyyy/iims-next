@@ -206,7 +206,7 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
 
     def get(self, request, pk):
         user = get_object_or_404(User, pk=pk)
-        serializer = UserSerializer(user)
+        serializer = UserSerializer(user, context={'request': request})
         return Response(serializer.data)
     
     def delete(self, request, pk):
@@ -216,7 +216,7 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
     
     def put(self, request, pk):
         user = get_object_or_404(User, pk=pk)
-        serializer = UserSerializer(user, data=request.data, partial=True)
+        serializer = UserSerializer(user, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)        
@@ -224,7 +224,7 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
     
     def patch(self, request, pk):
         user = get_object_or_404(User, pk=pk)
-        serialzer = UserSerializer(user, data=request.data, partial=True)
+        serialzer = UserSerializer(user, data=request.data, partial=True, context={'request': request})
         if serialzer.is_valid():
             serialzer.save()
             return Response(serialzer.data)

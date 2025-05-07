@@ -87,18 +87,18 @@
                                   <div class="flex space-x-2 justify-start">
                                     <button
                                         @click.stop="navigatetoRoomDetail(room.id)"
-                                        class="p-1 hover:bg-gray-100 rounded-full"
+                                        class="text-blue-500 hover:text-blue-800 border border-blue-300 rounded-full p-1 flex items-center justify-center w-7 h-7"
                                         title="View Details"
                                       >
-                                      <i class="fas fa-eye text-gray-600"></i>
+                                      <i class="pi pi-info" style="font-size: 14px"></i>
                                     </button>
                                     <button
                                       @click.stop="handleDeleteClick(room.id)"
-                                      class="p-1 hover:bg-gray-100 rounded-full"
+                                      class="text-red-500 hover:text-red-800 border border-red-300 rounded-full p-1 flex items-center justify-center w-7 h-7"
                                       title="Delete">
-                                      <i class="fas fa-trash text-red-600"></i>
+                                      <i class="pi pi-trash" style="font-size: 14px"></i>
                                     </button>
-                                </div>
+                                  </div>
                                 </td> 
                           </tr>
                     </tbody>
