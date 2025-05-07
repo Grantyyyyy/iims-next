@@ -32,7 +32,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Using Cloudinary with cloud name: {cloud_name}")
         
         # Get all instances with barcode images
-        instances = EquipmentInstance.objects.exclude(barcode='').exclude(barcode__isnull=True)
+        instances = ChemicalStock.objects.exclude(barcode='').exclude(barcode__isnull=True)
         self.stdout.write(f"Found {instances.count()} instances with barcodes")
         
         success_count = 0

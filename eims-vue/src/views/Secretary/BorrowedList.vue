@@ -99,7 +99,7 @@
                 </td>
                 <td class="px-4 py-4">
                   <div class="text-sm font-medium text-gray-900">
-                    {{ borrow.duration }}
+                    {{ borrow.duration ? `${borrow.duration} days` : 'Not set' }}
                   </div>
                 </td>
                 <td class="px-4 py-4">

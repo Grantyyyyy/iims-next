@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.conf import settings
 from django.db import IntegrityError, models
 from django.forms import ValidationError
 from django.urls import reverse
@@ -14,6 +15,8 @@ from django.db.models.signals import post_save, post_delete
 from users.models import Room
 from django.contrib.auth import get_user_model
 from cloudinary.models import CloudinaryField
+import cloudinary.uploader
+from django.core.files.base import ContentFile
 
 User = get_user_model()
 
@@ -117,6 +120,7 @@ class ItemInstance(models.Model):
     current_condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, blank=True, null=True, default='Good')
     last_condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, blank=True, null=True)
 
+    #barcode = models.ImageField(upload_to='barcode/item_barcodes', null=True, blank=True)
     barcode = CloudinaryField('barcode', folder='barcode/item_barcodes', null=True, blank=True)
     useful_life = models.PositiveIntegerField(null=True, blank=True)
     
@@ -132,26 +136,45 @@ class ItemInstance(models.Model):
     def get_last_borrow_record(self): 
         return self.borrowrecords.filter(return_date__isnull=False).order_by('-return_date').first()
 
-
-
     @classmethod
     def most_borrowed_overall(cls, limit=10):
         return cls.objects.annotate(total_borrow_count=models.Count('borrowrecord')).order_by('-total_borrow_count')[:limit]
 
     def generate_barcode(self):
+        if not self.inventory_number:
+            raise ValueError("Inventory number must be set before generating barcode.")
+
+        # Create the barcode image
         code = barcode.get('code128', str(self.inventory_number), writer=ImageWriter())
-        buffer = BytesIO() 
+        buffer = BytesIO()
         code.write(buffer)
 
         image = Image.open(buffer)
-        new_size = (400, 200)  
-        image = image.resize(new_size, Image.LANCZOS)
-        padding = 20
-        image = ImageOps.expand(image, border=padding, fill='white')
+        image = image.resize((400, 200), Image.LANCZOS)
+        image = ImageOps.expand(image, border=20, fill='white')
 
-        buffer = BytesIO()
-        image.save(buffer, format='PNG')
-        self.barcode.save(f'item_barcodec{self.inventory_number}.png', File(buffer), save=False)
+        final_buffer = BytesIO()
+        image.save(final_buffer, format='PNG')
+        final_buffer.seek(0)
+
+        # If using Cloudinary
+        if 'cloudinary' in settings.DEFAULT_FILE_STORAGE or hasattr(self.barcode, 'upload'):
+            # Upload to Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                final_buffer,
+                folder='barcode/item_barcodes',
+                public_id=f'{self.inventory_number}',
+                overwrite=True,
+                resource_type="image"
+            )
+            
+            # Store just the secure URL
+            self.barcode = upload_result['secure_url']
+        else:
+            # For regular Django file storage
+            barcode_name = f'barcode/item_barcodes/{self.inventory_number}.png'
+            self.barcode.save(barcode_name, ContentFile(final_buffer.getvalue()), save=False)
+
 
     @staticmethod
     def generate_serial(item_model):
@@ -172,7 +195,11 @@ class ItemInstance(models.Model):
         
         self.item.update_total_quantity()
 
-
+@receiver(post_save, sender=ItemInstance)
+def generate_barcode_after_save(sender, instance, created, **kwargs):
+    if created and instance.inventory_number:
+        instance.generate_barcode()
+        instance.save()
 
 @receiver(post_delete, sender=ItemInstance)
 def update_item_total_quantity_on_instance_delete(sender, instance, **kwargs):

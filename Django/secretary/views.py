@@ -256,7 +256,6 @@ class ItemsView(ListCreateAPIView):
                         purchase_date=purchase_date,
                         useful_life=useful_life
                     )
-                    instance.generate_barcode()
                     instances.append(instance)
                     instance.save()
                     
@@ -279,7 +278,6 @@ class ItemsView(ListCreateAPIView):
                             purchase_date=purchase_date,
                             useful_life=useful_life
                         )
-                        instance.generate_barcode()
                         instances.append(instance)
                         instance.save()
 
@@ -493,7 +491,6 @@ class ItemInstanceView(ListAPIView):
                     purchase_date=purchase_date,
                     useful_life=useful_life
                 )
-                instance.generate_barcode()
                 instances = [instance]
                 instance.save()
         
@@ -511,7 +508,6 @@ class ItemInstanceView(ListAPIView):
                         purchase_date=purchase_date,
                         useful_life=useful_life
                     ) 
-                    instance.generate_barcode()
                     instances.append(instance)
                     instance.save()
 
@@ -559,6 +555,11 @@ class ItemInstanceDetailView(generics.RetrieveAPIView):
         instance = self.get_object()
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)  
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
 class CheckItemView(APIView):
     def get(self, request, inventory_number):

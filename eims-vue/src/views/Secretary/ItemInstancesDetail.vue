@@ -142,12 +142,13 @@
           </div>
 
           <!-- Barcode -->
-          <div v-if="instance.barcode" class="bg-white rounded-lg shadow-sm border p-6">
-            <h3 class="text-xl font-semibold mb-4 text-gray-800">Barcode</h3>
-            <div class="flex justify-center">
-              <img :src="instance.barcode" alt="Item Barcode" class="h-24 border rounded" />
-            </div>
-          </div>
+          <div v-if="instance.barcode_url" class="bg-white rounded-lg shadow-sm border p-6">
+    <h3 class="text-xl font-semibold mb-4 text-gray-800">Barcode</h3>
+    <div class="flex justify-center">
+      <img :src="instance.barcode_url" alt="Item Barcode" class="h-24 border rounded" />
+    </div>
+  </div>
+
         </div>
       </div>
     </div>
@@ -179,9 +180,15 @@ export default defineComponent({
     const error = ref(null);
     const isSidebarOpen = ref(false);
     const userType =computed(() => store.state.userType);
+    const apiURL =  'https://iims-django.onrender.com';
     const handleResize = () => {
       isSidebarOpen.value = window.innerWidth >= 768;
     }
+
+    const getBarcodeUrl = (barcodePath) => {
+      return barcodePath || null;
+    };
+
 
     const getConditionClass = (condition) => {
       const classes = {
@@ -199,6 +206,9 @@ export default defineComponent({
       try {
         const response = await axios.get(`/api/instances/${props.id}/detail/`);
         instance.value = response.data;
+
+
+        console.log("Barcode value:", instance.value.barcode);
       } catch (err) {
         error.value = "Failed to fetch item instance details";
         console.error(err);
@@ -246,7 +256,9 @@ export default defineComponent({
       goBack,
       isSidebarOpen,
       handleSidebarToggle,
-      handleResize
+      handleResize,
+      getBarcodeUrl,
+      apiURL,
 
       
     };

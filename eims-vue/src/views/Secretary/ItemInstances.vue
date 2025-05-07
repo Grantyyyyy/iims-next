@@ -691,7 +691,7 @@ export default defineComponent({
             <div class="barcode-grid">
               ${filteredInstances.value.map(instance => `
                 <div class="barcode-item">
-                  <img src="${instance.barcode}" alt="Barcode ${instance.inventory_number}" />
+                  <img src="${instance.barcode_url}" alt="Barcode ${instance.inventory_number}" />
                   <div class="barcode-info">
                     <div class="item-name"> ${instance.item.name}</div>
                     <div class="item-model">Model: ${instance.item.model}</div>

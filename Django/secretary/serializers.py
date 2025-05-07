@@ -1,9 +1,11 @@
 import datetime
+import re
 from rest_framework import serializers
 from . models import Item, ItemInstance, BorrowRecord, ReturnRecord, Category
 from django.utils import timezone
 from users.models import User, Room
 from users.serializers import  RoomSerializer
+from cloudinary.utils import cloudinary_url
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -38,9 +40,9 @@ class ItemSerializer(serializers.ModelSerializer):
 
 class ItemInstanceSerializer(serializers.ModelSerializer):
     item = serializers.SerializerMethodField()
-
     current_borrow_record = serializers.SerializerMethodField()
     last_borrow_record = serializers.SerializerMethodField()
+    barcode_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ItemInstance
@@ -77,6 +79,26 @@ class ItemInstanceSerializer(serializers.ModelSerializer):
                 'room': last_record.room.name if last_record.room else None
             }
         return None
+    
+    def get_barcode_url(self, obj):
+        """Return the proper URL for the barcode image"""
+        if not obj.barcode:
+            return None
+            
+        # If it's already a complete URL (like from Cloudinary)
+        if isinstance(obj.barcode, str) and (
+            obj.barcode.startswith('http://') or 
+            obj.barcode.startswith('https://')
+        ):
+            # Return the URL as is, without prefixing
+            return obj.barcode
+            
+        # For local file storage
+        request = self.context.get('request')
+        if request and hasattr(obj.barcode, 'url'):
+            return request.build_absolute_uri(obj.barcode.url)
+        return None
+    
 
 
     
