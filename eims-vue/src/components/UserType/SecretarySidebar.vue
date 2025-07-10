@@ -179,7 +179,6 @@ export default {
     }
 
     onMounted(() => {
-    // If no stored value exists, set default to false
       if (localStorage.getItem('isDropdownOpen') === null) {
         localStorage.setItem('isDropdownOpen', 'false')
       }

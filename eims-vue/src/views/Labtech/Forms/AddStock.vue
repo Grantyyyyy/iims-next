@@ -47,6 +47,7 @@
                 type="number"
                 required
                 :disabled="isSubmitting"
+                min="1"
               >
             </div>
 
@@ -75,7 +76,9 @@
                 id="price"
                 type="number"
                 required
+                min="1"
                 :disabled="isSubmitting"
+
               >
             </div>
 

@@ -71,7 +71,7 @@
                   </div> 
                   <div class="text-right">
                     <div class="text-sm text-gray-500">Available</div>
-                    <div class="font-medium">{{ chemical.maxVolume }} {{ chemical.unit }}</div>
+                    <div class="font-medium">{{ formatVolume(chemical.maxVolume, chemical.unit) }}</div>
                   </div>
                 </div>
               </li>
@@ -155,6 +155,16 @@
         }, 2000);
       };
 
+      const formatVolume = (maxVolume, unit) => {
+        const v = parseFloat(maxVolume);
+        if (isNaN(v)) return maxVolume;
+
+        if (v % 1 === 0) `0 ${unit}`;
+
+        return `${parseFloat(v.toFixed(3))} `;
+
+      }
+
       const getMaxVolume = (chemical) => {
         const stockMaxVolume = chemical.maxVolume;
         const stockUnit = chemical.unit;
@@ -213,7 +223,8 @@
         getMaxVolume,
         volumeUnits,
         weightUnits,
-        toBaseUnit
+        toBaseUnit,
+        formatVolume
       };
     }
   });

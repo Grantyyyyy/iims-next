@@ -234,14 +234,14 @@ import BorrowedItems from '../Secretary/Modals/BorrowedItems.vue'
       const pageSize = ref(10);
       const isSubmitting = ref(false)
       const itemHeaders = ['Item', 'Quantity', 'Borrower', 'Condition', 'Room', 'Borrowed At', 'Purpose', 'Actions']
-      const equipmentHeaders = ['Equipment', 'Quantity', 'Borrower', 'Condition', 'Subject', 'Borrowed At', 'Purpose', 'Actions']
-      const apparatusHeaders = ['Apparatus', 'Quantity', 'Borrower', 'Condition', 'Subject', 'Borrowed At', 'Purpose', 'Actions']
+      const equipmentHeaders = ['Equipment', 'Quantity', 'Borrower', 'Condition', 'Subject', 'Borrowed At', 'Purpose', ...(userType.value === 'Staff' || userType.value === 'Dean' ? [] : ['Actions'])]
+      const apparatusHeaders = ['Apparatus', 'Quantity', 'Borrower', 'Condition', 'Subject', 'Borrowed At', 'Purpose', ...(userType.value === 'Staff' || userType.value === 'Dean' ? [] : ['Actions'])]
       const condition = ref('')
       const notes = ref('')
       const remarks = ref('')
   
 
-      const fetchBorrowedList = async () => {
+        const fetchBorrowedList = async () => {
         try {
           const config = {
             headers: { Authorization: `Token ${store.state.token}` },

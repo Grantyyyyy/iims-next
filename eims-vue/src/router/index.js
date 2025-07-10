@@ -36,8 +36,6 @@ const routes = [
 
   { path: '/department', name: 'department-list', component: () => import('@/views/Admin/DepartmentList.vue') },
 
-  { path: '/test', name: 'test', component: () => import('@/views/Secretary/Test.vue') },
-
 //LABTECH
   { path: '/labtech-category', name: 'labtech-category', component: () => import('@/views/Labtech/LabtechCategory.vue'), meta: { requiresAuth: true, allowedUserTypes: ['Dean', 'Lab Technician'] } },
   { path: '/labtech-category/:id/instances', name: 'labtech-category-instances', component: () => import('@/views/Labtech/LabtechCategoryInstances.vue'), props: true, meta: { requiresAuth: true, allowedUserTypes: ['Dean', 'Lab Technician'] } },
@@ -105,15 +103,6 @@ const routes = [
     component: () => import('@/views/Labtech/EquipmentInstancesDetail.vue'),
     props: true
 
-  },
-  { 
-    path: '/assigned-items', 
-    name: 'assigned-items', 
-    component: () => import('@/views/Secretary/AssignedList.vue'), 
-    meta: { 
-      requiresAuth: true, 
-      allowedUserTypes: ['Supply Office', 'Staff', 'Dean'] 
-    } 
   },
   { 
     path: '/assigned-equipments', 

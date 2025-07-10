@@ -42,7 +42,10 @@
                 class="flex items-center space-x-3 focus:outline-none hover:opacity-80 transition-opacity">
               <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
                 <template v-if="userData.profile_picture">
-                  <img :src="`${apiURL}${userData.profile_picture}`" alt="Profile Picture" class="w-10 h-10 rounded-full object-cover">
+                  <img 
+                    :src="getProfileImageUrl(userData.profile_picture)" 
+                    :alt="`${userData.first_name}'s profile`"
+                    class="w-10 h-10 rounded-full object-cover">
                 </template>
                 <template v-else>
                   <span class="text-lg font-bold text-white">{{ userInitials }}</span>
@@ -233,6 +236,14 @@
         }
       };
 
+      const getProfileImageUrl = (profilePath) => {
+        if (profilePath && profilePath.startsWith('http')) {
+          return profilePath;
+        }
+        // Otherwise, prepend the API URL
+        return profilePath ? `${apiURL}${profilePath}` : defaultImageUrl;
+      };
+
       // Add click outside listener
       if (typeof window !== 'undefined') {
         window.addEventListener('click', closeProfileMenu);
@@ -276,6 +287,7 @@
         isMenuOpen,
         isProfileMenuOpen,
         menuItems,
+        getProfileImageUrl,
         features,
         currentYear,
         toggleMenu,

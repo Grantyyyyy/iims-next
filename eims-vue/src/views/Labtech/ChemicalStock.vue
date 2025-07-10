@@ -147,7 +147,7 @@
                   <div class="flex space-x-2">
                     <button 
                       @click="addToCart(stock)"
-                      class="p-1 hover:bg-gray-100 rounded-full" 
+                      class="text-black-500 hover:text-black-800 border border-black-300 rounded-full p-1 flex items-center justify-center w-7 h-7"
                       title="Add to Cart"
                       :disabled="isInChemicalCart(stock.id) || stock.volume === '0.00'"
                       :class="{ 'opacity-50 cursor-not-allowed': isInChemicalCart(stock.id) || stock.volume === '0.00' || new Date(stock.expiry_date) < new Date() }"
@@ -165,10 +165,17 @@
                         stroke-width="2" 
                         d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
                       />
+                      
                     </svg>
                     <span v-if="isInChemicalCart(stock.id)" 
                       class="absolute -top-1 -right-1 bg-green-500 rounded-full w-3 h-3">
                     </span>
+                    </button>
+                    <button 
+                        @click.stop="handleDeleteClick(stock.id)" 
+                        class="text-red-500 hover:text-red-800 border border-red-300 rounded-full p-1 flex items-center justify-center w-7 h-7"
+                      >
+                        <i class="pi pi-trash" style="font-size: 14px"></i>
                     </button>
                   </div>
                 </td>
@@ -277,6 +284,14 @@
       </div>
     </div>
 
+    <ConfirmButton
+      v-model:visible="showDialog"
+      title="Delete Chemical Stock"
+      message="Are you sure you want to delete this Chemical Stock?"
+      @confirm="confirmDelete"
+      @cancel="handleCancel"
+    />
+
     <AddStock
       v-if = showAddStockForm
       :chemicals="chemicals"
@@ -297,6 +312,7 @@ import { useChemicalCart } from '@/stores/chemicalCart';
 import ChemicalCart from './Modals/ChemicalCart.vue';
 import PrimaryButton from '@/components/buttons/PrimaryButton.vue';
 import AddStock from '../Labtech/Forms/AddStock.vue';
+import ConfirmButton from '@/components/buttons/ConfirmButton.vue';
 
 export default defineComponent({
   name: 'ChemicalStock',
@@ -304,7 +320,8 @@ export default defineComponent({
     Sidebar,
     ChemicalCart,
     PrimaryButton,
-    AddStock
+    AddStock,
+    ConfirmButton
   },
   props: {
     id: {
@@ -323,6 +340,7 @@ export default defineComponent({
     const successMessage = ref('');
     const stocks = ref([]);
     const chemicalCartStore = useChemicalCart();
+    const token = computed(() => store.state.token)
     const loading = ref(true);
     const error = ref(null);
     const showBorrowModal = ref(false);
@@ -338,6 +356,8 @@ export default defineComponent({
     const isSidebarOpen = ref(false);
     const userType = computed(() => store.state.userType);
     const currentUser = computed(() => store.getters.user);
+    const showDialog = ref(false)
+    const itemToDelete  = ref(null)
 
     
     const tableHeaders = [ 'Chemical Name', 'Volume', 'Unit', 'Price', 'Inventory Number', 'Purchase Date', 'Expiry Date', 'Actions' ];
@@ -476,6 +496,32 @@ export default defineComponent({
       }
     };
 
+    const handleDeleteClick = (chemicalId) => {
+      itemToDelete.value = chemicalId
+      showDialog.value = true
+    }
+
+    const confirmDelete = async () => {
+      if (itemToDelete.value) {
+        try {
+          await axios.delete(`/api/stocks/${itemToDelete.value}/delete/`, {
+              headers: { 'Authorization': `Token ${token.value}` }
+          });
+          successMessage.value = "Chemical stock deleted successfully."
+          setTimeout(() => {
+            successMessage.value = null
+          } , 3000)
+          fetchStocksAndUsersAndRooms();
+        } catch (err) {
+          console.error("Error deleting stock:", err);
+          error.value = "Failed to delete stock. Please try again.";
+        } finally {
+          showDialog.value = false
+          itemToDelete.value = null
+        }
+      }
+    }
+
 
 
     const filteredUsers = computed(() => {
@@ -551,6 +597,10 @@ export default defineComponent({
       showAddStockForm,
       handleStockAdded,
       userType,
+      handleDeleteClick,
+      confirmDelete,
+      itemToDelete,
+      showDialog,
 
 
 

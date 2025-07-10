@@ -54,10 +54,16 @@ urlpatterns = [
 
     path('eq-instances/<int:instance_id>/return/', views.EquipmentReturn.as_view(), name='return-equipment'),
 
-    path('chemical/<int:pk>/stocks/', views.ChemicalStockView.as_view(), name='chemical-instance'),
+    
     path('chemical/', views.ChemicalView.as_view(), name='chemicals'),
     path('chemical/<int:pk>/update/', views.ChemicalDetailView.as_view(), name='chemical-update'),
     path('chemical/<int:pk>/delete/', views.ChemicalDetailView.as_view(), name='chemical-delete'),
+
+    path('chemical/<int:pk>/stocks/', views.ChemicalStockView.as_view(), name='chemical-instance'),
+    path('stocks/<int:instance_id>/update/', views.ChemicalInstanceDetailView.as_view(), name='stock-update'),
+    path('stocks/<int:instance_id>/delete/', views.ChemicalInstanceDetailView.as_view(), name='stock-delete'),
+
+
 
     path('chemical-usage/', views.ChemicalUsageView.as_view(), name='chemical-usage'),
     path('chemical-request/', views.ChemicalRequestView.as_view(), name='chemical-request'),

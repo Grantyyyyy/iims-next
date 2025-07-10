@@ -74,14 +74,6 @@
         </ul>
       </div>
 
-      <!-- Barcode Scanner Button -->
-      <router-link 
-        to="/barcode-scanner" 
-        class="fixed bottom-4 right-4 lg:absolute lg:top-1/2 lg:right-[-30px] w-12 h-12 lg:w-16 lg:h-16 bg-blue-600 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-blue-700 transition duration-300 transform hover:scale-110"
-        @click="closeSidebarOnMobile"
-      >
-        <i class="fas fa-barcode w-6 h-6 lg:w-8 lg:h-8"></i>
-      </router-link>
     </aside>
   </div>
 </template>

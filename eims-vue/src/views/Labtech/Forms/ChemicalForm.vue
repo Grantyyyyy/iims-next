@@ -18,6 +18,7 @@
             id="name"
             type="text"
             required
+            @input="addChemical.name = addChemical.name.charAt(0).toUpperCase() + addChemical.name.slice(1)"
           >
         </div>
         
@@ -29,6 +30,7 @@
             id="description"
             rows="3"
             required
+            @input="addChemical.description = addChemical.description.charAt(0).toUpperCase() + addChemical.description.slice(1)"
           ></textarea>
         </div>
         
@@ -57,6 +59,7 @@
             id="reorder_level"
             type="number"
             required
+            min="1"
           >
         </div>
         

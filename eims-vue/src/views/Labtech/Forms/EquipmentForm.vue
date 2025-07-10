@@ -45,6 +45,8 @@
               class="w-full px-3 py-2 border rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
               id="model"
               type="text"
+              placeholder="(Optional)"
+              @input="addEquipment.model = addEquipment.model.charAt(0).toUpperCase() + addEquipment.model.slice(1)"
             >
           </div>
 
@@ -55,6 +57,8 @@
               class="w-full px-3 py-2 border rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
               id="unit_cost"
               type="number"
+              step="0.01"
+              min="1"
               required
             >
           </div>
@@ -66,6 +70,7 @@
               class="w-full px-3 py-2 border rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
               id="quantity"
               type="number"
+              min="1"
               required
             >
           </div>
@@ -85,13 +90,14 @@
           </div>
 
           <div class="flex flex-col space-y-2">
-            <label class="text-sm font-semibold text-gray-700" for="useful_life">Useful Life</label>
+            <label class="text-sm font-semibold text-gray-700" for="useful_life">Useful Life (in years)</label>
             <input
               v-model="addEquipment.useful_life"
               class="w-full px-3 py-2 border rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
               id="useful_life"
               type="number"
               required
+              min="1"
             >
           </div>
 

@@ -396,9 +396,11 @@ export default {
         Object.assign(user, data);
         originalUser.value = { ...user };
         updateOriginalValues();
-        console.log('Fetched user data:', data);
       } catch (error) {
-        console.error('Error fetching user:', error);
+        console.error('Error fetching user data:', error);
+        error.value = 'Failed to fetch user data. Please try again.';
+      } finally {
+        loading.value = false;
       }
     };
 

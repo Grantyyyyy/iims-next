@@ -474,11 +474,11 @@ class ChemicalStock(models.Model):
 
 
 
-@receiver(post_delete, sender=ChemicalStock)
-def cleanup_chemical_stock(sender, instance, **kwargs):
-    if instance.barcode:
-        instance.barcode.delete(False)
-    instance.chemical.update_total_volume()
+# @receiver(post_delete, sender=ChemicalStock)
+# def cleanup_chemical_stock(sender, instance, **kwargs):
+#     if instance.barcode:
+#         instance.barcode.delete(False)
+#     instance.chemical.update_total_volume()
 
 class ChemicalUsage(models.Model):
     requested_chemical = models.ForeignKey(ChemicalStock, on_delete=models.CASCADE)

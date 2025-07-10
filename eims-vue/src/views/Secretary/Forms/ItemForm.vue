@@ -13,6 +13,7 @@
             id="name"
             type="text"
             required
+            @input="addItem.name = addItem.name.charAt(0).toUpperCase() + addItem.name.slice(1)"
           >
         </div>
         <div class="flex flex-col space-y-2">
@@ -22,6 +23,7 @@
             class="w-full px-3 py-2 border rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
             id="description"
             rows="3"
+            @input="addItem.description = addItem.description.charAt(0).toUpperCase() + addItem.description.slice(1)"
           ></textarea>
         </div>
         <div class="flex flex-col space-y-2">
@@ -32,6 +34,7 @@
             id="model"
             type="text"
             placeholder="(Optional)"
+            @input="addItem.model = addItem.model.charAt(0).toUpperCase() + addItem.model.slice(1)"
           >
         </div>
 
@@ -62,6 +65,7 @@
                 id="unit_cost"
                 type="number"
                 step="0.01"
+                min="1"
                 required
               >
             </div>
@@ -73,6 +77,7 @@
                 class="w-full px-3 py-2 border rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
                 id="quantity"
                 type="number"
+                min="1"
                 required
               >
             </div>
@@ -96,12 +101,13 @@
             </div>
 
             <div class="flex flex-col space-y-2">
-              <label class="text-sm font-semibold text-gray-700" for="useful_life">Useful Life</label>
+              <label class="text-sm font-semibold text-gray-700" for="useful_life">Useful Life (in years)</label>
               <input
                 v-model="addItem.useful_life"
                 class="w-full px-3 py-2 border rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
                 id="useful_life"
                 type="number"
+                min="1"
               >
             </div>
 
@@ -189,139 +195,121 @@
   </div>
 </template>
 
-<script>
-import { defineComponent, ref, onMounted } from 'vue'
+<script setup>
+import { ref, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import axios from 'axios'
 
-export default defineComponent({
-  name: 'ItemForm',
-  
-  props: {
-    categories: {
-      type: Array,
-      required: true
-    }
-  },
-  
-  setup(props, { emit }) {
-    const store = useStore()
-    const addItem = ref({
-      name: '',
-      description: '',
-      item_type: '',
-      quantity: '',
-      model: '',
-      category_id: '',
-      inventory_date: new Date().toISOString().split('T')[0],
-      start_number: '',
-      suffix: '01',
-      unit_cost: '',
-      purchase_date: '',
-      useful_life: ''
-    })
-    const latestNumberInfo = ref(null)
-
-    const fetchLatestStartNumber = async (equipments) => {
-      try {
-        const response = await axios.get(
-          'api/item-instances/latest-number/',
-          {
-            headers: {
-              'Authorization': `Token ${store.state.token}`
-            }
-          }
-        );
-        latestNumberInfo.value = response.data;
-
-        if (addItem.value.item_type === 'Non-Consumables') {
-          addItem.value.start_number = response.data.formatted_next_number;
-        }
-      } catch (error) {
-        console.error('Error fetching latest start number:', error);
-      }
-    };
-
-    onMounted(() => {
-      fetchLatestStartNumber();
-    });
-
-
-    const handleItemTypeChange = () => {
-      if (addItem.value.item_type === 'Consumables') {
-        addItem.value.inventory_date = ''
-        addItem.value.start_number = ''
-        addItem.value.suffix = ''
-      } else {
-        addItem.value.inventory_date = new Date().toISOString().split('T')[0]
-
-        if (latestNumberInfo.value && latestNumberInfo.value.formatted_next_number) { 
-          addItem.value.start_number = latestNumberInfo.value.formatted_next_number;
-        } else {
-          addItem.value.start_number = '0001';
-        }
-        
-        addItem.value.suffix = '01'
-
-        if (!latestNumberInfo.value) {
-          fetchLatestStartNumber();
-        }
-      }
-    }
-
-    const submitForm = async () => {
-      try {
-        const submissionData = { ...addItem.value }
-        
-        if (submissionData.item_type === 'Consumables') {
-          delete submissionData.inventory_date
-          delete submissionData.start_number
-          delete submissionData.suffix
-        }
-
-        await axios.post('api/items/', submissionData, {
-          headers: {
-            'Authorization': `Token ${store.state.token}`
-          }
-        })
-        
-        resetForm()
-        emit('item-added')
-        emit('close')
-      } catch (error) {
-        if (err.response && err.response.data) {
-          error.value = err.response.data.name ? err.response.data.name[0] : 'Failed to update item.'
-        } else {
-          error.value = 'Failed to update item. Please try again.'
-        }
-        console.error('Error updating item:', err)
-      }
-    }
-
-    const resetForm = () => {
-      addItem.value = {
-        name: '',
-        description: '',
-        item_type: '',
-        category_id: '',
-        quantity: '',
-        model: '',
-        inventory_date: new Date().toISOString().split('T')[0],
-        start_number: '',
-        suffix: '01',
-        unit_cost: '',
-        purchase_date: '',
-        useful_life: ''
-      }
-    }
-
-    return {
-      addItem,
-      handleItemTypeChange,
-      submitForm,
-      resetForm,
-      latestNumberInfo,
-    }
+const props = defineProps({
+  categories: {
+    type: Array,
+    required: true
   }
 })
+
+const emit = defineEmits(['close', 'item-added'])
+
+const store = useStore()
+const addItem = ref({
+  name: '',
+  description: '',
+  item_type: '',
+  quantity: '',
+  model: '',
+  category_id: '',
+  inventory_date: new Date().toISOString().split('T')[0],
+  start_number: '',
+  suffix: '01',
+  unit_cost: '',
+  purchase_date: '',
+  useful_life: ''
+})
+const latestNumberInfo = ref(null)
+
+const fetchLatestStartNumber = async () => {
+  try {
+    const response = await axios.get(
+      'api/item-instances/latest-number/',
+      {
+        headers: {
+          'Authorization': `Token ${store.state.token}`
+        }
+      }
+    )
+    latestNumberInfo.value = response.data
+
+    if (addItem.value.item_type === 'Non-Consumables') {
+      addItem.value.start_number = response.data.formatted_next_number;
+    }
+  } catch (error) {
+    console.error('Error fetching latest start number:', error)
+  }
+}
+
+onMounted(() => {
+  fetchLatestStartNumber()
+})
+
+const handleItemTypeChange = () => {
+  if (addItem.value.item_type === 'Consumables') {
+    addItem.value.inventory_date = ''
+    addItem.value.start_number = ''
+    addItem.value.suffix = ''
+  } else {
+    addItem.value.inventory_date = new Date().toISOString().split('T')[0]
+
+    if (latestNumberInfo.value && latestNumberInfo.value.formatted_next_number) { 
+      addItem.value.start_number = latestNumberInfo.value.formatted_next_number;
+    } else {
+      addItem.value.start_number = '0001';
+    }
+    
+    addItem.value.suffix = '01'
+
+    if (!latestNumberInfo.value) {
+      fetchLatestStartNumber()
+    }
+  }
+}
+
+const submitForm = async () => {
+  try {
+    const submissionData = { ...addItem.value }
+    
+    if (submissionData.item_type === 'Consumables') {
+      delete submissionData.inventory_date
+      delete submissionData.start_number
+      delete submissionData.suffix
+    }
+
+    await axios.post('api/items/', submissionData, {
+      headers: {
+        'Authorization': `Token ${store.state.token}`
+      }
+    })
+    
+    resetForm()
+    emit('item-added')
+    emit('close')
+  } catch (error) {
+    console.error('Error updating item:', error)
+  }
+}
+
+const resetForm = () => {
+  addItem.value = {
+    name: '',
+    description: '',
+    item_type: '',
+    category_id: '',
+    quantity: '',
+    model: '',
+    inventory_date: new Date().toISOString().split('T')[0],
+    start_number: '',
+    suffix: '01',
+    unit_cost: '',
+    purchase_date: '',
+    useful_life: ''
+  }
+}
 </script>
