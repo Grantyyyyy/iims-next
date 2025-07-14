@@ -49,6 +49,16 @@
           </li>
 
           <li>
+            <li>
+              <router-link 
+                to="/labtech-category" 
+                class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                @click="closeSidebarOnMobile"
+              >
+                <i class="fas fa-sitemap w-5 h-5 text-gray-500 dark:text-gray-400"></i>
+                <span class="ms-3">Category</span>
+              </router-link>
+            </li>
             <button 
               @click="toggleTransactionDropdown" 
               type="button" 
@@ -158,15 +168,6 @@
           </li>
         </ul>
       </div>
-
-      <!-- Barcode Scanner Button -->
-      <router-link 
-        to="/barcode-scanner" 
-        class="fixed bottom-4 right-4 lg:absolute lg:top-1/2 lg:right-[-30px] w-12 h-12 lg:w-16 lg:h-16 bg-blue-600 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-blue-700 transition duration-300 transform hover:scale-110"
-        @click="closeSidebarOnMobile"
-      >
-        <i class="fas fa-barcode w-6 h-6 lg:w-8 lg:h-8"></i>
-      </router-link>
     </aside>
   </div>
 </template>
@@ -188,7 +189,6 @@ export default {
       localStorage.getItem('isItemDropdownOpen') === 'true'
     )
     const menuItems = [
-      { name: 'Categories', route: '/labtech-category', icon: 'fas fa-clipboard-list' },
       { name: 'Subjects', route: '/subjects', icon: 'fas fa-book' },
       { name: 'Profile', route: '/profile', icon: 'fas fa-user' },
     ]

@@ -184,7 +184,7 @@
           </div>
         </div>
 
-        <!-- Change Password Tab -->
+
         <div v-if="currentTab === 'Change Password'" class="flex flex-col md:flex-row gap-8">
           
           <div class="md:w-1/3">

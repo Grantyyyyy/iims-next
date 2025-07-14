@@ -47,6 +47,7 @@
                   type="number"
                   required
                   :disabled="isSubmitting"
+                  min="1"
                 >
               </div>
 
@@ -61,6 +62,8 @@
                   type="number"
                   required
                   :disabled="isSubmitting"
+                  min="1"
+                  step="0.01"
                 >
               </div>
 
@@ -76,6 +79,7 @@
                   type="date"
                   required
                   :disabled="isSubmitting"
+                  :max="new Date().toISOString().split('T')[0]"
                 >
               </div>
 
@@ -86,6 +90,7 @@
                   class="mt-1 block w-full px-3 py-2 border rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
                   id="useful_life"
                   type="number"
+                  min="1"
                   required
                   :disabled="isSubmitting"
                 >

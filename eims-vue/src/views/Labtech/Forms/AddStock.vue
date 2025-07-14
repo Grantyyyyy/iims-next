@@ -63,6 +63,7 @@
                 min: 
                 required
                 :disabled="isSubmitting"
+                :max="new Date().toISOString().split('T')[0]"
               >
             </div>
 

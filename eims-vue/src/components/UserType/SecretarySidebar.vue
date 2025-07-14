@@ -50,6 +50,16 @@
 
 
           <li>
+            <li>
+              <router-link 
+                to="/category" 
+                class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                @click="closeSidebarOnMobile"
+              >
+                <i class="fas fa-sitemap w-5 h-5 text-gray-500 dark:text-gray-400"></i>
+                <span class="ms-3">Category</span>
+              </router-link>
+            </li>
             <button 
               @click="toggleDropdown" 
               type="button" 
@@ -141,7 +151,6 @@ export default {
     const isDropdownOpen = ref(localStorage.getItem('isDropdownOpen') === 'true')
 
     const menuItems = [
-      { name: 'Categories', route: '/category', icon: 'fas fa-clipboard-list' },
       { name: 'Instances', route: '/instances', icon: 'fas fa-box-open' },
       { name: 'Damaged Items', route: '/damaged-items', icon: 'fas fa-exclamation-triangle' },
       { name: 'Profile', route: '/profile', icon: 'fas fa-user-circle' } 

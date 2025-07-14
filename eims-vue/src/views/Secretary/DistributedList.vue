@@ -134,6 +134,8 @@
       const currentPage = ref(1);
       const totalPages = ref(0);
       const pageSize = ref(10);
+
+      const userType = computed(() => store.state.userType)
   
       const goBack = () => {
         router.back()
@@ -251,7 +253,8 @@
         currentPage,
         totalPages,
         pageSize,
-        handleSidebarToggle
+        handleSidebarToggle,
+        userType
   
       }
     }
