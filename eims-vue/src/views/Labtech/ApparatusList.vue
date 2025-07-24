@@ -198,7 +198,7 @@
   </div>
 </template>
 
-<script>
+<script >
 import { defineComponent, ref, computed, onMounted, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
@@ -249,34 +249,6 @@ export default defineComponent({
     const currentPage = ref(1);
     const totalPages = ref(0);
     const pageSize = ref(10);
-
-    // const fetchApparatusesandCategories = async () => {
-    //   loading.value = true;
-    //   try {
-    //     const response = await axios.get('/api/apparatus/', {
-    //       headers: { 'Authorization': `Token ${token.value}` },
-    //       params: { search: searchQuery.value }
-    //     });
-    //     apparatuses.value = response.data.results || response.data;
-    //   } catch (err) {
-    //     console.error('Error fetching apparatuses:', err);
-    //     error.value = 'Failed to fetch apparatuses';
-    //   } finally {
-    //     loading.value = false;
-    //   }
-    // };
-
-    // const fetchCategories = async () => {
-    //   try {
-    //     const response = await axios.get('/api/labtech-category/', {
-    //       headers: { 'Authorization': `Token ${token.value}` }
-    //     });
-    //     categories.value = response.data;
-    //   } catch (err) {
-    //     console.error('Error fetching categories:', err);
-    //     error.value = 'Failed to fetch categories';
-    //   }
-    // };
 
     const fetchApparatusAndCategories = async () => {
       loading.value = true;

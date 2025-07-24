@@ -96,7 +96,6 @@ class StaffDetailSerializer(serializers.ModelSerializer):
     current_borrowed_items = serializers.SerializerMethodField()
     current_borrowed_apparatus = serializers.SerializerMethodField()
     current_borrowed_equipments = serializers.SerializerMethodField()
-    w
     class Meta:
         model = User
         fields = [ 'id', 'custom_id', 'username', 'first_name', 'last_name', 'email', 'current_borrowed_items', 'current_borrowed_apparatus', 'current_borrowed_equipments']

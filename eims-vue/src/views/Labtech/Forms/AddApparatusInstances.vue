@@ -1,7 +1,7 @@
 <template>
     <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
       <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-xl">
-        <h2 class="text-xl font-bold mb-4">Add Stock</h2>
+        <h2 class="text-xl font-bold mb-4">Add Apparatus</h2>
   
         <div v-if="loading" class="flex justify-center items-center py-8">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>

@@ -32,7 +32,7 @@
               <template #icon>
                 <i class="fas fa-plus mr-2"></i>
               </template>
-              Add Instance
+              Add Instance 
             </PrimaryButton>
           </div>
   
@@ -455,7 +455,7 @@
               },
             }),
           ]);
-          apparatus.value = apparatusResponse.data;
+          apparatus.value = apparatusResponse.data.results || apparatusResponse.data;
           users.value = usersResponse.data;
           rooms.value = roomsResponse.data.results;
           subjects.value = subjectsResponse.data;

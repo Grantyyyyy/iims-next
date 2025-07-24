@@ -15,13 +15,10 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
 # SECRET_KEY = 'django-insecure-knd%f@mbf#*v2i-^*w%q9qdqzz($nbh68*3+uw#@8psh3m$$$)'
 # DEBUG = True
-# ALLOWED_HOSTS = [ 'localhost',  '127.0.0.1'  ]
+# ALLOWED_HOSTS = [ 'localhost',  '127.0.0.1',  ]
 
 
 
@@ -184,7 +181,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = [
+    "https://capstone-main-omega.vercel.app",
+    "http://localhost:8080",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 
 REST_FRAMEWORK = {
