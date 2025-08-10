@@ -41,20 +41,53 @@
               </template>
               Add Category
             </PrimaryButton>
+
+            <div class="relative" ref="exportDropdownRef">
+              <PrimaryButton @click="toggleExportDropdown" class="flex items-center">
+                <template #icon>
+                  <i class="fas fa-file-export mr-2"></i>
+                </template>
+                Export
+                <i class="fas fa-chevron-down ml-2 text-sm"></i>
+              </PrimaryButton>
+              
+              <div v-if="showExportDropdown" class="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                <div class="py-2">
+                  <button 
+                    @click="exportCurrentPage" 
+                    :disabled="exportingCurrentPage"
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    <i class="fas fa-file-csv mr-2"></i>
+                    <span v-if="!exportingCurrentPage">Export Current Page (CSV)</span>
+                    <span v-else class="flex items-center">
+                      <i class="fas fa-spinner fa-spin mr-2"></i>
+                      Exporting...
+                    </span>
+                  </button>
+                  
+                  <button 
+                    @click="exportAllData" 
+                    :disabled="exportingAllData"
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    <i class="fas fa-database mr-2"></i>
+                    <span v-if="!exportingAllData">Export All Data (CSV)</span>
+                    <span v-else class="flex items-center">
+                      <i class="fas fa-spinner fa-spin mr-2"></i>
+                      Exporting All...
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
 
         <!-- Loading and Error States -->
         <div v-if="loading" class="flex justify-center items-center h-64">
           <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
         </div>
-
-        <!-- <div v-else-if="items.length === 0" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded" role="alert">
-          <p class="font-bold">Warning</p>
-          <p>No items found.</p>
-        </div> -->
-      
 
         <!-- Items Table -->
         <div v-else class="overflow-x-auto">
@@ -224,8 +257,8 @@
   </div>
 </template>
 
-<script>
-import { defineComponent, ref, computed, onMounted, watch } from 'vue'
+<script setup>
+import { ref, computed, onMounted, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import { useItemCartStore } from '@/stores/newCart'
@@ -238,284 +271,331 @@ import UpdateItemForm from './Forms/UpdateItemForm.vue'
 import ConfirmButton from '@/components/buttons/ConfirmButton.vue'
 import AddCategory from './Forms/AddCategory.vue'
 
-export default defineComponent({
-  name: 'ItemList',
-  components: {
-    Sidebar, ItemForm, CartSummary, PrimaryButton, UpdateItemForm, ConfirmButton, AddCategory
-  },
-  setup() {
-    const store = useStore()
-    const router = useRouter()
-    const items = ref([])
-    const searchQuery = ref('')
-    const categories = ref([])
-    const batches = ref([])
-    const loading = ref(false)
-    const error = ref(null)
-    const showAddForm = ref(false)
-    const showAddCategoryForm = ref(false)
-    const cartStore = useItemCartStore();
-    const isSidebarOpen = ref(false)
-    const tableHeaders = ['Name', 'Model', 'Category', 'Item Type', 'Item Availability',  'Actions']
-    const visibleHeaders = computed(() => {
-      const userType = store.state.userType;
-      return tableHeaders.filter(header => header !== 'Actions' || userType !== 'Dean');
-    });
-    const showUpdateForm = ref(false)
-    const selectedItemId = ref(null)
-    const showDialog = ref(false)
-    const itemToDelete = ref(null)
+// Store and router
+const store = useStore()
+const router = useRouter()
+const cartStore = useItemCartStore()
+
+// Reactive data
+const items = ref([])
+const searchQuery = ref('')
+const categories = ref([])
+const batches = ref([])
+const loading = ref(false)
+const error = ref(null)
+const showAddForm = ref(false)
+const showAddCategoryForm = ref(false)
+const isSidebarOpen = ref(false)
+const showUpdateForm = ref(false)
+const selectedItemId = ref(null)
+const showDialog = ref(false)
+const itemToDelete = ref(null)
+const successMessage = ref(null)
+
+// Pagination
+const currentPage = ref(1)
+const totalPages = ref(0)
+const pageSize = ref(10)
+
+const showExportDropdown = ref(false)
+const exportDropdownRef = ref(null)
+const exportingCurrentPage = ref(false)
+const exportingAllData = ref(false)
+
+// Constants
+const tableHeaders = ['Name', 'Model', 'Category', 'Item Type', 'Item Availability', 'Actions']
+
+// Computed properties
+const token = computed(() => store.state.token)
+const userType = computed(() => store.state.userType)
+const visibleHeaders = computed(() => {
+  return tableHeaders.filter(header => header !== 'Actions' || userType.value !== 'Dean')
+})
+
+const toggleExportDropdown = () => {
+  showExportDropdown.value = !showExportDropdown.value
+}
+
+const downloadCSV = (data, filename) => {
+  if (!data || data.length === 0) {
+    error.value = 'No data available to export'
+    setTimeout(() => {
+      error.value = null
+    }, 3000)
+    return
+  }
+
+  const csvRows = []
+  const headers = ['Name', 'Description', 'Model', 'Category', 'Item Availability']
+  csvRows.push(headers.join(','))
+
+  for (const row of data) {
+    // Determine status
+    let status = 'Available'
+    if (row.available_instances === 0) {
+      status = 'No Available Left'
+    } else if (row.total_instances > 0 && row.available_instances / row.total_instances <= 0.2) {
+      status = `Low Stock: ${row.available_instances} left`
+    }
+
+    const values = [
+      `"${row.name || ''}"`,
+      `"${row.description || ''}"`,
+      `"${row.model || ''}"`,
+      `"${row.category?.name || ''}"`,
+      `"${row.available_instances || 0}"`,
+    ]
+    csvRows.push(values.join(','))
+  }
+
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.setAttribute('hidden', '')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
+}
+
+const exportCurrentPage = async () => {
+  exportingCurrentPage.value = true
+  showExportDropdown.value = false
+  
+  try {
+    const date = new Date().toISOString().slice(0, 10)
+    downloadCSV(items.value, `items_page_${currentPage.value}_${date}.csv`)
+    setTimeout(() => {
+      successMessage.value = null
+    }, 3000)
+  } catch (err) {
+    console.error('Export error:', err)
+    error.value = 'Failed to export current page data'
+    setTimeout(() => {
+      error.value = null
+    }, 3000)
+  } finally {
+    exportingCurrentPage.value = false
+  }
+}
+
+const exportAllData = async () => {
+  exportingAllData.value = true
+  showExportDropdown.value = false
+  
+  try {
+    const params = {
+      export: 'all'
+    }
     
-    const token = computed(() => store.state.token)
-    const userType = computed(() => store.state.userType);
-
-    const currentPage = ref(1);
-    const totalPages = ref(0);
-    const pageSize = ref(10);
-
-
-    const successMessage = ref(null);
-    const handleItemAdded = () => {
-      showAddForm.value = false;
-      showAddCategoryForm.value = false
-      successMessage.value = 'Item added successfully!';
-      fetchItems();
-      fetchCategories();
-      setTimeout(() => successMessage.value = null, 3000);
-    };
-
-    const fetchItems = async () => {
-      loading.value = true;
-      try {
-        const response = await axios.get('/api/items/', { 
-          headers: { 
-            'Authorization': `Token ${token.value}` 
-          },
-          params: {
-            page: currentPage.value,
-            page_size: pageSize.value,
-            search: searchQuery.value,
-          } 
-        });
-
-        items.value = response.data.results || response.data;
-        totalPages.value = Math.ceil(response.data.count / pageSize.value) || 1;
-
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        error.value = "Failed to fetch data. Please try again.";
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    const fetchCategories = async () => {
-      try {
-        const response = await axios.get('/api/category/');
-        categories.value = response.data;
-      } catch (err) {
-        console.error("Error fetching categories:", err);
-        error.value = "Failed to fetch categories. Please try again.";
-      }
+    if (searchQuery.value) {
+      params.search = searchQuery.value
     }
+    
+    const response = await axios.get('/api/items/', {
+      headers: { 'Authorization': `Token ${token.value}` },
+      params
+    })
+    
+    const date = new Date().toISOString().slice(0, 10)
+    const allData = response.data.results || response.data
+    downloadCSV(allData, `all_items_${date}.csv`)
 
-    watch([searchQuery], () => {
-        currentPage.value = 1;  
-        fetchItems();
-      }, { immediate: true });
-        
-    const nextPage = () => {
-      if (currentPage.value < totalPages.value) {
-        currentPage.value++;
-        fetchItems();
-      }
-    };
-
-    const prevPage = () => {
-      if (currentPage.value > 1) {
-        currentPage.value--;
-        fetchItems();
-      }
-    };
+    setTimeout(() => {
+      successMessage.value = null
+    }, 3000)
+  } catch (err) {
+    console.error('Export all data error:', err)
+    error.value = 'Failed to export all data'
+    setTimeout(() => {
+      error.value = null
+    }, 3000)
+  } finally {
+    exportingAllData.value = false
+  }
+}
 
 
-    const handleDeleteClick = (itemId) => {
-      itemToDelete.value = itemId
-      showDialog.value = true
-    }
+// Methods
+const fetchItems = async () => {
+  loading.value = true
+  try {
+    const response = await axios.get('/api/items/', { 
+      headers: { 
+        'Authorization': `Token ${token.value}` 
+      },
+      params: {
+        page: currentPage.value,
+        page_size: pageSize.value,
+        search: searchQuery.value,
+      } 
+    })
 
-    const confirmDelete = async () => {
-      if (itemToDelete.value) {
-        try {
-          await axios.delete(`/api/items/${itemToDelete.value}/delete/`);
-          fetchItems();
-        } catch (err) {
-          console.error("Error deleting item:", err);
-          error.value = "Failed to delete item. Please try again.";
-        } finally {
-          showDialog.value = false
-          itemToDelete.value = null
-        }
-      }
-    }
+    items.value = response.data.results || response.data
+    totalPages.value = Math.ceil(response.data.count / pageSize.value) || 1
 
-    const handleCancel = () => {
-      showDialog.value = false;
-      itemToDelete.value = null;
-    };
+  } catch (err) {
+    console.error('Error fetching data:', err)
+    error.value = "Failed to fetch data. Please try again."
+  } finally {
+    loading.value = false
+  }
+}
 
-    const editItem = (item) => {
-      selectedItemId.value = item.id;
-      showUpdateForm.value = true;
-    };
+const fetchCategories = async () => {
+  try {
+    const response = await axios.get('/api/category/')
+    categories.value = response.data
+  } catch (err) {
+    console.error("Error fetching categories:", err)
+    error.value = "Failed to fetch categories. Please try again."
+  }
+}
 
-    const closeForm = () => {
-      showAddForm.value = false;
-      showAddCategoryForm.value = false
-    };
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+    fetchItems()
+  }
+}
 
-    const addToCart = (instance) => {
-      if (!instance.borrowed_by && !cartStore.isInCart(instance.id)) {
-        cartStore.addToCart(instance);
-      }
-    };
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+    fetchItems()
+  }
+}
 
-    const removeFromCart = (instanceId) => {
-      cartStore.removeFromCart(instanceId);
-    };
+const handleDeleteClick = (itemId) => {
+  itemToDelete.value = itemId
+  showDialog.value = true
+}
 
-    const isInCart = (instanceId) => {
-      return cartStore.isInCart(instanceId);
-    };
-
-    const filteredItems = computed(() => {
-      if (!searchQuery.value) return items.value;
-      return items.value.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        item.category.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        item.item_type.toLowerCase().includes(searchQuery.value.toLowerCase())
-
-      );
-    });
-
-    onMounted(() => {
-      fetchItems();
-      fetchCategories();
-
-      window.addEventListener('resize', handleWindowResize);
-
-      handleWindowResize();
-    });
-
-    const handleWindowResize = () => {
-      if (window.innerWidth >= 1024) {
-        isSidebarOpen.value = true;
-      } else {
-        isSidebarOpen.value = false;
-      }
-    };
-
-    const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
-    }
-
-    const openAddItemForm = () => {
-      showAddForm.value = true
-    }
-
-    const openAddCategoryForm = () => {
-      showAddCategoryForm.value = true
-    }
-
-    const goBack = () => {
-      router.back()
-    }
-
-    const navigateToItemInstances = (itemId) => {
-      router.push({ name: 'item-instances', params: { id: itemId } })
-    }
-
-    const handleSidebarToggle = (isOpen) => {
-      isSidebarOpen.value = isOpen
-
-      // Force layout recalculation
-      window.requestAnimationFrame(() => {
-        window.dispatchEvent(new Event('resize'))
-      })
-    }
-
-    const handleItemUpdated = () => {
-      showUpdateForm.value = false
-      selectedItemId.value = null
+const confirmDelete = async () => {
+  if (itemToDelete.value) {
+    try {
+      await axios.delete(`/api/items/${itemToDelete.value}/delete/`)
       fetchItems()
-    }
-
-    const handleCategoryAdded = () => {
-      showAddCategoryForm.value = false
-      successMessage.value = 'Category added successfully!';
-      fetchCategories()
-    }
-
-    const closeUpdateForm = () => {
-      showUpdateForm.value = false
-      selectedItemId.value = null
-    }
-
-    
-
-
-    return {
-      addToCart,
-      batches,
-      cartStore,
-      categories,
-      closeForm,
-      closeUpdateForm,
-      confirmDelete,
-      editItem,
-      error,
-      userType,
-      filteredItems,
-      formatDate,
-      goBack,
-      handleCancel,
-      handleDeleteClick,
-      handleItemAdded,
-      handleItemUpdated,
-      handleCategoryAdded,
-      handleSidebarToggle,
-      isSidebarOpen,
-      isInCart,
-      items,
-      loading,
-      navigateToItemInstances,
-      openAddCategoryForm,
-      openAddItemForm,
-      removeFromCart,
-      searchQuery,
-      successMessage,
-      selectedItemId,
-      showAddForm,
-      showDialog,
-      showUpdateForm,
-      tableHeaders,
-      visibleHeaders,
-      useItemCartStore,
-      nextPage,
-      prevPage,
-      currentPage,
-      totalPages,
-      pageSize,
-      showAddCategoryForm
-
-      
+    } catch (err) {
+      console.error("Error deleting item:", err)
+      error.value = "Failed to delete item. Please try again."
+    } finally {
+      showDialog.value = false
+      itemToDelete.value = null
     }
   }
+}
+
+const handleCancel = () => {
+  showDialog.value = false
+  itemToDelete.value = null
+}
+
+const editItem = (item) => {
+  selectedItemId.value = item.id
+  showUpdateForm.value = true
+}
+
+const closeForm = () => {
+  showAddForm.value = false
+  showAddCategoryForm.value = false
+}
+
+const closeUpdateForm = () => {
+  showUpdateForm.value = false
+  selectedItemId.value = null
+}
+
+const addToCart = (instance) => {
+  if (!instance.borrowed_by && !cartStore.isInCart(instance.id)) {
+    cartStore.addToCart(instance)
+  }
+}
+
+const removeFromCart = (instanceId) => {
+  cartStore.removeFromCart(instanceId)
+}
+
+const isInCart = (instanceId) => {
+  return cartStore.isInCart(instanceId)
+}
+
+const handleItemAdded = () => {
+  showAddForm.value = false
+  showAddCategoryForm.value = false
+  successMessage.value = 'Item added successfully!'
+  fetchItems()
+  fetchCategories()
+  setTimeout(() => successMessage.value = null, 3000)
+}
+
+const handleItemUpdated = () => {
+  showUpdateForm.value = false
+  selectedItemId.value = null
+  fetchItems()
+}
+
+const handleCategoryAdded = () => {
+  showAddCategoryForm.value = false
+  successMessage.value = 'Category added successfully!'
+  fetchCategories()
+}
+
+const handleWindowResize = () => {
+  if (window.innerWidth >= 1024) {
+    isSidebarOpen.value = true
+  } else {
+    isSidebarOpen.value = false
+  }
+}
+
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const openAddItemForm = () => {
+  showAddForm.value = true
+}
+
+const openAddCategoryForm = () => {
+  showAddCategoryForm.value = true
+}
+
+const goBack = () => {
+  router.back()
+}
+
+const navigateToItemInstances = (itemId) => {
+  router.push({ name: 'item-instances', params: { id: itemId } })
+}
+
+const handleSidebarToggle = (isOpen) => {
+  isSidebarOpen.value = isOpen
+
+  // Force layout recalculation
+  window.requestAnimationFrame(() => {
+    window.dispatchEvent(new Event('resize'))
+  })
+}
+
+// Watchers
+watch([searchQuery], () => {
+  currentPage.value = 1
+  fetchItems()
+}, { immediate: true })
+
+// Lifecycle
+onMounted(() => {
+  fetchItems()
+  fetchCategories()
+  window.addEventListener('resize', handleWindowResize)
+  handleWindowResize()
 })
 </script>
 

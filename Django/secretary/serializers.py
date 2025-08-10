@@ -32,8 +32,16 @@ class ItemSerializer(serializers.ModelSerializer):
         return obj.available_instances()
     
     def validate_name(self, value):
-        if Item.objects.filter(name__iexact=value).exists():
+        instance = self.instance
+        
+        queryset = Item.objects.filter(name__iexact=value)
+        
+        if instance:
+            queryset = queryset.exclude(pk=instance.pk)
+
+        if queryset.exists():
             raise serializers.ValidationError("Item with this name already exists.")
+        
         return value
 
     

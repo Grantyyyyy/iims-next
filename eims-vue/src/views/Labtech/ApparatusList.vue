@@ -27,21 +27,61 @@
             />
           </div>
 
-          <div class="flex space-x-2" v-if="userType === 'Lab Technician'">
+          <div class="flex space-x-2">
             <PrimaryButton @click="showAddForm = true">
               <template #icon>
                 <i class="fas fa-plus mr-2"></i>
               </template>
               Add Apparatus
             </PrimaryButton>
+
+            <div class="relative" ref="exportDropdownRef">
+              <PrimaryButton @click="toggleExportDropdown" class="flex items-center">
+                <template #icon>
+                  <i class="fas fa-file-export mr-2"></i>
+                </template>
+                Export
+                <i class="fas fa-chevron-down ml-2 text-sm"></i>
+              </PrimaryButton>
+              
+              <div v-if="showExportDropdown" class="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                <div class="py-2">
+                  <button 
+                    @click="exportCurrentPage" 
+                    :disabled="exportingCurrentPage"
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    <i class="fas fa-file-csv mr-2"></i>
+                    <span v-if="!exportingCurrentPage">Export Current Page (CSV)</span>
+                    <span v-else class="flex items-center">
+                      <i class="fas fa-spinner fa-spin mr-2"></i>
+                      Exporting...
+                    </span>
+                  </button>
+                  
+                  <button 
+                    @click="exportAllData" 
+                    :disabled="exportingAllData"
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    <i class="fas fa-database mr-2"></i>
+                    <span v-if="!exportingAllData">Export All Data (CSV)</span>
+                    <span v-else class="flex items-center">
+                      <i class="fas fa-spinner fa-spin mr-2"></i>
+                      Exporting All...
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
+          
         </div>
 
         <!-- Loading and Error States -->
         <div v-if="loading" class="flex justify-center items-center h-64">
           <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
         </div>
-
 
         <div v-else class="overflow-x-auto">
 
@@ -198,205 +238,275 @@
   </div>
 </template>
 
-<script >
-import { defineComponent, ref, computed, onMounted, watch } from 'vue';
-import { useStore } from 'vuex';
-import { useRouter } from 'vue-router';
-import axios from 'axios';
-import Sidebar from '@/components/UserType/Sidebar.vue';
-import PrimaryButton from '@/components/buttons/PrimaryButton.vue';
-import ConfirmButton from '@/components/buttons/ConfirmButton.vue';
-import ApparatusForm from './Forms/ApparatusForm.vue';
-import UpdateApparatus from './Forms/UpdateApparatus.vue';
+<script setup>
+import { ref, computed, onMounted, watch } from 'vue'
+import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+import Sidebar from '@/components/UserType/Sidebar.vue'
+import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
+import ConfirmButton from '@/components/buttons/ConfirmButton.vue'
+import ApparatusForm from './Forms/ApparatusForm.vue'
+import UpdateApparatus from './Forms/UpdateApparatus.vue'
 
-export default defineComponent({
-  name: 'ApparatusList',
-  components: {
-    Sidebar,
-    PrimaryButton,
-    ConfirmButton,
-    ApparatusForm,
-    UpdateApparatus
-  },
+// Store and router
+const store = useStore()
+const router = useRouter()
 
-  setup() {
-    const store = useStore();
-    const router = useRouter();
-    const apparatuses = ref([]);
-    const searchQuery = ref('');
-    const categories = ref([]);
-    const loading = ref(false);
-    const error = ref(null);
-    const successMessage = ref('');
-    const showAddForm = ref(false);
-    const isSidebarOpen = ref(false);
-    const tableHeaders = ['Name', 'Category', 'Type', 'Apparatus Availability', 'Actions'];
-    const visibleHeaders = computed(() => {
-        if(userType.value === 'Dean' || userType.value === 'Staff'){
-            return tableHeaders.filter(header => header !== 'Actions');
-        }else{
-            return tableHeaders;
-        }
-    })
-    const showUpdateForm = ref(false);
-    const selectedApparatus = ref(null);
-    const showDialog = ref(false);
-    const apparatusToDelete = ref(null);
+// Reactive data
+const apparatuses = ref([])
+const searchQuery = ref('')
+const categories = ref([])
+const loading = ref(false)
+const error = ref(null)
+const successMessage = ref('')
+const showAddForm = ref(false)
+const isSidebarOpen = ref(false)
+const showUpdateForm = ref(false)
+const selectedApparatus = ref(null)
+const showDialog = ref(false)
+const apparatusToDelete = ref(null)
 
-    const token = computed(() => store.state.token);
-    const userType = computed(() => store.state.userType);
+// Pagination
+const currentPage = ref(1)
+const totalPages = ref(0)
+const pageSize = ref(10)
 
-    const currentPage = ref(1);
-    const totalPages = ref(0);
-    const pageSize = ref(10);
-
-    const fetchApparatusAndCategories = async () => {
-      loading.value = true;
-      error.value = null;
-      try {
-      const [apparatusResponse, categoriesResponse] = await Promise.all([
-          axios.get('/api/apparatus/', {
-              headers: { 'Authorization': `Token ${token.value}` },
-              params: {
-                  search: searchQuery.value,
-                  page: currentPage.value,
-                  page_size: pageSize.value
-              }
-          }),
-          
-          axios.get('/api/labtech-category/', {
-              headers: { 'Authorization': `Token ${token.value}` }
-          })
-          ]);
-
-      apparatuses.value = apparatusResponse.data.results;
-      categories.value = categoriesResponse.data;
-
-      totalPages.value = Math.ceil(apparatusResponse.count / pageSize.value) || 1;
+const showExportDropdown = ref(false)
+const exportDropdownRef = ref(null)
+const exportingCurrentPage = ref(false)
+const exportingAllData = ref(false)
 
 
-    } catch (err) {
-        console.error('Error fetching data:', err);
-        error.value = err.response?.data?.message || "Failed to fetch data. Please try again.";
-        } finally {
-            loading.value = false;
-        }
-    };
+// Constants
+const tableHeaders = ['Name', 'Category', 'Type', 'Apparatus Availability', 'Actions']
 
-    watch(searchQuery, () => {
-      currentPage.value = 1;  
-      fetchApparatusAndCategories();
-    });
-
-    const nextPage = () => {
-      if (currentPage.value < totalPages.value) {
-        currentPage.value++;
-        fetchApparatusAndCategories();
-      }
-    };
-
-    const prevPage = () => {
-      if (currentPage.value > 1) {
-        currentPage.value--;
-        fetchApparatusAndCategories();
-      }
-    };
-
-    const handleDeleteClick = (apparatusId) => {
-      apparatusToDelete.value = apparatusId;
-      showDialog.value = true;
-    };
-
-    const confirmDelete = async () => {
-      if (!apparatusToDelete.value) return;
-      
-      try {
-        await axios.delete(`/api/apparatus/${apparatusToDelete.value}/delete/`, {
-          headers: { 'Authorization': `Token ${token.value}` }
-        });
-        successMessage.value = 'Apparatus deleted successfully';
-        fetchApparatusAndCategories();
-      } catch (err) {
-        console.error('Error deleting apparatus:', err);
-        error.value = 'Failed to delete apparatus';
-      } finally {
-        showDialog.value = false;
-        apparatusToDelete.value = null;
-        setTimeout(() => {
-          successMessage.value = '';
-          error.value = null;
-        }, 3000);
-      }
-    };
-
-    const editApparatus = (apparatus) => {
-      selectedApparatus.value = apparatus.id;
-      showUpdateForm.value = true;
-    };
-
-    const handleEquipmentAdded = () => {
-      showAddForm.value = false;
-      fetchApparatusAndCategories();
-    };
-
-    const handleItemUpdated = () => {
-      showUpdateForm.value = false;
-      selectedApparatus.value = null;
-      fetchApparatusAndCategories();
-    };
-
-    const navigateToApparatusInstances = (apparatusId) => {
-      router.push({ name: 'apparatus-instances', params: { apId: apparatusId } });
-    };
-
-    const handleSidebarToggle = (isOpen) => {
-      isSidebarOpen.value = isOpen;
-    };
-
-    const goBack = () => router.back();
-
-    watch(searchQuery, () => {
-      fetchApparatusAndCategories();
-    });
-
-    onMounted(() => {
-      fetchApparatusAndCategories();
-      isSidebarOpen.value = window.innerWidth >= 1024;
-    });
-
-    return {
-      apparatuses,
-      categories,
-      loading,
-      error,
-      successMessage,
-      userType,
-      showAddForm,
-      tableHeaders,
-      visibleHeaders,
-      searchQuery,
-      isSidebarOpen,
-      showUpdateForm,
-      selectedApparatus,
-      showDialog,
-
-      handleDeleteClick,
-      confirmDelete,
-      editApparatus,
-      handleEquipmentAdded,
-      handleItemUpdated,
-      navigateToApparatusInstances,
-      handleSidebarToggle,
-      goBack,
-
-      currentPage,
-      totalPages,
-      pageSize,
-      nextPage,
-      prevPage
-    };
+// Computed properties
+const token = computed(() => store.state.token)
+const userType = computed(() => store.state.userType)
+const visibleHeaders = computed(() => {
+  if (userType.value === 'Dean' || userType.value === 'Staff') {
+    return tableHeaders.filter(header => header !== 'Actions')
+  } else {
+    return tableHeaders
   }
-});
+})
+
+const toggleExportDropdown = () => {
+  showExportDropdown.value = !showExportDropdown.value
+}
+
+const downloadCSV = (data, filename) => {
+  if (!data || data.length === 0) {
+    error.value = 'No data available to export'
+    setTimeout(() => {
+      error.value = null
+    }, 3000)
+    return
+  }
+
+  const csvRows = []
+  const headers = ['Name', 'Description', 'Category', 'Type', 'Available Apparatus']
+  csvRows.push(headers.join(','))
+
+  for (const row of data) {
+    // Determine status
+    let status = 'Available'
+    if (row.available_instances === 0) {
+      status = 'No Available Left'
+    } else if (row.total_instances > 0 && row.available_instances / row.total_instances <= 0.2) {
+      status = `Low Stock: ${row.available_instances} left`
+    }
+
+    const values = [
+      `"${row.name || ''}"`,
+      `"${row.description || ''}"`,
+      `"${row.category?.name || ''}"`,
+      `"${row.apparatus_type || ''}"`,
+      `"${row.available_instances || ''} / ${row.total_instances || ''} (${status})"`
+    ]
+    csvRows.push(values.join(','))
+  }
+
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.setAttribute('hidden', '')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
+}
+
+const exportCurrentPage = async () => {
+  exportingCurrentPage.value = true
+  showExportDropdown.value = false
+  
+  try {
+    const date = new Date().toISOString().slice(0, 10)
+    downloadCSV(apparatuses.value, `apparatus_page_${currentPage.value}_${date}.csv`)
+    setTimeout(() => {
+      successMessage.value = null
+    }, 3000)
+  } catch (err) {
+    console.error('Export error:', err)
+    error.value = 'Failed to export current page data'
+    setTimeout(() => {
+      error.value = null
+    }, 3000)
+  } finally {
+    exportingCurrentPage.value = false
+  }
+}
+
+const exportAllData = async () => {
+  exportingAllData.value = true
+  showExportDropdown.value = false
+  
+  try {
+    const params = {
+      export: 'all'
+    }
+    
+    if (searchQuery.value) {
+      params.search = searchQuery.value
+    }
+    
+    const response = await axios.get('/api/apparatus/', {
+      headers: { 'Authorization': `Token ${token.value}` },
+      params
+    })
+    
+    const date = new Date().toISOString().slice(0, 10)
+    const allData = response.data.results || response.data
+    downloadCSV(allData, `all_apparatus_${date}.csv`)
+
+    setTimeout(() => {
+      successMessage.value = null
+    }, 3000)
+  } catch (err) {
+    console.error('Export all data error:', err)
+    error.value = 'Failed to export all data'
+    setTimeout(() => {
+      error.value = null
+    }, 3000)
+  } finally {
+    exportingAllData.value = false
+  }
+}
+
+// Methods
+const fetchApparatusAndCategories = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const [apparatusResponse, categoriesResponse] = await Promise.all([
+      axios.get('/api/apparatus/', {
+        headers: { 'Authorization': `Token ${token.value}` },
+        params: {
+          search: searchQuery.value,
+          page: currentPage.value,
+          page_size: pageSize.value
+        }
+      }),
+      
+      axios.get('/api/labtech-category/', {
+        headers: { 'Authorization': `Token ${token.value}` }
+      })
+    ])
+
+    apparatuses.value = apparatusResponse.data.results
+    categories.value = categoriesResponse.data
+    totalPages.value = Math.ceil(apparatusResponse.count / pageSize.value) || 1
+
+  } catch (err) {
+    console.error('Error fetching data:', err)
+    error.value = err.response?.data?.message || "Failed to fetch data. Please try again."
+  } finally {
+    loading.value = false
+  }
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+    fetchApparatusAndCategories()
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+    fetchApparatusAndCategories()
+  }
+}
+
+const handleDeleteClick = (apparatusId) => {
+  apparatusToDelete.value = apparatusId
+  showDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (!apparatusToDelete.value) return
+  
+  try {
+    await axios.delete(`/api/apparatus/${apparatusToDelete.value}/delete/`, {
+      headers: { 'Authorization': `Token ${token.value}` }
+    })
+    successMessage.value = 'Apparatus deleted successfully'
+    fetchApparatusAndCategories()
+  } catch (err) {
+    console.error('Error deleting apparatus:', err)
+    error.value = 'Failed to delete apparatus'
+  } finally {
+    showDialog.value = false
+    apparatusToDelete.value = null
+    setTimeout(() => {
+      successMessage.value = ''
+      error.value = null
+    }, 3000)
+  }
+}
+
+const editApparatus = (apparatus) => {
+  selectedApparatus.value = apparatus.id
+  showUpdateForm.value = true
+}
+
+const handleEquipmentAdded = () => {
+  showAddForm.value = false
+  fetchApparatusAndCategories()
+}
+
+const handleItemUpdated = () => {
+  showUpdateForm.value = false
+  selectedApparatus.value = null
+  fetchApparatusAndCategories()
+}
+
+const navigateToApparatusInstances = (apparatusId) => {
+  router.push({ name: 'apparatus-instances', params: { apId: apparatusId } })
+}
+
+const handleSidebarToggle = (isOpen) => {
+  isSidebarOpen.value = isOpen
+}
+
+const goBack = () => router.back()
+
+// Watchers
+watch(searchQuery, () => {
+  currentPage.value = 1
+  fetchApparatusAndCategories()
+})
+
+// Lifecycle
+onMounted(() => {
+  fetchApparatusAndCategories()
+  isSidebarOpen.value = window.innerWidth >= 1024
+})
 </script>
 
 <style scoped>

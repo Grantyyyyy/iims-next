@@ -25,28 +25,64 @@
             class="border border-gray-300 rounded py-2 px-4"
           />
 
-          <PrimaryButton @click="openAddChemicalForm" v-if="userType === 'Lab Technician'">
-            <template #icon>
-              <i class="fas fa-plus mr-2"></i>
-            </template>
-            Add Chemical
-          </PrimaryButton>
+          <div class="flex space-x-2">
+            <PrimaryButton @click="openAddChemicalForm" v-if="userType === 'Lab Technician'">
+              <template #icon>
+                <i class="fas fa-plus mr-2"></i>
+              </template>
+              Add Chemical
+            </PrimaryButton>
+            
+            <!-- Export Dropdown -->
+            <div class="relative" ref="exportDropdownRef">
+              <PrimaryButton @click="toggleExportDropdown" class="flex items-center">
+                <template #icon>
+                  <i class="fas fa-file-export mr-2"></i>
+                </template>
+                Export
+                <i class="fas fa-chevron-down ml-2 text-sm"></i>
+              </PrimaryButton>
+              
+              <div v-if="showExportDropdown" class="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                <div class="py-2">
+                  <button 
+                    @click="exportCurrentPage" 
+                    :disabled="exportingCurrentPage"
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    <i class="fas fa-file-csv mr-2"></i>
+                    <span v-if="!exportingCurrentPage">Export Current Page (CSV)</span>
+                    <span v-else class="flex items-center">
+                      <i class="fas fa-spinner fa-spin mr-2"></i>
+                      Exporting...
+                    </span>
+                  </button>
+                  
+                  <button 
+                    @click="exportAllData" 
+                    :disabled="exportingAllData"
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    <i class="fas fa-database mr-2"></i>
+                    <span v-if="!exportingAllData">Export All Data (CSV)</span>
+                    <span v-else class="flex items-center">
+                      <i class="fas fa-spinner fa-spin mr-2"></i>
+                      Exporting All...
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div v-if="loading" class="flex justify-center items-center h-64">
           <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
         </div>
 
-
-        <div v-else-if="loading" class="py-4 flex justify-center">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          <span class="ml-2">Loading...</span>
-        </div>
-
         <div v-else-if="error" class="text-red-500 py-4">
           {{ error }}
         </div>
-
 
         <div v-else class="overflow-x-auto">
           <div v-if="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded" role="alert">
@@ -202,223 +238,287 @@
   </div>
 </template>
 
-<script>
-import { defineComponent, ref, onMounted, computed, watch } from 'vue';
-import axios from 'axios';
-import { useRouter } from 'vue-router';
-import { useStore } from 'vuex';
-import Sidebar from '@/components/UserType/Sidebar.vue';
-import ChemicalForm from './Forms/ChemicalForm.vue';
-import PrimaryButton from '@/components/buttons/PrimaryButton.vue';
-import UpdateChemical from '../Labtech/Forms/UpdateChemical.vue';
-import ConfirmButton from '@/components/buttons/ConfirmButton.vue';
-import ChemicalCart from '../Labtech/Modals/ChemicalCart.vue';
-import { useChemicalCart } from '@/stores/chemicalCart';
+<script setup>
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
+import axios from 'axios'
+import { useRouter } from 'vue-router'
+import { useStore } from 'vuex'
+import * as XLSX from 'xlsx'
+import Sidebar from '@/components/UserType/Sidebar.vue'
+import ChemicalForm from './Forms/ChemicalForm.vue'
+import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
+import UpdateChemical from '../Labtech/Forms/UpdateChemical.vue'
+import ConfirmButton from '@/components/buttons/ConfirmButton.vue'
+import ChemicalCart from '../Labtech/Modals/ChemicalCart.vue'
+import { useChemicalCart } from '@/stores/chemicalCart'
 
-export default defineComponent({
-  name: 'ChemicalList',
-  components: {
-    Sidebar,
-    ChemicalForm,
-    PrimaryButton,
-    UpdateChemical,
-    ConfirmButton,
-    ChemicalCart
-  },
-  setup() {
-    const store = useStore();
-    const router = useRouter();
-    const loading = ref(true);
-    const error = ref(null);
-    const successMessage = ref(null);
-    const chemicals = ref([]);
-    const chemicalCartStore = useChemicalCart();
-    const searchQuery = ref('');
-    const showAddForm = ref(false);
-    const showUpdateForm = ref(false);
-    const isSidebarOpen = ref(false);
-    const selectedChemical = ref(null);
-    const tableHeaders = ['Name', 'Unit', 'Stocks Level', 'Reorder Level', 'Actions'];
-    const visibleHeaders = computed(() => {
-      const userType = store.state.userType;
-      return tableHeaders.filter(header => header !== 'Actions' || userType !== 'Dean');
-    });
-    const showDialog = ref(false);
-    const chemicalToDelete = ref(null);
+// Composables
+const store = useStore()
+const router = useRouter()
+const chemicalCartStore = useChemicalCart()
 
-    const currentPage = ref(1);
-    const totalPages = ref(0);
-    const pageSize = ref(10);
+// Reactive data
+const loading = ref(true)
+const error = ref(null)
+const successMessage = ref(null)
+const chemicals = ref([])
+const searchQuery = ref('')
+const showAddForm = ref(false)
+const showUpdateForm = ref(false)
+const isSidebarOpen = ref(false)
+const selectedChemical = ref(null)
+const showDialog = ref(false)
+const chemicalToDelete = ref(null)
+const currentPage = ref(1)
+const totalPages = ref(0)
+const pageSize = ref(10)
 
-    const userType = computed(() => store.state.userType);
+// Export related
+const showExportDropdown = ref(false)
+const exportDropdownRef = ref(null)
+const exportingCurrentPage = ref(false)
+const exportingAllData = ref(false)
 
-    const goBack = () => {
-      router.back();
-    };
+// Computed properties
+const userType = computed(() => store.state.userType)
+const tableHeaders = ['Name', 'Unit', 'Stocks Level', 'Reorder Level', 'Actions']
+const visibleHeaders = computed(() => {
+  return tableHeaders.filter(header => header !== 'Actions' || userType.value !== 'Dean')
+})
 
+// Helper functions
+const goBack = () => {
+  router.back()
+}
 
-    const isNew = (chemical) => {
-      if (!chemical || !chemical.addedAt) return false;
-      
-      const addedDate = new Date(chemical.addedAt);
-      const currentDate = new Date();
-      
-      const diffInHours = (currentDate - addedDate) / (1000 * 60 * 60);
-      return diffInHours < 24;
-    };
+const isNew = (chemical) => {
+  if (!chemical || !chemical.addedAt) return false
+  
+  const addedDate = new Date(chemical.addedAt)
+  const currentDate = new Date()
+  
+  const diffInHours = (currentDate - addedDate) / (1000 * 60 * 60)
+  return diffInHours < 24
+}
 
-    const fetchChemicals = async () => {
-      loading.value = true;
-      error.value = null;
-      try {
-        const response = await axios.get('/api/chemical/');
-        chemicals.value = response.data.results;
-        totalPages.value = Math.ceil(response.data.count / pageSize.value) || 1;
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        error.value = err.response?.data?.message || "Failed to fetch data. Please try again.";
-      } finally {
-          loading.value = false;
-      }
-    };
+// Export functions
+const toggleExportDropdown = () => {
+  showExportDropdown.value = !showExportDropdown.value
+}
 
-    watch([searchQuery], () => {
-        currentPage.value = 1;  
-        fetchChemicals();
-      }, { immediate: true });
-        
-    const nextPage = () => {
-      if (currentPage.value < totalPages.value) {
-        currentPage.value++;
-        fetchChemicals();
-      }
-    };
-
-    const prevPage = () => {
-      if (currentPage.value > 1) {
-        currentPage.value--;
-        fetchChemicals();
-      }
-    };
-
-    const handleDeleteClick = (chemicalId) => {
-      chemicalToDelete.value = chemicalId
-      showDialog.value = true
-    }
-
-    const confirmDelete = async () => {
-      if (chemicalToDelete.value) {
-        try {
-          await axios.delete(`/api/chemical/${chemicalToDelete.value}/delete/`);
-
-          successMessage.value = "Chemical deleted successfully.";
-          setTimeout(() => {
-            successMessage.value = null;
-          }, 1000);
-
-          fetchChemicals();
-        } catch (err) {
-          console.error("Error deleting chemical:", err);
-          error.value = "Failed to delete chemical. Please try again.";
-        } finally {
-          showDialog.value = false
-          chemicalToDelete.value = null
-        }
-      }
-    }
-    const editChemical = (chemical) => {
-      selectedChemical.value = chemical;
-      showUpdateForm.value = true;
-    };
-
-    const closeUpdateForm = () => {
-      selectedChemical.value = null;
-      showUpdateForm.value = false;
-    };
-
-    const getBarWidth = (chemical) => {
-      const volume = parseFloat(chemical.active_volume);
-      if (volume <= 0) return 0;
-      if (volume < 100) return 33;
-      if (volume < 500) return 66;
-      return Math.min(100, Math.round((volume / (chemical.maxVolume || 1000)) * 100));
-    };
-
-    const getVolumeBarColor = (chemical) => {
-      const volume = parseFloat(chemical.active_volume);
-      if (volume < 100) return 'bg-red-500';
-      if (volume < 500) return 'bg-yellow-500';
-      return 'bg-green-500';
-    };
-
-    const navigateToChemicalStocks = (chemicalId) => {
-      router.push({ name: 'chemical-stocks', params: { id: chemicalId } });
-    };
-
-    const openAddChemicalForm = () => {
-      showAddForm.value = true;
-    };
-
-    const handleCancel = () => {
-      showDialog.value = false;
-      chemicalToDelete.value = null;
-    };
-
-    const handleChemicalUpdated = async () => {
-      await fetchChemicals();
-      closeUpdateForm();
-    };
-
-    const handleChemicalAdded = async () => {
-      await fetchChemicals();
-      showAddForm.value = false;
-    };
-
-    const handleSidebarToggle = (isOpen) => {
-      isSidebarOpen.value = isOpen;
-    };
-
-    onMounted(() => {
-      fetchChemicals();
-      isSidebarOpen.value = window.innerWidth >= 1024;
-    });
-
-    return {
-      goBack,
-      chemicals,
-      loading,
-      error,
-      userType,
-      editChemical,
-      handleDeleteClick,
-      useChemicalCart,
-      chemicalCartStore,
-      showDialog,
-      handleCancel,
-      confirmDelete,
-      closeUpdateForm,
-      tableHeaders,
-      visibleHeaders,
-      searchQuery,
-      showAddForm,
-      showUpdateForm,
-      openAddChemicalForm,
-      handleChemicalAdded,
-      handleChemicalUpdated,
-      navigateToChemicalStocks,
-      getVolumeBarColor,
-      getBarWidth,
-      isSidebarOpen,
-      successMessage,
-      handleSidebarToggle,
-      selectedChemical,
-      currentPage,
-      totalPages,
-      pageSize,
-      nextPage,
-      prevPage,
-      isNew,
-    };
+const downloadCSV = (data, filename) => {
+  if (!data || data.length === 0) {
+    alert('No data available to export')
+    return
   }
-});
+
+  const csvRows = []
+  const headers = ['Name', 'Description', 'Unit', 'Active Volume', 'Reorder Level', 'Purchase Date', 'Expiry Date']
+  csvRows.push(headers.join(','))
+
+  for (const row of data) {
+    const values = [
+      `"${row.name || ''}"`,
+      `"${row.description || ''}"`,
+      `"${row.unit || ''}"`,
+      `"${row.active_volume || ''}"`,
+      `"${row.reorder_level || ''}"`,
+      `"${row.purchase_date || ''}"`,
+      `"${row.expiry_date || ''}"`
+    ]
+    csvRows.push(values.join(','))
+  }
+
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.setAttribute('hidden', '')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
+}
+
+const exportCurrentPage = async () => {
+  exportingCurrentPage.value = true
+  showExportDropdown.value = false
+  
+  try {
+    const date = new Date().toISOString().slice(0, 10)
+    downloadCSV(chemicals.value, `chemicals_page_${currentPage.value}_${date}.csv`)
+  } catch (err) {
+    console.error('Export error:', err)
+    alert('Failed to export data')
+  } finally {
+    exportingCurrentPage.value = false
+  }
+}
+
+const exportAllData = async () => {
+  exportingAllData.value = true
+  showExportDropdown.value = false
+  
+  try {
+    const params = {
+      export: 'all'
+    }
+    
+    if (searchQuery.value) {
+      params.search = searchQuery.value
+    }
+    
+    const response = await axios.get('/api/chemical/', { params })
+    const date = new Date().toISOString().slice(0, 10)
+    downloadCSV(response.data.results || response.data, `all_chemicals_${date}.csv`)
+  } catch (err) {
+    console.error('Export all data error:', err)
+    alert('Failed to export all data')
+  } finally {
+    exportingAllData.value = false
+  }
+}
+
+const fetchChemicals = async () => {
+  loading.value = true
+  error.value = null
+  
+  try {
+    const params = {
+      page: currentPage.value,
+      page_size: pageSize.value
+    }
+    
+    if (searchQuery.value) {
+      params.search = searchQuery.value
+    }
+    
+    const response = await axios.get('/api/chemical/', { params })
+    chemicals.value = response.data.results
+    totalPages.value = Math.ceil(response.data.count / pageSize.value) || 1
+  } catch (err) {
+    console.error('Error fetching data:', err)
+    error.value = err.response?.data?.message || "Failed to fetch data. Please try again."
+  } finally {
+    loading.value = false
+  }
+}
+
+// Pagination
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+    fetchChemicals()
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+    fetchChemicals()
+  }
+}
+
+// CRUD operations
+const handleDeleteClick = (chemicalId) => {
+  chemicalToDelete.value = chemicalId
+  showDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (chemicalToDelete.value) {
+    try {
+      await axios.delete(`/api/chemical/${chemicalToDelete.value}/delete/`)
+      successMessage.value = "Chemical deleted successfully."
+      setTimeout(() => {
+        successMessage.value = null
+      }, 1000)
+      fetchChemicals()
+    } catch (err) {
+      console.error("Error deleting chemical:", err)
+      error.value = "Failed to delete chemical. Please try again."
+    } finally {
+      showDialog.value = false
+      chemicalToDelete.value = null
+    }
+  }
+}
+
+const editChemical = (chemical) => {
+  selectedChemical.value = chemical
+  showUpdateForm.value = true
+}
+
+const closeUpdateForm = () => {
+  selectedChemical.value = null
+  showUpdateForm.value = false
+}
+
+const handleCancel = () => {
+  showDialog.value = false
+  chemicalToDelete.value = null
+}
+
+const handleChemicalUpdated = async () => {
+  await fetchChemicals()
+  closeUpdateForm()
+}
+
+const handleChemicalAdded = async () => {
+  await fetchChemicals()
+  showAddForm.value = false
+}
+
+const openAddChemicalForm = () => {
+  showAddForm.value = true
+}
+
+// UI helpers
+const getBarWidth = (chemical) => {
+  const volume = parseFloat(chemical.active_volume)
+  if (volume <= 0) return 0
+  if (volume < 100) return 33
+  if (volume < 500) return 66
+  return Math.min(100, Math.round((volume / (chemical.maxVolume || 1000)) * 100))
+}
+
+const getVolumeBarColor = (chemical) => {
+  const volume = parseFloat(chemical.active_volume)
+  if (volume < 100) return 'bg-red-500'
+  if (volume < 500) return 'bg-yellow-500'
+  return 'bg-green-500'
+}
+
+const navigateToChemicalStocks = (chemicalId) => {
+  router.push({ name: 'chemical-stocks', params: { id: chemicalId } })
+}
+
+const handleSidebarToggle = (isOpen) => {
+  isSidebarOpen.value = isOpen
+}
+
+// Click outside handler for dropdown
+const handleClickOutside = (event) => {
+  if (exportDropdownRef.value && !exportDropdownRef.value.contains(event.target)) {
+    showExportDropdown.value = false
+  }
+}
+
+// Watchers
+watch([searchQuery], () => {
+  currentPage.value = 1
+  fetchChemicals()
+}, { immediate: true })
+
+// Lifecycle
+onMounted(() => {
+  fetchChemicals()
+  isSidebarOpen.value = window.innerWidth >= 1024
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>

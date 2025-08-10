@@ -193,7 +193,6 @@
       @open-borrow="showBorrowModal = true"
     />
 
-
     <div v-if="showBorrowModal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
       <div class="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
         <h2 class="text-xl font-semibold mb-6">Complete Your Borrowing</h2>

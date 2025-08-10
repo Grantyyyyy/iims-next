@@ -54,11 +54,18 @@ class EquipmentSerializer(serializers.ModelSerializer):
         return obj.available_instances()
     
     def validate_name(self, value):
-        if Equipment.objects.filter(name__iexact=value).exists():
-            raise serializers.ValidationError("Equipment name already exists.")
+        instance = self.instance
+        
+        queryset = Equipment.objects.filter(name__iexact=value)
+        
+        if instance:
+            queryset = queryset.exclude(pk=instance.pk)
+
+        if queryset.exists():
+            raise serializers.ValidationError("Equipment with this name already exists.")
+        
         return value
 
-    
 
 class EquipmentInstanceCreateSerializer(serializers.ModelSerializer):
     inventory_date = serializers.DateField(format='%Y-%m-%d')
@@ -196,11 +203,6 @@ class ChemicalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chemical
         fields = '__all__'
-
-    def validate_name(self, value):
-        if Chemical.objects.filter(name__iexact=value).exists():
-            raise serializers.ValidationError("Chemical name already exists.")
-        return value
     
     def get_active_volume(self, obj):
         today = timezone.now().date()
@@ -212,6 +214,20 @@ class ChemicalSerializer(serializers.ModelSerializer):
         )['total_volume'] or 0
         
         return total
+    
+    def validate_name(self, value):
+        instance = self.instance
+        
+        queryset = Chemical.objects.filter(name__iexact=value)
+        
+        if instance:
+            queryset = queryset.exclude(pk=instance.pk)
+
+        if queryset.exists():
+            raise serializers.ValidationError("Chemical with this name already exists.")
+        
+        return value
+
 
 class ChemicalStockSerializer(serializers.ModelSerializer):
     chemical = ChemicalSerializer(read_only=True)
@@ -264,9 +280,18 @@ class ApparatusSerializer(serializers.ModelSerializer):
         return obj.available_instances()
     
     def validate_name(self, value):
-        if Apparatus.objects.filter(name__iexact=value).exists():
-            raise serializers.ValidationError("Apparatus name already exists.")
+        instance = self.instance
+        
+        queryset = Apparatus.objects.filter(name__iexact=value)
+        
+        if instance:
+            queryset = queryset.exclude(pk=instance.pk)
+
+        if queryset.exists():
+            raise serializers.ValidationError("Apparatus with this name already exists.")
+        
         return value
+
 
 
 class ApparatusInstanceSerializer(serializers.ModelSerializer):

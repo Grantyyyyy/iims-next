@@ -25,7 +25,8 @@
     "vue-router": "^4.0.3",
     "vue3-apexcharts": "^1.7.0",
     "vue3-qr-reader": "^1.0.0",
-    "vuex": "^4.0.0"
+    "vuex": "^4.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~5.0.0",
