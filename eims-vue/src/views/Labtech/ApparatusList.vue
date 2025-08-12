@@ -28,7 +28,7 @@
           </div>
 
           <div class="flex space-x-2">
-            <PrimaryButton @click="showAddForm = true">
+            <PrimaryButton @click="showAddForm = true" v-if="userType === 'Lab Technician'">
               <template #icon>
                 <i class="fas fa-plus mr-2"></i>
               </template>
@@ -213,7 +213,7 @@
       <ApparatusForm
         :categories="categories"
         @close="showAddForm = false"
-        @equipment-added="handleEquipmentAdded"
+        @apparatus-added="handleEquipmentAdded"
       />
     </div>
 
@@ -223,11 +223,10 @@
         :apparatusId="selectedApparatus"
         :categories="categories"
         @close="showUpdateForm = false"
-        @apparatus-updated="handleItemUpdated"
+        @apparatus-updated="handleApparatusUpdated"
       />
     </div>
 
-    <!-- Delete Confirmation Dialog -->
     <ConfirmButton
       v-model:visible="showDialog"
       title="Delete Apparatus"
@@ -480,9 +479,15 @@ const editApparatus = (apparatus) => {
 const handleEquipmentAdded = () => {
   showAddForm.value = false
   fetchApparatusAndCategories()
+  successMessage.value = 'Apparatus added successfully!'
+  setTimeout(() => {
+    successMessage.value = null
+  }, 3000)
+  error.value = null
 }
 
-const handleItemUpdated = () => {
+
+const handleApparatusUpdated = () => {
   showUpdateForm.value = false
   selectedApparatus.value = null
   fetchApparatusAndCategories()

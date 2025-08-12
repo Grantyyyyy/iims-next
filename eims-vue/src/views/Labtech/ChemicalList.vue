@@ -20,7 +20,7 @@
         <div class="flex justify-between mb-4">
           <input
             v-model="searchQuery"
-            type="text"
+            type="text" 
             placeholder="Search chemicals..."
             class="border border-gray-300 rounded py-2 px-4"
           />

@@ -76,7 +76,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> 
         </div>
 
         <!-- Loading and Error States -->
@@ -224,7 +224,7 @@
         :equipmentId="selectedEquipment"
         :categories="categories"
         @close="closeUpdateForm"
-        @equipment-updated="handleEquipmentAdded"
+        @equipment-updated="handleItemUpdated"
       />
     </div>
   </div>
@@ -455,6 +455,14 @@ const editEquipment = (equipment) => {
 const handleEquipmentAdded = () => {
   showAddForm.value = false
   showAddCategoryForm.value = false
+  successMessage.value = 'Equipment added successfully!'
+  fetchEquipementAndCategories()
+  setTimeout(() => successMessage.value = null, 3000)
+}
+
+const handleItemUpdated = () => {
+  showUpdateForm.value = false
+  selectedEquipment.value = null
   fetchEquipementAndCategories()
 }
 

@@ -207,7 +207,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'item-added'])
+const emit = defineEmits(['close', 'item-added']) 
 
 const store = useStore()
 const addItem = ref({

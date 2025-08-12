@@ -109,7 +109,7 @@
               id="purchase_date"
               type="date"
               required
-              :min="new Date().toISOString().split('T')[0]"
+              :max="new Date().toISOString().split('T')[0]"
             >
           </div>            
         </div>
@@ -188,112 +188,108 @@
   </div>
 </template>
 
-<script>
-import { defineComponent, ref, onMounted, watch } from 'vue'
+<script setup>
+import { ref, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import axios from 'axios'
 
-export default defineComponent({
-  name: 'EquipmentForm',
-  props: ['categories'],
-  
-  setup(props, { emit }) {
-    const store = useStore()
+// Props
+const props = defineProps(['categories'])
 
-    const addEquipment = ref({
-      name: '',
-      description: '',
-      category_id: '',
-      purchase_date: '',
-      useful_life: '',
-      unit_cost: '',
-      quantity: '',
-      model: '',
-      inventory_date: new Date().toISOString().split('T')[0],
-      start_number: '',
-      suffix: '01',
-    })
-    const latestStartNumber = ref(null)
-    const error = ref('')
+// Emits
+const emit = defineEmits(['close', 'equipment-added'])
 
-    const fetchLatestStartNumber = async () => {
-      try {
-        const response = await axios.get(
-          'api/equipment-instances/latest-number/',
-          {
-            headers: {
-              'Authorization': `Token ${store.state.token}`
-            }
-          }
-        );
-        latestStartNumber.value = response.data;
-        
-        // Auto-fill the start_number with the next number
-        if (response.data && response.data.formatted_next_number) {
-          addEquipment.value.start_number = response.data.formatted_next_number;
-        } else {
-          addEquipment.value.start_number = '0001';
-        }
-        
-      } catch (error) {
-        console.error('Error fetching latest start number:', error);
-        // Set a default value if there's an error
-        addEquipment.value.start_number = '0001';
-      }
-    };
+// Store
+const store = useStore()
 
-    onMounted(() => {
-      fetchLatestStartNumber();
-    });
-
-    const submitForm = async () => {
-      try {
-        const newEquipmentData = {
-          ...addEquipment.value,
-        }
-        await axios.post('api/equipments/', newEquipmentData, {
-          headers: {
-            'Authorization': `Token ${store.state.token}`
-          }
-        })
-        resetForm()
-        emit('equipment-added')
-        emit('close')
-      } catch (error) {
-        if (err.response && err.response.data) {
-          error.value = err.response.data.name ? err.response.data.name[0] : 'Failed to add equipment.'
-        } else {
-          error.value = 'Failed to add equipment. Please try again.'
-        }
-        console.error('Error adding equipment:', err)
-      }
-    }
-
-    const resetForm = () => {
-      addEquipment.value = {
-        name: '',
-        description: '',
-        category_id: '',
-        purchase_date: '',
-        useful_life: '',
-        unit_cost: '',
-        quantity: '',
-        model: '',
-        inventory_date: new Date().toISOString().split('T')[0],
-        start_number: '',
-        suffix: '01',
-      }
-    }
-
-    return {
-      addEquipment,
-      error,
-      submitForm,
-      resetForm,
-      latestStartNumber
-    }
-  }
+// Reactive data
+const addEquipment = ref({
+  name: '',
+  description: '',
+  category_id: '',
+  purchase_date: '',
+  useful_life: '',
+  unit_cost: '',
+  quantity: '',
+  model: '',
+  inventory_date: new Date().toISOString().split('T')[0],
+  start_number: '',
+  suffix: '01',
 })
+
+const latestStartNumber = ref(null)
+const error = ref('')
+
+// Methods
+const fetchLatestStartNumber = async () => {
+  try {
+    const response = await axios.get(
+      'api/equipment-instances/latest-number/',
+      {
+        headers: {
+          'Authorization': `Token ${store.state.token}`
+        }
+      }
+    );
+    latestStartNumber.value = response.data;
+    
+    // Auto-fill the start_number with the next number
+    if (response.data && response.data.formatted_next_number) {
+      addEquipment.value.start_number = response.data.formatted_next_number;
+    } else {
+      addEquipment.value.start_number = '0001';
+    }
+    
+  } catch (error) {
+    console.error('Error fetching latest start number:', error);
+    // Set a default value if there's an error
+    addEquipment.value.start_number = '0001';
+  }
+};
+
+const submitForm = async () => {
+  try {
+    const newEquipmentData = {
+      ...addEquipment.value,
+    }
+    await axios.post('api/equipments/', newEquipmentData, {
+      headers: {
+        'Authorization': `Token ${store.state.token}`
+      }
+    })
+    resetForm()
+    emit('equipment-added')
+    emit('close')
+  } catch (err) {
+    if (err.response && err.response.data) {
+      error.value = err.response.data.name ? err.response.data.name[0] : 'Failed to add equipment.'
+    } else {
+      error.value = 'Failed to add equipment. Please try again.'
+    }
+    console.error('Error adding equipment:', err)
+  }
+}
+
+const resetForm = () => {
+  addEquipment.value = {
+    name: '',
+    description: '',
+    category_id: '',
+    purchase_date: '',
+    useful_life: '',
+    unit_cost: '',
+    quantity: '',
+    model: '',
+    inventory_date: new Date().toISOString().split('T')[0],
+    start_number: '',
+    suffix: '01',
+  }
+}
+
+// Lifecycle
+onMounted(() => {
+  fetchLatestStartNumber();
+});
 </script>
 
 <style scoped>
