@@ -210,6 +210,7 @@ const tabs = ref(['Borrowed Items', 'Borrowed Equipments', 'Borrowed Apparatus']
 if (userData.department === 'Marine Biology' || userType.value === 'Staff' || userType.value === 'Lab Technician') {
   tabs.value = tabs.value.filter(tab => tab !== 'Borrowed Items')
 }
+
 const currentTab = ref(localStorage.getItem('currentTab') || tabs.value[0])
 const error = ref(null)
 const searchQuery = ref('');
@@ -217,7 +218,7 @@ const currentPage = ref(1);
 const totalPages = ref(0);
 const pageSize = ref(10);
 const isSubmitting = ref(false)
-const itemHeaders = ['Item', 'Quantity', 'Borrower', 'Condition', 'Room', 'Borrowed At', 'Purpose', 'Actions']
+const itemHeaders = ['Item', 'Borrower', 'Condition', 'Room', 'Borrowed At', 'Purpose', ...(userType.value === 'Staff' || userType.value === 'Dean' ? [] : ['Actions'])]
 const equipmentHeaders = ['Equipment', 'Quantity', 'Borrower', 'Condition', 'Subject', 'Borrowed At', 'Purpose', ...(userType.value === 'Staff' || userType.value === 'Dean' ? [] : ['Actions'])]
 const apparatusHeaders = ['Apparatus', 'Quantity', 'Borrower', 'Condition', 'Subject', 'Borrowed At', 'Purpose', ...(userType.value === 'Staff' || userType.value === 'Dean' ? [] : ['Actions'])]
 const condition = ref('')

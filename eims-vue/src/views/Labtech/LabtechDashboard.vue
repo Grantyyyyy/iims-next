@@ -60,8 +60,13 @@
 
           </div>
 
-      
-          <UsageChart :usagePerDay="dashboardData.todays_usage_details" />
+          <UsageChart 
+            :usagePerDay="dashboardData.todays_usage_details" 
+            :equipmentBorrowPerDay="dashboardData.equipment_borrow_details"
+            :apparatusBorrowPerDay="dashboardData.apparatus_borrow_details"
+          
+            />
+          
 
           <div class="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-8">
               <div class="bg-white shadow-md rounded-lg p-6 border-gray-200">
@@ -229,7 +234,9 @@ import UsageChart from '@/components/charts/UsageChart.vue';
       most_borrowed_items: [],
       chemical_recent_usage: [],
       chemical_low_stocks: [],
-      todays_usage_details: []
+      todays_usage_details: [],
+      equipment_borrow_details: [],
+      apparatus_borrow_details: []
     });
     const mostBorrowedItems = ref([]);
     const totalBorrowRecords = ref([]);

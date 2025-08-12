@@ -61,6 +61,9 @@ class DashboardView(APIView):
             chemical_low_stocks = Chemical.objects.filter(volume__lte=F('reorder_level'))
             chemical_recent_usage = ChemicalUsage.objects.order_by('-date_used')[:5]
 
+            equipment_recent_borrows = EquipmentBorrowRecord.objects.order_by('-borrowed_date')[:5]
+            apparatus_recent_borrows = ApparatusBorrowRecord.objects.order_by('-borrowed_date')[:5]
+
             current_tz = timezone.get_current_timezone()
             end_date = timezone.now().astimezone(current_tz)
             start_date = (end_date - timezone.timedelta(days=6)).replace(
@@ -77,15 +80,15 @@ class DashboardView(APIView):
                     end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
                 ]
             ).annotate(
-                date=TruncDate('date_used', tzinfo=current_tz)
-            ).values('date_used').annotate(
+                day=TruncDate('date_used', tzinfo=current_tz)
+            ).values('day').annotate(
                 count=Count('id')
-            ).order_by('date_used')
+            ).order_by('day')
 
             usage_count = {date: 0 for date in all_dates}
             for usage in todays_usage:
-                if usage['date_used'] in usage_count:
-                    usage_count[usage['date_used']] = usage['count']
+                if usage['day'] in usage_count:
+                    usage_count[usage['day']] = usage['count']
                     
             todays_usage_details = [
                 {
@@ -94,6 +97,55 @@ class DashboardView(APIView):
                 } 
                 for date in all_dates
             ] 
+
+            equipment_borrowed = EquipmentBorrowRecord.objects.filter(
+                borrowed_date__range=[
+                    start_date.replace(hour=0, minute=0, second=0, microsecond=0),
+                    end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+                ]
+            ).annotate(
+                day=TruncDate('borrowed_date', tzinfo=current_tz)
+            ).values('day').annotate(
+                count=Count('id')
+            ).order_by('day')
+
+            borrow_count = {date: 0 for date in all_dates}
+            for borrow in equipment_borrowed:
+                if borrow['day'] in borrow_count:
+                    borrow_count[borrow['day']] = borrow['count']
+
+            equipment_borrow_details = [
+                {
+                    'day': date.strftime('%Y-%m-%d'), 
+                    'count': borrow_count[date]
+                } 
+                for date in all_dates
+            ]
+
+            apparatus_usage = ApparatusBorrowRecord.objects.filter(
+                borrowed_date__range=[
+                    start_date.replace(hour=0, minute=0, second=0, microsecond=0),
+                    end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+                ]
+            ).annotate(
+                day=TruncDate('borrowed_date', tzinfo=current_tz)
+            ).values('day').annotate(
+                count=Count('id')
+            ).order_by('day')
+            
+            apparatus_borrow_count = {date: 0 for date in all_dates}
+            for usage in apparatus_usage:
+                if usage['day'] in apparatus_borrow_count:
+                    apparatus_borrow_count[usage['day']] = usage['count']
+
+            apparatus_borrow_details = [
+                {
+                    'day': date.strftime('%Y-%m-%d'), 
+                    'count': apparatus_borrow_count[date]
+                } 
+                for date in all_dates
+            ]
+
 
             data = {
                 'total_equipments': total_equipments,
@@ -119,7 +171,27 @@ class DashboardView(APIView):
                         'volume_used': usage.quantity_used,
                         'date_used': usage.date_used.strftime('%Y-%m-%d'),
                     } for usage in chemical_recent_usage 
-                ]
+                ],
+                'equipment_recent_borrows': [
+                    {
+                        'id': borrow.id,
+                        'equipment_instance': borrow.equipment_instance.equipment.name,
+                        'borrowed_by': borrow.borrower.get_full_name() if borrow.borrower else borrow.custom_borrower,
+                        'borrowed_date': borrow.borrowed_date.strftime('%Y-%m-%d %H:%M:%S'),
+                        'return_date': borrow.returned_date.strftime('%Y-%m-%d %H:%M:%S') if borrow.returned_date else None
+                    } for borrow in equipment_recent_borrows
+                ],
+                'apparatus_recent_borrows': [
+                    {
+                        'id': borrow.id,
+                        'apparatus_instance': borrow.apparatus_instance.apparatus.name,
+                        'borrowed_by': borrow.borrower.get_full_name() if borrow.borrower else borrow.custom_borrower,
+                        'borrowed_date': borrow.borrowed_date.strftime('%Y-%m-%d %H:%M:%S'),
+                        'return_date': borrow.returned_date.strftime('%Y-%m-%d %H:%M:%S') if borrow.returned_date else None
+                    } for borrow in apparatus_recent_borrows
+                ],
+                'equipment_borrow_details': equipment_borrow_details,
+                'apparatus_borrow_details': apparatus_borrow_details
             }
 
             return Response(data, status=status.HTTP_200_OK)

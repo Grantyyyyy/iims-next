@@ -65,7 +65,9 @@
 
                     :borrowPerDayData="dashboardData.borrow_per_day_full"
                     :usagePerDay="labtechData.todays_usage_details"
-                />
+                    :equipmentBorrowPerDay="labtechData.equipment_borrow_details"
+                    :apparatusBorrowPerDay="labtechData.apparatus_borrow_details"
+                /> 
 
                 <div class="bg-white w1/4 shadow-md rounded-lg p-6 border-gray-200">
                   <div class="flex items-center mb-4">
@@ -163,47 +165,47 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 mb-8">
-                <div 
-                  @click="navigateToChemical"
-                  class="bg-white shadow-md rounded-lg p-6 border border-gray-200 flex items-center transition duration-150 ease-in-out hover:bg-gray-100 hover:shadow-lg"
-                > 
-                <div class="bg-blue-100 rounded-full p-3 mr-4 flex items-center justify-center">
-                    <i class="fas fa-flask text-blue-600 text-xl"></i>
+              <div 
+                @click="navigateToChemical"
+                class="bg-white shadow-md rounded-lg p-6 border border-gray-200 flex items-center transition duration-150 ease-in-out hover:bg-gray-100 hover:shadow-lg"
+              > 
+              <div class="bg-blue-100 rounded-full p-3 mr-4 flex items-center justify-center">
+                  <i class="fas fa-flask text-blue-600 text-xl"></i>
+              </div>
+              <div>
+                  <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Number of Chemicals</h3>
+                  <p class="text-3xl font-bold text-blue-600">{{ labtechData.total_chemicals }}</p>
+              </div>
+              </div>
+
+              <div 
+                @click="navigateToEquipments"
+                class="bg-white shadow-md rounded-lg p-6 border border-gray-200 flex items-center transition duration-150 ease-in-out hover:bg-gray-100 hover:shadow-lg"
+              >
+                <div class="bg-green-100 rounded-full p-3 mr-4 flex items-center justify-center">
+                    <i class="fas fa-tools text-green-600 text-xl"></i>
                 </div>
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Number of Chemicals</h3>
-                    <p class="text-3xl font-bold text-blue-600">{{ labtechData.total_chemicals }}</p>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Number of Equipments</h3>
+                    <p class="text-3xl font-bold text-green-600">{{ labtechData.total_equipments }}</p>
                 </div>
-                </div>
+              </div>
 
-                <div 
-                  @click="navigateToEquipments"
-                  class="bg-white shadow-md rounded-lg p-6 border border-gray-200 flex items-center transition duration-150 ease-in-out hover:bg-gray-100 hover:shadow-lg"
-                >
-                  <div class="bg-green-100 rounded-full p-3 mr-4 flex items-center justify-center">
-                      <i class="fas fa-tools text-green-600 text-xl"></i>
-                  </div>
-                  <div>
-                      <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Number of Equipments</h3>
-                      <p class="text-3xl font-bold text-green-600">{{ labtechData.total_equipments }}</p>
-                  </div>
-                </div>
+              <div 
+                @click="navigateToApparatus"
+                class="bg-white shadow-md rounded-lg p-6 border border-gray-200 flex items-center transition duration-150 ease-in-out hover:bg-gray-100 hover:shadow-lg"
+              >
+              <div class="bg-yellow-100 rounded-full p-3 mr-4 flex items-center justify-center">
+                  <i class="fas fa-magnifying-glass text-yellow-600 text-xl"></i>
+              </div>
+              <div>
+                  <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Number of Apparatus</h3>
+                  <p class="text-3xl font-bold text-yellow-600">{{ labtechData.total_apparatus }}</p>
+              </div>
+              </div>
+          </div>
 
-                <div 
-                  @click="navigateToApparatus"
-                  class="bg-white shadow-md rounded-lg p-6 border border-gray-200 flex items-center transition duration-150 ease-in-out hover:bg-gray-100 hover:shadow-lg"
-                >
-                <div class="bg-yellow-100 rounded-full p-3 mr-4 flex items-center justify-center">
-                    <i class="fas fa-magnifying-glass text-yellow-600 text-xl"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Number of Apparatus</h3>
-                    <p class="text-3xl font-bold text-yellow-600">{{ labtechData.total_apparatus }}</p>
-                </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-8">
+          <div class="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-8">
               <div class="bg-white shadow-md rounded-lg p-6 border-gray-200">
                 <div class="flex items-center mb-4">
                   <i class="fas fa-chart-bar text-blue-600 mr-2 text-lg"></i>
@@ -233,7 +235,7 @@
                 </div>
               </div>
 
-            <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200">
+            <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 mb-8">
               <div class="flex items-center mb-4">
                 <i class="fas fa-exclamation-triangle text-red-600 mr-2 text-lg"></i>
                 <h3 class="text-xl font-semibold text-gray-800">Chemicals with Low Stock</h3>
@@ -272,8 +274,76 @@
                 No chemicals with low stock.
               </div>
             </div>
+          </div>
 
+          <div class=" mt-8 gap-8">
+            <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                  <i class="fas fa-chart-bar text-blue-600 mr-2 text-lg"></i>
+                  <h3 class="text-xl font-semibold text-gray-800">
+                    {{ selectedTable === 'equipment' ? 'Recent Borrowed Equipments' : 'Recent Borrowed Apparatus' }}
+                  </h3>
+                </div>
+
+                <!-- Dropdown -->
+                <select 
+                  v-model="selectedTable"
+                  class="border border-gray-300 rounded px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="equipment">Equipments</option>
+                  <option value="apparatus">Apparatus</option>
+                </select>
+              </div>
+
+              <div v-if="selectedTable === 'equipment' && labtechData.equipment_recent_borrows.length > 0" class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500">
+                  <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-2">Equipment</th>
+                      <th class="px-4 py-2">Borrowed By</th>
+                      <th class="px-4 py-2">Borrowed Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="equipment in labtechData.equipment_recent_borrows" :key="equipment.id" 
+                        class="bg-white border-b hover:bg-gray-50">
+                      <td class="px-4 py-2 cursor-pointer hover:bg-gray-50">
+                        <div class="flex items-center ">{{ equipment.equipment_instance }}</div>
+                      </td>
+                      <td class="px-4 py-2">{{ equipment.borrowed_by }}</td>
+                      <td class="px-4 py-2">{{ equipment.borrowed_date }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div v-else-if="selectedTable === 'apparatus' && labtechData.apparatus_recent_borrows.length > 0" class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500">
+                  <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-2">Apparatus</th>
+                      <th class="px-4 py-2">Borrowed By</th>
+                      <th class="px-4 py-2">Borrowed Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="apparatus in labtechData.apparatus_recent_borrows" :key="apparatus.id" 
+                        class="bg-white border-b hover:bg-gray-50">
+                      <td class="px-4 py-2 cursor-pointer hover:bg-gray-50">
+                        <div class="flex items-center ">{{ apparatus.apparatus_instance }}</div>
+                      </td>
+                      <td class="px-4 py-2">{{ apparatus.borrowed_by }}</td>
+                      <td class="px-4 py-2">{{ apparatus.borrowed_date }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div v-else class="text-center text-gray-500 text-lg mt-4 my-8">
+                No recent borrowed {{ selectedTable }}.
+              </div>
             </div>
+          </div>
+
         </div> 
       </div>
     </div>
@@ -302,7 +372,8 @@
         most_borrowed_items: [],
         total_borrow_records: [],
         items_needing_attention: [],
-        borrow_per_day_full: []
+        borrow_per_day_full: [],
+
       });
 
       const labtechData = ref({
@@ -311,13 +382,20 @@
         total_apparatus: 0,
         chemical_recent_usage: [],
         chemical_low_stocks: [],
-        todays_usage_details: []
+        todays_usage_details: [],
+        equipment_borrow_details: [],
+        equipment_recent_borrows: [],
+        apparatus_borrow_details: [],
+        apparatus_recent_borrows: []
+
       });
       const mostBorrowedItems = ref([]);
       const totalBorrowRecords = ref([]);
       const itemsNeedingAttention = ref([]);
       const borrowPerDay = ref([])
       const isSidebarOpen = ref(false)
+
+      const selectedTable = ref('equipment');
     
       const fetchSecretaryDashboardData = async () => {
         try {
@@ -417,7 +495,8 @@
           navigateToReturnedItems,
           navigateToChemical,
           navigateToEquipments,
-          navigateToApparatus
+          navigateToApparatus,
+          selectedTable
         }
       }
     })

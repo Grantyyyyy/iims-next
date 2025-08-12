@@ -1,16 +1,16 @@
 <template>
     <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+      <thead class="bg-gray-50">
         <tr>
-            <th v-for="header in visibleHeaders" 
+            <th v-for="header in itemHeaders" 
                 :key="header" 
                 class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             {{ header }}
             </th>
         </tr>
-        </thead>
+      </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-        <tr v-for="borrow in itemBorrowed" :key="itemBorrowed.id" 
+        <tr v-for="borrow in itemBorrowed" :key="borrow .id"   
             :class="{'bg-gray-50': index % 2 === 0}"
             class="hover:bg-gray-100 transition-colors duration-150 ease-in-out">
             <td class="px-4 py-4">

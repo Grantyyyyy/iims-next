@@ -3,33 +3,62 @@
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-2">
         <i class="fas fa-calendar text-blue-600 text-xl"></i>
-        <h2 class="text-xl font-bold text-gray-800">Weekly {{ isRegularData ? 'Item Borrow' : 'Chemical Usage' }}</h2>
+        <h2 class="text-xl font-bold text-gray-800">
+          Weekly {{ tabTitle }} </h2>
+
       </div>
       
       <!-- Toggle Switch -->
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
         <button 
-          @click="toggleDataType"
-          class="px-4 py-2 rounded-lg text-sm font-medium"
-          :class="isRegularData ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+          @click="selectTab('items')"
+          class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+          :class="{
+            'bg-white text-blue-600 shadow-sm': selectedTab === 'items',
+            'text-gray-600 hover:text-gray-800 hover:bg-gray-50': selectedTab !== 'items'
+          }"
         >
-          Borrowing Data
+          Items Borrowed
         </button>
         <button 
-          @click="toggleDataType" 
-          class="px-4 py-2 rounded-lg text-sm font-medium"
-          :class="!isRegularData ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'" 
-        >
+          @click="selectTab('usage')" 
+          class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+          :class="{
+            'bg-white text-blue-600 shadow-sm': selectedTab === 'usage',
+            'text-gray-600 hover:text-gray-800 hover:bg-gray-50': selectedTab !== 'usage'
+          }"        >
           Usage Data
         </button>
+        <button 
+          @click="selectTab('equipment')" 
+          class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+          :class="{
+            'bg-white text-blue-600 shadow-sm': selectedTab === 'equipment',
+            'text-gray-600 hover:text-gray-800 hover:bg-gray-50': selectedTab !== 'equipment'
+          }"        >
+          Equipment Borrowed
+        </button>
+        <button 
+          @click="selectTab('apparatus')" 
+          class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+          :class="{
+            'bg-white text-blue-600 shadow-sm': selectedTab === 'apparatus',
+            'text-gray-600 hover:text-gray-800 hover:bg-gray-50': selectedTab !== 'apparatus'
+          }"        >
+          Apparatus Borrowed
+        </button>
       </div>
+      
     </div>
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
       <div class="p-4 bg-blue-50 rounded-lg">
         <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-blue-600">Total {{ isRegularData ? 'Borrows' : 'Usage' }}</p>
+          <p class="text-sm font-medium text-blue-600">Total 
+            {{ selectedTab === 'items'
+               ? 'Items Borrowed'
+              : selectedTab === 'usage' ? 'Chemical Usage' : 'Equipment Borrowed' }}</p>
           <i class="fas fa-users text-blue-600"></i>
         </div>
         <p class="text-2xl font-bold text-gray-900 mt-2">{{ totalCount }}</p>
@@ -67,33 +96,64 @@ export default {
     usagePerDay: {
       type: Array,
       required: true
+    },
+    equipmentBorrowPerDay: {
+      type: Array,
+      required: true
+    },
+    apparatusBorrowPerDay: {
+      type: Array,
+      required: true
     }
+
   },
   
   setup(props) {
     const store = useStore()
     const chartCanvas = ref(null)
-    const isRegularData = ref(true)
+    const selectedTab = ref('items')
     const userType = computed(() => store.state.userType);
 
+    const selectTab = (tab) => {
+      selectedTab.value = tab
+    }
 
     let chartInstance = null
 
-    const currentData = computed(() => 
-      isRegularData.value ? props.borrowPerDayData : props.usagePerDay
-    )
+    const tabTitle = computed(() => {
+      switch (selectedTab.value) {
+        case 'items': return 'Items Borrowed'
+        case 'usage': return 'Chemical Usage'
+        case 'equipment': return 'Equipment Borrowed'
+        case 'apparatus': return 'Apparatus Borrowed'
+        default: return ''
+      }
+    })
+
+
+    const currentData = computed(() => {
+      if (selectedTab.value === 'items') return props.borrowPerDayData
+      if (selectedTab.value === 'usage') return props.usagePerDay
+      if (selectedTab.value === 'equipment') return props.equipmentBorrowPerDay
+      if (selectedTab.value === 'apparatus') return props.apparatusBorrowPerDay
+      return []
+    })
 
     const totalCount = computed(() => 
       currentData.value.reduce((sum, day) => sum + day.count, 0)
     )
 
-    const dailyAverage = computed(() => 
-      Math.round(totalCount.value / 7)
-    )
+    const dailyAverage = computed(() =>  {
+      const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        return currentData.value.reduce((sum, day) => {
+          const dayDate = new Date(day.day)
+          dayDate.setHours(0, 0, 0, 0)
+          return dayDate.getTime() === today.getTime() ? sum + day.count : sum
+        }, 0)
+    })
 
-    const toggleDataType = () => {
-      isRegularData.value = !isRegularData.value
-    }
+
 
     const generateFullWeekData = (data) => {
       const days = []
@@ -141,7 +201,7 @@ export default {
           data: {
             labels: formattedData.map(item => item.day),
             datasets: [{
-              label: isRegularData.value ? 'Borrow Count' : 'Usage Count',
+              label: tabTitle.value,
               data: formattedData.map(item => item.count),
               backgroundColor: 'rgba(37, 99, 235, 0.2)',
               borderColor: 'rgb(37, 99, 235)',
@@ -180,16 +240,16 @@ export default {
     }
 
     onMounted(createChart)
-    watch(currentData, createChart)
-    watch(isRegularData, createChart)
+    watch([currentData, selectedTab], createChart)
 
     return {
       chartCanvas,
-      isRegularData,
       userType,
       totalCount,
       dailyAverage,
-      toggleDataType
+      selectedTab,
+      tabTitle,
+      selectTab
     }
   }
 }
