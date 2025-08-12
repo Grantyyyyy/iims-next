@@ -262,6 +262,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import { useItemCartStore } from '@/stores/newCart'
+import Papa from 'papaparse'
 import axios from 'axios'
 import Sidebar from '@/components/UserType/Sidebar.vue'
 import ItemForm from './Forms/ItemForm.vue'
@@ -325,11 +326,8 @@ const downloadCSV = (data, filename) => {
     return
   }
 
-  const csvRows = []
-  const headers = ['Name', 'Description', 'Model', 'Category', 'Item Availability']
-  csvRows.push(headers.join(','))
-
-  for (const row of data) {
+  // Transform data to desired format
+  const csvData = data.map(row => { 
     // Determine status
     let status = 'Available'
     if (row.available_instances === 0) {
@@ -338,17 +336,29 @@ const downloadCSV = (data, filename) => {
       status = `Low Stock: ${row.available_instances} left`
     }
 
-    const values = [
-      `"${row.name || ''}"`,
-      `"${row.description || ''}"`,
-      `"${row.model || ''}"`,
-      `"${row.category?.name || ''}"`,
-      `"${row.available_instances || 0}"`,
-    ]
-    csvRows.push(values.join(','))
-  }
+    return {
+      'Name': row.name || '',
+      'Description': row.description || '',
+      'Model': row.model || '',
+      'Category': row.category?.name || '',
+      'Item Type': row.item_type || '',
+      'Available Instances': row.available_instances || 0,
+      'Total Instances': row.total_instances || 0,
+      'Status': status
+    }
+  })
 
-  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
+  // Use PapaParse to convert to CSV (handles all escaping automatically)
+  const csv = Papa.unparse(csvData, {
+    quotes: true,        // Wrap all fields in quotes
+    quoteChar: '"',      // Use double quotes
+    delimiter: ',',      // Use comma delimiter
+    header: true,        // Include headers
+    skipEmptyLines: true // Skip empty lines
+  })
+
+  // Create and download the file
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.setAttribute('hidden', '')
@@ -359,7 +369,6 @@ const downloadCSV = (data, filename) => {
   document.body.removeChild(a)
   window.URL.revokeObjectURL(url)
 }
-
 const exportCurrentPage = async () => {
   exportingCurrentPage.value = true
   showExportDropdown.value = false

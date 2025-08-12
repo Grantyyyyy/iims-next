@@ -17,6 +17,7 @@
     "echarts": "^5.5.1",
     "html5-qrcode": "^2.3.8",
     "lucide-vue-next": "^0.453.0",
+    "papaparse": "^5.5.3",
     "pinia": "^2.2.2",
     "primeicons": "^7.0.0",
     "quagga": "^0.12.1",

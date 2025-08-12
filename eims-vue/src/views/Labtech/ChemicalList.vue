@@ -243,7 +243,7 @@ import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
-import * as XLSX from 'xlsx'
+import Papa from 'papaparse'
 import Sidebar from '@/components/UserType/Sidebar.vue'
 import ChemicalForm from './Forms/ChemicalForm.vue'
 import PrimaryButton from '@/components/buttons/PrimaryButton.vue'
@@ -312,25 +312,26 @@ const downloadCSV = (data, filename) => {
     return
   }
 
-  const csvRows = []
-  const headers = ['Name', 'Description', 'Unit', 'Active Volume', 'Reorder Level', 'Purchase Date', 'Expiry Date']
-  csvRows.push(headers.join(','))
+  const csvData = data.map(row => {
+    return {
+      'Name': row.name || '',
+      'Description': row.description || '',
+      'Unit': row.unit || '',
+      'Stock Level': row.active_volume || 0,
+      'Reorder Level': row.reorder_level || ''
+    }
+  })
 
-  for (const row of data) {
-    const values = [
-      `"${row.name || ''}"`,
-      `"${row.description || ''}"`,
-      `"${row.unit || ''}"`,
-      `"${row.active_volume || ''}"`,
-      `"${row.reorder_level || ''}"`,
-      `"${row.purchase_date || ''}"`,
-      `"${row.expiry_date || ''}"`
-    ]
-    csvRows.push(values.join(','))
-  }
+  const csv = Papa.unparse(csvData, {
+    quotes: true,
+    quoteChar: '"',
+    delimiter: ',',
+    header: true,
+    skipEmptyLines: true
+  })
 
-  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
-  const url = window.URL.createObjectURL(blob)
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.setAttribute('hidden', '')
   a.href = url

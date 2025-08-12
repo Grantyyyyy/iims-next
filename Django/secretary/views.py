@@ -222,6 +222,20 @@ class ItemsView(ListCreateAPIView):
             )
         return queryset.order_by('name')
     
+
+    def list (self, request, *args, **kwargs):
+        export_param = request.query_params.get('export', '')
+
+        if export_param == 'all':
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.get_serializer(queryset, many=True)
+            return Response({
+                'results': serializer.data,
+                'count': len(serializer.data)
+            })
+        
+        return super().list(request, *args, **kwargs)
+    
     def generate_unique_inventory_number(self, item_name):
         sanitized_name = re.sub(r'[^A-Za-z0-9]', '', item_name)[:5].upper()
         

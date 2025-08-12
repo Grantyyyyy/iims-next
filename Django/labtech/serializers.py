@@ -139,9 +139,6 @@ class EquipmentInstanceSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.barcode.url)
         return None
     
-    
-
-
 class EquipmentAssignmentRecordSerializer(serializers.ModelSerializer):
     equipment_instance = EquipmentInstanceSerializer()
     assignee = serializers.SerializerMethodField()

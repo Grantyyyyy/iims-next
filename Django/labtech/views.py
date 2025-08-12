@@ -359,6 +359,19 @@ class EquipmentView(ListCreateAPIView):
                 Q(model__icontains=search_query)
             )
         return queryset.order_by('name')
+    
+    def list (self, request, *args, **kwargs):
+        export_param = request.query_params.get('export', '')
+
+        if export_param == 'all':
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.get_serializer(queryset, many=True)
+            return Response({
+                'results': serializer.data,
+                'count': len(serializer.data)
+            })
+        
+        return super().list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -904,6 +917,20 @@ class ChemicalView(ListCreateAPIView):
             )
         return queryset.order_by('name')
     
+    def list(self, request, *args, **kwargs):
+        export_param = request.query_params.get('export', '')
+        
+        if export_param == 'all':
+            # For export, get all data without pagination
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.get_serializer(queryset, many=True)
+            return Response({
+                'results': serializer.data,
+                'count': len(serializer.data)
+            })
+        
+        return super().list(request, *args, **kwargs)
+    
 class ChemicalDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1160,6 +1187,20 @@ class ApparatusView(ListCreateAPIView):
             )
 
         return queryset
+    
+    def list (self, request, *args, **kwargs):
+        export_param = request.query_params.get('export', '')
+        
+        if export_param == 'all':
+            # For export, get all data without pagination
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.get_serializer(queryset, many=True)
+            return Response({
+                'results': serializer.data,
+                'count': len(serializer.data)
+            })
+        
+        return super().list(request, *args, **kwargs)
     
     def generate_unique_inventory_number(self, apparatus_name):
         # Sanitize apparatus name: remove special characters and truncate to 5 characters

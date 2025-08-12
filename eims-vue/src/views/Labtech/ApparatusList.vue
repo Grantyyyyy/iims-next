@@ -305,12 +305,7 @@ const downloadCSV = (data, filename) => {
     return
   }
 
-  const csvRows = []
-  const headers = ['Name', 'Description', 'Category', 'Type', 'Available Apparatus']
-  csvRows.push(headers.join(','))
-
-  for (const row of data) {
-    // Determine status
+  const csvData = data.map(row => {
     let status = 'Available'
     if (row.available_instances === 0) {
       status = 'No Available Left'
@@ -318,17 +313,24 @@ const downloadCSV = (data, filename) => {
       status = `Low Stock: ${row.available_instances} left`
     }
 
-    const values = [
-      `"${row.name || ''}"`,
-      `"${row.description || ''}"`,
-      `"${row.category?.name || ''}"`,
-      `"${row.apparatus_type || ''}"`,
-      `"${row.available_instances || ''} / ${row.total_instances || ''} (${status})"`
-    ]
-    csvRows.push(values.join(','))
-  }
+    return {
+      'Name': row.name || '',
+      'Description': row.description || '',
+      'Category': row.category?.name || '',
+      'Type': row.apparatus_type || '',
+      'Available Apparatus': `${row.available_instances || ''} / ${row.total_instances || ''} (${status})`
+    }
+  })
 
-  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
+  const csv = Papa.unparse(csvData, {
+    quotes: true,
+    quoteChar: '"',
+    delimiter: ',',
+    header: true,
+    skipEmptyLines: true
+  })
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.setAttribute('hidden', '')
