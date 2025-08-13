@@ -79,6 +79,8 @@ urlpatterns = [
     path('apparatus-instances/<int:instance_id>/update/', views.ApparatusInstanceDetailView.as_view(), name='apparatus-update'),
     path('apparatus-instances/<int:instance_id>/delete/', views.ApparatusInstanceDetailView.as_view(), name='apparatus-delete'),
 
+
+
     path('borrow-apparatus/', views.ApparatusBorrowView.as_view(), name='apparatus-borrow'),
     path('apparatus-instances/<int:instance_id>/return/', views.ApparatusReturnView.as_view(), name='return-apparatus'),
 
@@ -86,5 +88,5 @@ urlpatterns = [
     path('borrowed-apparatus/', views.ApparatusBorrowListView.as_view(), name='borrowed-apparatus'),
     path('returned-apparatus/', views.ApparatusReturnListView.as_view(), name='return-apparatus'),
 
-
+    path('apparatus-distributed/', views.ApparatusDistributedListView.as_view(), name='apparatus-distributed'),
 ]

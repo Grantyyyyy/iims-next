@@ -338,6 +338,12 @@ const routes = [
     component: () => import('@/views/Secretary/DistributedList.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/distributed-apparatus',
+    name: 'distributed-apparatus',
+    component: () => import('@/views/Labtech/DistributedApparatus.vue'),
+    meta: { requiresAuth: true }
+  },
   { 
     path: '/sidebar', 
     component: Sidebar,

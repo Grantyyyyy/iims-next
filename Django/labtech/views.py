@@ -197,6 +197,40 @@ class DashboardView(APIView):
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class ApparatusDistributedListView(ListAPIView):
+    serializer_class = ApparatusReturnRecordSerializer
+    pagination_class = Pagination
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+    def get_queryset(self):
+        queryset = ApparatusReturnRecord.objects.filter(
+            returned_date__lte=timezone.now(),
+            borrow_record__apparatus_instance__apparatus__apparatus_type='Consumables'
+        ).order_by('-returned_date')
+        
+        if self.request.user.is_staff and not self.request.user.is_superuser:
+            queryset = queryset.filter(borrow_record__borrower=self.request.user)
+        search_query = self.request.query_params.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(borrow_record__item_instance__item__name__icontains=search_query) |
+                Q(borrow_record__item_instance__inventory_number__icontains=search_query) |
+                Q(borrow_record__item_instance__current_condition__icontains=search_query) |
+                Q(borrow_record__room__name__icontains=search_query) |
+                Q(borrow_record__borrower__first_name__icontains=search_query) |
+                Q(borrow_record__borrower__last_name__icontains=search_query) |
+                Q(condition_on_return__icontains=search_query) |
+                Q(notes__icontains=search_query)
+            )
+        
+        return queryset
+    
 
         
 class BorrowTestEquipmentView(ListCreateAPIView):
@@ -1601,7 +1635,10 @@ class ApparatusReturnListView(ListAPIView):
     serializer_class = ApparatusReturnRecordSerializer
 
     def get_queryset(self):
-        queryset = ApparatusReturnRecord.objects.filter(returned_date__lte=timezone.now()).order_by('-returned_date')
+        queryset = ApparatusReturnRecord.objects.filter(
+            returned_date__lte=timezone.now(),
+            borrow_record__apparatus_instance__apparatus__apparatus_type='Non-Consumables'
+        ).order_by('-returned_date')
 
         search_query = self.request.query_params.get('search', '')
         if search_query:
