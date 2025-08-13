@@ -68,7 +68,7 @@
             />
           
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-8">
               <div class="bg-white shadow-md rounded-lg p-6 border-gray-200">
                 <div class="flex items-center mb-4">
                   <i class="fas fa-chart-bar text-blue-600 mr-2 text-lg"></i>
@@ -145,65 +145,74 @@
               </div>
             </div>
         </div>
-        <!-- <div class="grid grid-cols-1 lg:grid-cols-2 mt-8 gap-8">
-              <div class="bg-white shadow-md rounded-lg p-6 border-gray-200">
-                <div class="flex items-center mb-4">
+        
+        <div class=" mt-8 gap-8">
+            <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
                   <i class="fas fa-chart-bar text-blue-600 mr-2 text-lg"></i>
-                  <h3 class="text-xl font-semibold text-gray-800">Recent Chemical Usage</h3>
+                  <h3 class="text-xl font-semibold text-gray-800">
+                    {{ selectedTable === 'equipment' ? 'Recent Borrowed Equipments' : 'Recent Borrowed Apparatus' }}
+                  </h3>
                 </div>
-                <div class="overflow-x-auto">
-                  <table class="w-full text-sm text-left text-gray-500">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                      <tr>
-                        <th class="px-4 py-2">Chemical Name</th>
-                        <th class="px-4 py-2">Volume Used</th>
-                        <th class="px-4 py-2">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="usage in dashboardData.chemical_recent_usage" :key="usage.id" 
-                          class="bg-white border-b hover:bg-gray-50">
-                        <td class="px-4 py-2">
-                          <div class="flex items-center">{{ usage.name }}</div>
-                          <di class="text-xs text-gray-400">{{ usage.inventory_number }}</di>
-                        </td>
-                        <td class="px-4 py-2">{{ usage.volume_used }} {{ usage.unit }}</td>
-                        <td class="px-4 py-2">{{ usage.date_used }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+
+                <!-- Dropdown -->
+                <select 
+                  v-model="selectedTable"
+                  class="border border-gray-300 rounded px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="equipment">Equipments</option>
+                  <option value="apparatus">Apparatus</option>
+                </select>
               </div>
 
-            <div class="bg-white shadow-md rounded-lg p-6 border-gray-200">
-                <div class="flex items-center mb-4">
-                  <i class="fas fa-chart-bar text-blue-600 mr-2 text-lg"></i>
-                  <h3 class="text-xl font-semibold text-gray-800">Recent Chemical Usage</h3>
-                </div>
-                <div class="overflow-x-auto">
-                  <table class="w-full text-sm text-left text-gray-500">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                      <tr>
-                        <th class="px-4 py-2">Chemical Name</th>
-                        <th class="px-4 py-2">Volume Used</th>
-                        <th class="px-4 py-2">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="usage in dashboardData.chemical_recent_usage" :key="usage.id" 
-                          class="bg-white border-b hover:bg-gray-50">
-                        <td class="px-4 py-2">
-                          <div class="flex items-center">{{ usage.name }}</div>
-                          <di class="text-xs text-gray-400">{{ usage.inventory_number }}</di>
-                        </td>
-                        <td class="px-4 py-2">{{ usage.volume_used }} {{ usage.unit }}</td>
-                        <td class="px-4 py-2">{{ usage.date_used }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+              <div v-if="selectedTable === 'equipment' && dashboardData.equipment_recent_borrows.length > 0" class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500">
+                  <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-2">Equipment</th>
+                      <th class="px-4 py-2">Borrowed By</th>
+                      <th class="px-4 py-2">Borrowed Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="equipment in dashboardData.equipment_recent_borrows" :key="equipment.id" 
+                        class="bg-white border-b hover:bg-gray-50">
+                      <td class="px-4 py-2 cursor-pointer hover:bg-gray-50">
+                        <div class="flex items-center ">{{ equipment.equipment_instance }}</div>
+                      </td>
+                      <td class="px-4 py-2">{{ equipment.borrowed_by }}</td>
+                      <td class="px-4 py-2">{{ equipment.borrowed_date }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-            </div> -->
+              <div v-else-if="selectedTable === 'apparatus' && dashboardData.apparatus_recent_borrows.length > 0" class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500">
+                  <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-2">Apparatus</th>
+                      <th class="px-4 py-2">Borrowed By</th>
+                      <th class="px-4 py-2">Borrowed Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="apparatus in dashboardData.apparatus_recent_borrows" :key="apparatus.id" 
+                        class="bg-white border-b hover:bg-gray-50">
+                      <td class="px-4 py-2 cursor-pointer hover:bg-gray-50">
+                        <div class="flex items-center ">{{ apparatus.apparatus_instance }}</div>
+                      </td>
+                      <td class="px-4 py-2">{{ apparatus.borrowed_by }}</td>
+                      <td class="px-4 py-2">{{ apparatus.borrowed_date }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div v-else class="text-center text-gray-500 text-lg mt-4 my-8">
+                No recent borrowed {{ selectedTable }}.
+              </div>
+            </div>
+          </div>
       </div> 
     </div>
   </div>
@@ -236,13 +245,17 @@ import UsageChart from '@/components/charts/UsageChart.vue';
       chemical_low_stocks: [],
       todays_usage_details: [],
       equipment_borrow_details: [],
-      apparatus_borrow_details: []
+      apparatus_borrow_details: [],
+      equipment_recent_borrows: [],
+      apparatus_recent_borrows: []
     });
     const mostBorrowedItems = ref([]);
     const totalBorrowRecords = ref([]);
     const itemsNeedingAttention = ref([]);
     const borrowPerDay = ref([])
     const isSidebarOpen = ref(false)
+
+    const selectedTable = ref('equipment');
   
     const fetchDashboardData = async () => {
       try {
@@ -313,7 +326,8 @@ import UsageChart from '@/components/charts/UsageChart.vue';
         formatDate,
         navigateToChemical,
         navigateToEquipments,
-        navigateToApparatus
+        navigateToApparatus,
+        selectedTable
       }
     }
   })
