@@ -15,7 +15,7 @@
             Back
           </button>
   
-          <h1 v-if="userType === 'Secretary'" class="text-3xl font-bold mb-6 text-gray-800">Distributed Items </h1>
+          <h1 v-if="userType === 'Secretary' || userType === 'Dean'" class="text-3xl font-bold mb-6 text-gray-800">Distributed Items </h1>
           <h1 v-else class="text-3xl font-bold mb-6 text-gray-800">Received Items </h1>
   
           <div class="flex items-center mb-4 mr-4">
