@@ -16,6 +16,8 @@
     "cropperjs": "^1.6.2",
     "echarts": "^5.5.1",
     "html5-qrcode": "^2.3.8",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
     "lucide-vue-next": "^0.453.0",
     "papaparse": "^5.5.3",
     "pinia": "^2.2.2",

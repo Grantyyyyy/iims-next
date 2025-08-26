@@ -18,42 +18,90 @@
 
         <h1 class="text-3xl font-bold mb-6 text-gray-800">Item List</h1>
         
-        <div class="mb-4 flex items-center space-x-4 justify-between">
-            <div class="flex items-center space-x-4 flex-grow">
-                <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="Search instances..."
-                class="border border-gray-300 rounded py-2 px-4 "
-                />
+        <!-- <div class="mb-4 flex items-center space-x-4 justify-between">
 
-              <div class="relative">
-                  <select 
-                      v-model="selectedCategory" 
-                      class="border border-gray-300 rounded py-2 px-4 w-screen md:w-auto"
-                  >
-                    <option :value=null>All Categories</option>
-                    <option 
-                        v-for="category in categories" 
-                        :key="category.id" 
-                        :value="category.id"
-                    >
-                        {{ category.name }} 
-                    </option>
-                  </select>
-              </div>
-              <div class="relative">
-                  <select 
-                      v-model="selectedValue" 
-                      class="border border-gray-300 rounded py-2 px-4 w-screen md:w-auto"
-                  >
-                      <option :value=null>All Values</option>
-                      <option value="high">High Value (≥5000)</option>
-                      <option value="low">Low Value (≤4999)</option>
-                  </select>
-              </div>
+        </div> -->
+
+        <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+        <!-- Filters -->
+        <div class="flex flex-col md:flex-row md:items-center gap-3 flex-grow">
+          <!-- Search -->
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search instances..."
+            class="border border-gray-300 rounded-lg py-2 px-4 text-sm w-full md:w-56 focus:ring-2 focus:ring-blue-400"
+          />
+
+          <!-- Category -->
+            <select 
+              v-model="selectedCategory" 
+              class="border border-gray-300 rounded-lg py-2 px-4 text-sm w-full md:w-auto focus:ring-2 focus:ring-blue-400"
+            >
+              <option :value="null">All Categories</option>
+              <option 
+                v-for="category in categories" 
+                :key="category.id" 
+                :value="category.id"
+              >
+                {{ category.name }}
+              </option>
+            </select>
+
+          <!-- Value -->
+            <select 
+              v-model="selectedValue" 
+              class="border border-gray-300 rounded-lg py-2 px-4 text-sm w-full md:w-auto focus:ring-2 focus:ring-blue-400"
+            >
+              <option :value="null">All Values</option>
+              <option value="high">High Value (≥5000)</option>
+              <option value="low">Low Value (≤4999)</option>
+            </select>
+
+          <!-- Date Range -->
+            <div class="flex items-center space-x-2">
+              <input
+                type="date"
+                v-model="startDate"
+                class="border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-400"
+              />
+              <span class="text-gray-500 text-sm">to</span>
+              <input
+                type="date"
+                v-model="endDate"
+                class="border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-400"
+              />
+              <button
+                type="button"
+                @click="clearDateFilter"
+                class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg bg-white hover:bg-gray-50 transition"
+                title="Clear date filter"
+              >
+                <i class="fas fa-times mr-1"></i> Clear
+              </button>
             </div>
+          </div>
+
+        <!-- Action Buttons -->
+          <div class="flex space-x-2 shrink-0">
+            <button 
+              @click="printSelectedItems"
+              :disabled="selectedRows.length === 0"
+              class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <i class="fas fa-print mr-2"></i> Print Selected
+            </button>
+            <button 
+              @click="printAllItems"
+              class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:ring-2 focus:ring-gray-400 transition"
+            >
+              <i class="fas fa-print mr-2"></i> Print All
+            </button>
+          </div>
         </div>
+
+        
 
         <div v-if="loading" class="flex justify-center items-center h-64">
           <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
@@ -79,6 +127,14 @@
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <input 
+                    type="checkbox" 
+                    :checked="selectAll" 
+                    @change="toggleSelectAll"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  >
+                </th>
                 <th v-for="header in tableHeaders" 
                     :key="header" 
                     class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -92,6 +148,15 @@
                 :key="instance.id" 
                 @click="navigateToItemDetails(instance.id)"
                 class="hover:bg-gray-50 transition-colors duration-150 ease-in-out cursor-pointer">
+                <td class="px-4 py-4">
+                  <input 
+                    type="checkbox" 
+                    v-model="selectedRows"
+                    :value="instance.id"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    @click.stop
+                  >
+                </td>
                 <td class="px-4 py-4">
                   <div class="text-sm text-gray-900">
                     ₱ {{ Number(instance.unit_cost).toLocaleString() }}
@@ -288,8 +353,8 @@
   </div>
 </template>
 
-<script>
-import { defineComponent, ref, onMounted, computed, watch} from 'vue';
+<script setup>
+import { ref, onMounted, computed, watch} from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
@@ -300,450 +365,458 @@ import PrimaryButton from '@/components/buttons/PrimaryButton.vue';
 import UpdateInstancesFrom from './Forms/UpdateInstancesFrom.vue';
 import ConfirmButton from '@/components/buttons/ConfirmButton.vue';
 
-export default defineComponent({
-  name: 'ItemInstances',
-  components: { Sidebar, CartSummary,  PrimaryButton, UpdateInstancesFrom, ConfirmButton },
-  props: {
-    id: {
-      type: String,
-      required: true
-    }
-  },
-  setup(props) {
-    const store = useStore()
-    const router = useRouter();
-    const errorMessage = ref(null);
-    const successMessage = ref(null);
-    const cartStore = useItemCartStore();
-    const instances = ref([]);
-    const loading = ref(true);
-    const error = ref(null);
-    const tableHeaders = ['Unit Cost', 'Item Name', 'Quantity',  'Inventory Item No.', 'Condition', 'Purchase Date', 'Borrower Info', ' Actions'];
-    const showBarcodePopup = ref(false);
-    const currentBarcode = ref('');
-    const showBorrowModal = ref(false);
-    const showAddInstancesForm = ref(false);
-    const selectedUser = ref('');
-    const selectedRoom = ref('');
-    const users = ref([]);
-    const items = ref([]);
-    const rooms = ref([]);
-    const categories = ref([]);
-    const searchQuery = ref('');
-    const customBorrower = ref('');
-    const selectedCategory = ref(null);
-    const selectedValue = ref(null);
-    const selectedInstance = ref(null);
-    const showAddForm = ref(false);
-    const isSidebarOpen = ref(true);
-    const token = computed(() => store.state.token)
-    const currentPage = ref(1);
-    const totalPages = ref(0);
-    const pageSize = ref(10);
-    const showUpdateForm = ref(false);
-    const itemToDelete = ref(null);
-    const showDialog = ref(false);
+import {   printAllInstances, printSelectedInstances, } from '@/utils/instancesPrint';
 
-    const userType = computed(() => store.state.userType);
-
-    const editInstance = (instance) => {
-      selectedInstance.value = instance.id;
-      showUpdateForm.value = true;
-    };
-
-    const closeUpdateForm = () => {
-      showUpdateForm.value = false
-      selectedInstance.value = null
-    }
-
-    const handleInstanceUpdated = () => {
-      fetchInstances();
-      showUpdateForm.value = false;
-    };
-
-    const handleDeleteClick = (equipmentId) => {
-      itemToDelete.value = equipmentId
-      showDialog.value = true
-    }
-
-    const confirmDelete = async () => {
-      if (itemToDelete.value) {
-        try {
-          await axios.delete(`/api/instances/${itemToDelete.value}/delete/`, {
-              headers: { 'Authorization': `Token ${token.value}` }
-          });
-          successMessage.value = "Item instance deleted successfully."
-          setTimeout(() => {
-            successMessage.value = null
-          } , 3000)
-          fetchInstances();
-        } catch (err) {
-          console.error("Error deleting item:", err);
-          error.value = "Failed to delete item. Please try again.";
-        } finally {
-          showDialog.value = false
-          itemToDelete.value = null
-        }
-      }
-    }
-
-    const handleSidebarToggle = (isOpen) => {
-      isSidebarOpen.value = isOpen;
-      // Force layout recalculation
-      window.requestAnimationFrame(() => {
-        window.dispatchEvent(new Event('resize'));
-      });
-    };
-
-    onMounted(() => {
-      fetchItemsAndUsersAndRooms();
-      fetchInstances();
-      
-      window.addEventListener('resize', () => {
-        if (window.innerWidth >= 1024) {
-          isSidebarOpen.value = true;
-        } else {
-          isSidebarOpen.value = false;
-        }
-      });
-    });
-
-    const navigateToItemDetails = (itemId) => {
-      router.push({ name: 'ItemInstancesDetail', params: { id: itemId } })
-    }
-
-    const goBack = () => {
-      router.back();
-    };
-
-    const fetchItemsAndUsersAndRooms = async () => {
-      try {
-        const [itemsResponse, usersResponse, roomsResponse, categoriesResponse] = await Promise.all([
-          axios.get('/api/items/', {
-            headers: {
-              'Authorization': `Token ${token.value}`,
-            },
-          }),
-          axios.get('/api/user-list/', {
-            headers: {
-              'Authorization': `Token ${token.value}`,
-            },
-          }),
-          axios.get('/api/room-list/', {
-            headers: {
-              'Authorization': `Token ${token.value}`,
-            },
-          }),
-          axios.get('/api/category/', {
-            headers: {
-              'Authorization': `Token ${token.value}`,
-            },
-          }),
-        ]);
-        items.value = itemsResponse.data;
-        users.value = usersResponse.data;
-        rooms.value = roomsResponse.data;
-        categories.value = categoriesResponse.data;
-      } catch (err) {
-        console.error('Error fetching items, users, rooms and categories:', err);
-      }
-    };
-
-
-    const fetchInstances = async () => {
-      try {
-        const response = await axios.get('/api/instances/', {
-          headers: {
-            'Authorization': `Token ${token.value}`,
-          },
-          params: {
-            page: currentPage.value,
-            page_size: pageSize.value,
-            search: searchQuery.value,
-            category: selectedCategory.value || null,
-            value_filter: selectedValue.value || null
-          },
-        });
-        instances.value = response.data.results;
-
-        totalPages.value = Math.ceil(response.data.count / pageSize.value);
-
-      } catch (err) {
-        error.value = "Failed to fetch item instances. Please try again.";
-        console.error('Error fetching instances:', err);
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    watch([searchQuery, selectedCategory, selectedValue], () => {
-      currentPage.value = 1;  
-      fetchInstances();
-    }, { immediate: true });
-      
-    const nextPage = () => {
-      if (currentPage.value < totalPages.value) {
-        currentPage.value++;
-        fetchInstances();
-      }
-    };
-
-    const prevPage = () => {
-      if (currentPage.value > 1) {
-        currentPage.value--;
-        fetchInstances();
-      }
-    };
-
-    const handleItemAdded = (newItem) => {
-      fetchInstances();
-      showAddForm.value = false;
-    };
-
-
-    const getConditionClass = (condition) => {
-      switch (condition.toLowerCase()) {
-        case 'good':
-          return 'text-green-600';
-        case 'fair':
-          return 'text-yellow-600';
-        case 'poor':
-          return 'text-blue-600';
-        case 'damaged':
-          return 'text-red-600';
-        default:
-          return 'text-gray-600';
-      }
-    };
-
-    const getBorrowedStatusClass = (borrowedBy, isLastBorrower = false) => {
-        if (isLastBorrower) {
-            return 'px-5 text-xs py-1 bg-blue-100 w-32 text-blue-800 rounded-full'; 
-        }
-        return borrowedBy
-            ? 'px-5 py-1 bg-red-100 text-red-800 w-32 rounded-full' 
-            : 'px-5 py-1 bg-green-100 text-green-800 w-32 rounded-full'; 
-    };
-
-
-    const getBorrowerStatus = (instance, type) => {
-      if (type === 'current' && instance.current_borrow_record) {
-        return `${instance.current_borrow_record.borrower}`;
-      }
-      if (type === 'last' && instance.last_borrow_record) {
-        return `${instance.last_borrow_record.borrower} `;
-      }
-      return 'Available';
-    };
-
-    const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    };
-
-    const openAddInstancesForm = () => {
-      showAddInstancesForm.value = true;
-    };
-
-    const closeAddInstancesForm = () => {
-      showAddInstancesForm.value = false;
-    };
-
-    const printBarcode = (barcodeUrl) => {
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Print Barcode</title>
-            <style>
-              @page { size: 3in 2in; margin: 0; }
-              body { 
-                margin: 0; 
-                padding: 0;
-                display: flex; 
-                justify-content: center; 
-                align-items: center; 
-                width: 3in; 
-                height: 2in;
-              }
-              img { 
-                max-width: 90%; 
-                max-height: 90%; 
-              }
-            </style>
-          </head>
-          <body>
-            <img src="${barcodeUrl}" alt="Barcode" />
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
-    };
-
-    const openBarcodePopup = (barcodeUrl) => {
-      currentBarcode.value = barcodeUrl;
-      showBarcodePopup.value = true;
-    };
-
-    const closeBarcodePopup = () => {
-      showBarcodePopup.value = false;
-      currentBarcode.value = '';
-    };
-
-    // New methods for cart functionality
-    const addToCart = (instance) => {
-  // For consumable items, check if quantity is above 0
-    if (instance.item.item_type === 'Consumables') {
-      if (instance.quantity > 0 && !cartStore.isInCart(instance.id)) {
-        cartStore.addToCart(instance);
-      }
-    } else {
-      // For non-consumable items, use existing logic
-      if (!instance.current_borrow_record && !cartStore.isInCart(instance.id)) {
-        cartStore.addToCart(instance);
-      }
-    }
-  };
-
-    const removeFromCart = (instanceId) => {
-      cartStore.removeFromCart(instanceId);
-    };
-
-    const isInCart = (instanceId) => {
-      return cartStore.isInCart(instanceId);
-    };
-
-    const finalizeBorrowing = async () => {
-      if ( !selectedUser.value && !customBorrower.value) {
-                errorMessage.value = 'Please select a user or provide a custom borrower';
-                setTimeout(() => {
-                    errorMessage.value = null;
-                }, 5000);
-                return;
-            }
-            if (!selectedRoom.value) {
-                errorMessage.value = 'Please select a room';
-                setTimeout(() => {
-                    errorMessage.value = null;
-                }, 5000);
-                return;
-            }
-      try {
-          const borrowData = {
-              user_id: selectedUser.value || null,
-              custom_borrower: customBorrower.value,
-              room_id: selectedRoom.value,
-              instances: cartStore.cartItems.map(item => ({
-                  id: item.id,
-                  quantity: item.requested_quantity || 1,
-              })),
-
-          };
-
-          await axios.post('/api/manual-borrow/', borrowData);
-          successMessage.value = 'Items borrowed successfully';
-
-          setTimeout(() => {
-              successMessage.value = null;
-          }, 5000);
-
-          cartStore.clearCart();
-          closeBorrowModal();
-          fetchInstances();
-
-      } catch (err) {
-          console.error('Error finalizing borrowing:', err);
-          errorMessage.value = 'Error finalizing borrowing';
-
-          setTimeout(() => {
-              errorMessage.value = null;
-          }, 5000);
-      }
-    };
-
-
-
-    return {
-      // states
-      instances,
-      loading,
-      error,
-      errorMessage,
-      successMessage,
-      totalPages,
-      currentPage,
-      pageSize,
-      // table
-      tableHeaders,
-      // barcode
-      showBarcodePopup,
-      currentBarcode,
-      // borrow
-      showBorrowModal,
-      selectedUser,
-      selectedRoom,
-      customBorrower,
-      users,
-      rooms,
-      // add instances
-      openAddInstancesForm,
-      closeAddInstancesForm,
-      // cart
-      cartStore,
-      // helpers
-      getConditionClass,
-      getBorrowedStatusClass,
-      getBorrowerStatus,
-      formatDate,
-      printBarcode,
-      openBarcodePopup,
-      closeBarcodePopup,
-      goBack,
-      navigateToItemDetails,
-      addToCart,
-      removeFromCart,
-      isInCart,
-      finalizeBorrowing,
-      // search
-      searchQuery,
-      // add instances form
-      showAddInstancesForm,
-      items,
-      categories,
-      showAddForm,
-      // update form
-      handleItemAdded,
-      useItemCartStore,
-      isSidebarOpen,
-      handleSidebarToggle,
-      // pagination
-      nextPage,
-      prevPage,
-      // update form
-      selectedCategory,
-      selectedInstance,
-      selectedValue,
-      editInstance,
-      closeUpdateForm,
-      handleInstanceUpdated,
-      // delete confirmation
-      handleDeleteClick,
-      itemToDelete,
-      showDialog,
-      confirmDelete,
-      showUpdateForm,
-      userType
-
-      
-    };
+const props = defineProps({
+  id: {
+    type: String,
+    required: true
   }
 });
+
+const store = useStore()
+const router = useRouter();
+const errorMessage = ref(null);
+const successMessage = ref(null);
+const cartStore = useItemCartStore();
+const instances = ref([]);
+const loading = ref(true);
+const error = ref(null);
+const tableHeaders = ['Unit Cost', 'Item Name', 'Quantity',  'Inventory Item No.', 'Condition', 'Purchase Date', 'Borrower Info', ' Actions'];
+const printHeaders = ['Unit Cost', 'Quantity', 'Description',  'Inventory Item No.', 'Purchase Date'];
+const showBarcodePopup = ref(false);
+const currentBarcode = ref('');
+const showBorrowModal = ref(false);
+const showAddInstancesForm = ref(false);
+const selectedUser = ref('');
+const selectedRoom = ref('');
+const users = ref([]);
+const items = ref([]);
+const rooms = ref([]);
+const categories = ref([]);
+const searchQuery = ref('');
+const customBorrower = ref('');
+const selectedCategory = ref(null);
+const selectedValue = ref(null);
+const selectedInstance = ref(null);
+const showAddForm = ref(false);
+const isSidebarOpen = ref(true);
+const token = computed(() => store.state.token)
+const currentPage = ref(1);
+const totalPages = ref(0);
+const pageSize = ref(10);
+const showUpdateForm = ref(false);
+const itemToDelete = ref(null);
+const showDialog = ref(false);
+
+const startDate = ref(null);
+const endDate = ref(null);
+
+const selectedRows = ref([]);
+const selectAll = computed({
+  get: () => instances.value.length > 0 && selectedRows.value.length === instances.value.length,
+  set: (value) => {
+    selectedRows.value = value ? instances.value.map(instance => instance.id) : [];
+  }
+});
+
+const userType = computed(() => store.state.userType);
+const user = computed(() => store.getters.user);
+
+const toggleSelectAll = () => {
+  selectAll.value = !selectAll.value;
+};
+
+// Fetch all pages respecting current filters for printing
+const fetchAllInstancesForPrint = async () => {
+  const aggregated = [];
+  let page = 1;
+  const size = 200; // batch size per request
+  try {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const response = await axios.get('/api/instances/', {
+        headers: {
+          'Authorization': `Token ${token.value}`,
+        },
+        params: {
+          page,
+          page_size: size,
+          search: searchQuery.value,
+          category: selectedCategory.value || null,
+          value_filter: selectedValue.value || null,
+          start_date: startDate.value || null,
+          end_date: endDate.value || null
+        },
+      });
+
+      const results = response.data?.results || [];
+      const total = response.data?.count ?? 0;
+
+      aggregated.push(...results);
+      if (aggregated.length >= total || results.length === 0) break;
+      page += 1;
+    }
+  } catch (err) {
+    console.error('Error fetching all instances for print:', err);
+  }
+  return aggregated;
+};
+
+const printAllItems = async () => {
+  try {
+    const allData = await fetchAllInstancesForPrint();
+    await  printAllInstances(allData, {
+      headers: printHeaders,
+      onBeforePrint: () => console.log('Starting print all damaged items...'),
+      onAfterPrint: () => console.log('Print all completed'),
+      user: user.value,
+      userType: userType.value
+      
+
+    })
+  } catch (error) {
+    console.error('Error printing all items:', error);
+  }
+}
+
+const printSelectedItems = async() => {
+  try {
+    await printSelectedInstances(instances.value, selectedRows.value, {
+    headers: printHeaders,
+    onBeforePrint: () => console.log('Starting print selected damaged items...'),
+    onAfterPrint: () => console.log('Print selected completed'),
+    user: user.value,
+    userType: userType.value
+  })
+  } catch (error) {
+    console.error('Error printing selected items:', error);
+  }
+}
+
+
+const editInstance = (instance) => {
+  selectedInstance.value = instance.id;
+  showUpdateForm.value = true;
+};
+
+const closeUpdateForm = () => {
+  showUpdateForm.value = false
+  selectedInstance.value = null
+}
+
+const handleInstanceUpdated = () => {
+  fetchInstances();
+  showUpdateForm.value = false;
+};
+
+const handleDeleteClick = (equipmentId) => {
+  itemToDelete.value = equipmentId
+  showDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (itemToDelete.value) {
+    try {
+      await axios.delete(`/api/instances/${itemToDelete.value}/delete/`, {
+          headers: { 'Authorization': `Token ${token.value}` }
+      });
+      successMessage.value = "Item instance deleted successfully."
+      setTimeout(() => {
+        successMessage.value = null
+      } , 3000)
+      fetchInstances();
+    } catch (err) {
+      console.error("Error deleting item:", err);
+      error.value = "Failed to delete item. Please try again.";
+    } finally {
+      showDialog.value = false
+      itemToDelete.value = null
+    }
+  }
+}
+
+const handleSidebarToggle = (isOpen) => {
+  isSidebarOpen.value = isOpen;
+  // Force layout recalculation
+  window.requestAnimationFrame(() => {
+    window.dispatchEvent(new Event('resize'));
+  });
+};
+
+onMounted(() => {
+  fetchItemsAndUsersAndRooms();
+  fetchInstances();
+  
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 1024) {
+      isSidebarOpen.value = true;
+    } else {
+      isSidebarOpen.value = false;
+    }
+  });
+});
+
+const navigateToItemDetails = (itemId) => {
+  router.push({ name: 'ItemInstancesDetail', params: { id: itemId } })
+}
+
+const goBack = () => {
+  router.back();
+};
+
+const fetchItemsAndUsersAndRooms = async () => {
+  try {
+    const [itemsResponse, usersResponse, roomsResponse, categoriesResponse] = await Promise.all([
+      axios.get('/api/items/', {
+        headers: {
+          'Authorization': `Token ${token.value}`,
+        },
+      }),
+      axios.get('/api/user-list/', {
+        headers: {
+          'Authorization': `Token ${token.value}`,
+        },
+      }),
+      axios.get('/api/room-list/', {
+        headers: {
+          'Authorization': `Token ${token.value}`,
+        },
+      }),
+      axios.get('/api/category/', {
+        headers: {
+          'Authorization': `Token ${token.value}`,
+        },
+      }),
+    ]);
+    items.value = itemsResponse.data;
+    users.value = usersResponse.data;
+    rooms.value = roomsResponse.data;
+    categories.value = categoriesResponse.data;
+  } catch (err) {
+    console.error('Error fetching items, users, rooms and categories:', err);
+  }
+};
+
+
+const fetchInstances = async () => {
+  try {
+    const response = await axios.get('/api/instances/', {
+      headers: {
+        'Authorization': `Token ${token.value}`,
+      },
+      params: {
+        page: currentPage.value,
+        page_size: pageSize.value,
+        search: searchQuery.value,
+        category: selectedCategory.value || null,
+        value_filter: selectedValue.value || null,
+        start_date: startDate.value || null,
+        end_date: endDate.value || null
+      },
+    });
+    instances.value = response.data.results;
+
+    totalPages.value = Math.ceil(response.data.count / pageSize.value);
+
+  } catch (err) {
+    error.value = "Failed to fetch item instances. Please try again.";
+    console.error('Error fetching instances:', err);
+  } finally {
+    loading.value = false;
+  }
+};
+
+watch([searchQuery, selectedCategory, selectedValue, startDate, endDate], () => {
+  currentPage.value = 1;  
+  fetchInstances();
+}, { immediate: true });
+  
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    fetchInstances();
+  }
+};
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    fetchInstances();
+  }
+};
+
+const handleItemAdded = (newItem) => {
+  fetchInstances();
+  showAddForm.value = false;
+};
+
+
+const getConditionClass = (condition) => {
+  switch (condition.toLowerCase()) {
+    case 'good':
+      return 'text-green-600';
+    case 'fair':
+      return 'text-yellow-600';
+    case 'poor':
+      return 'text-blue-600';
+    case 'damaged':
+      return 'text-red-600';
+    default:
+      return 'text-gray-600';
+  }
+};
+
+const getBorrowedStatusClass = (borrowedBy, isLastBorrower = false) => {
+    if (isLastBorrower) {
+        return 'px-5 text-xs py-1 bg-blue-100 w-32 text-blue-800 rounded-full'; 
+    }
+    return borrowedBy
+        ? 'px-5 py-1 bg-red-100 text-red-800 w-32 rounded-full' 
+        : 'px-5 py-1 bg-green-100 text-green-800 w-32 rounded-full'; 
+};
+
+
+const getBorrowerStatus = (instance, type) => {
+  if (type === 'current' && instance.current_borrow_record) {
+    return `${instance.current_borrow_record.borrower}`;
+  }
+  if (type === 'last' && instance.last_borrow_record) {
+    return `${instance.last_borrow_record.borrower} `;
+  }
+  return 'Available';
+};
+
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
+const openAddInstancesForm = () => {
+  showAddInstancesForm.value = true;
+};
+
+const closeAddInstancesForm = () => {
+  showAddInstancesForm.value = false;
+};
+
+const printBarcode = (barcodeUrl) => {
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Print Barcode</title>
+        <style>
+          @page { size: 3in 2in; margin: 0; }
+          body { 
+            margin: 0; 
+            padding: 0;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            width: 3in; 
+            height: 2in;
+          }
+          img { 
+            max-width: 90%; 
+            max-height: 90%; 
+          }
+        </style>
+      </head>
+      <body>
+        <img src="${barcodeUrl}" alt="Barcode" />
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+};
+
+const openBarcodePopup = (barcodeUrl) => {
+  currentBarcode.value = barcodeUrl;
+  showBarcodePopup.value = true;
+};
+
+const closeBarcodePopup = () => {
+  showBarcodePopup.value = false;
+  currentBarcode.value = '';
+};
+
+// New methods for cart functionality
+const addToCart = (instance) => {
+// For consumable items, check if quantity is above 0
+  if (instance.item.item_type === 'Consumables') {
+    if (instance.quantity > 0 && !cartStore.isInCart(instance.id)) {
+      cartStore.addToCart(instance);
+    }
+  } else {
+    // For non-consumable items, use existing logic
+    if (!instance.current_borrow_record && !cartStore.isInCart(instance.id)) {
+      cartStore.addToCart(instance);
+    }
+  }
+};
+
+const removeFromCart = (instanceId) => {
+  cartStore.removeFromCart(instanceId);
+};
+
+const isInCart = (instanceId) => {
+  return cartStore.isInCart(instanceId);
+};
+
+const finalizeBorrowing = async () => {
+  if ( !selectedUser.value && !customBorrower.value) {
+            errorMessage.value = 'Please select a user or provide a custom borrower';
+            setTimeout(() => {
+                errorMessage.value = null;
+            }, 5000);
+            return;
+        }
+        if (!selectedRoom.value) {
+            errorMessage.value = 'Please select a room';
+            setTimeout(() => {
+                errorMessage.value = null;
+            }, 5000);
+            return;
+        }
+  try {
+      const borrowData = {
+          user_id: selectedUser.value || null,
+          custom_borrower: customBorrower.value,
+          room_id: selectedRoom.value,
+          instances: cartStore.cartItems.map(item => ({
+              id: item.id,
+              quantity: item.requested_quantity || 1,
+          })),
+
+      };
+
+      await axios.post('/api/manual-borrow/', borrowData);
+      successMessage.value = 'Items borrowed successfully';
+
+      setTimeout(() => {
+          successMessage.value = null;
+      }, 5000);
+
+      cartStore.clearCart();
+      closeBorrowModal();
+      fetchInstances();
+
+  } catch (err) {
+      console.error('Error finalizing borrowing:', err);
+      errorMessage.value = 'Error finalizing borrowing';
+
+      setTimeout(() => {
+          errorMessage.value = null;
+      }, 5000);
+  }
+};
 </script>
 
 <style scoped>

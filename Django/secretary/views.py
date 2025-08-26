@@ -18,6 +18,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
+from django.utils.dateparse import parse_date
 
 from .models import (
     BorrowRecord, Category, Item,  ItemInstance, ReturnRecord
@@ -178,6 +179,8 @@ class DamagedItemsView(ListAPIView):
         search_query = self.request.query_params.get('search')
         category_id = self.request.query_params.get('category', '')
         value_filter = self.request.query_params.get('value_filter', '')
+        start_date = self.request.query_params.get('start_date', '')
+        end_date = self.request.query_params.get('end_date', '')
 
         if search_query:
             queryset = queryset.filter(
@@ -195,6 +198,25 @@ class DamagedItemsView(ListAPIView):
                 queryset = queryset.filter(unit_cost__gte=5000)
             elif value_filter.lower() == 'low':
                 queryset = queryset.filter(unit_cost__lte=4999)
+
+        if start_date and start_date.strip():
+            start = parse_date(start_date.strip())
+            if start:
+                queryset = queryset.filter(purchase_date__gte=start)
+
+        if end_date and end_date.strip():
+            end = parse_date(end_date.strip())
+            if end:
+                queryset = queryset.filter(purchase_date__lte=end)
+
+        # if (start_date and start_date.strip()) and (end_date and end_date.strip()):
+        #     try:
+        #         start = parse_date(start_date.strip())
+        #         end = parse_date(end_date.strip())
+        #         if start and end and start > end:
+        #             return queryset.none()
+        #     except (ValueError, TypeError) as e:
+        #         print(f"Error parsing start_date or end_date: {e}")
 
         return queryset
 
@@ -393,6 +415,8 @@ class AllInstancesView(ListAPIView):
         search_query = self.request.query_params.get('search', '')
         category_id = self.request.query_params.get('category', '')
         value_filter = self.request.query_params.get('value_filter', '')
+        start_date = self.request.query_params.get('start_date', '')
+        end_date = self.request.query_params.get('end_date', '')
  
         if search_query:
             queryset = queryset.filter(
@@ -415,6 +439,16 @@ class AllInstancesView(ListAPIView):
                 queryset = queryset.filter(unit_cost__gte=5000)
             elif value_filter.lower() == 'low':
                 queryset = queryset.filter(unit_cost__lte=4999)
+
+        if start_date:
+            start = parse_date(start_date.strip())
+            if start:
+                queryset = queryset.filter(purchase_date__gte=start)
+
+        if end_date:
+            end = parse_date(end_date.strip())
+            if end:
+                queryset = queryset.filter(purchase_date__lte=end)
 
         return queryset
     
