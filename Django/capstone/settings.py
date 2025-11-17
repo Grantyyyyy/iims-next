@@ -5,26 +5,22 @@ import cloudinary.uploader
 import cloudinary.api
 from dotenv import load_dotenv
 
-
 load_dotenv()
-
-# print(f"USE_CLOUDINARY: {os.getenv('USE_CLOUDINARY')}")
-# print(f"CLOUDINARY_CLOUD_NAME: {os.getenv('CLOUDINARY_CLOUD_NAME')}")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Auto-switch environment
+ENV = os.getenv("ENV", "local")
 
-
-SECRET_KEY = 'django-insecure-knd%f@mbf#*v2i-^*w%q9qdqzz($nbh68*3+uw#@8psh3m$$$)'
-DEBUG = True
-ALLOWED_HOSTS = [ 'localhost',  '127.0.0.1',  ]
-
-
-
-# SECRET_KEY = os.environ.get('SECRET_KEY')
-# DEBUG = os.environ.get('DEBUG') == 'True'
-# ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+if ENV == "production":
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    DEBUG = os.getenv("DEBUG", "False") == "True"
+    ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+else:
+    SECRET_KEY = 'django-insecure-knd%f@mbf#*v2i-^*w%q9qdqzz($nbh68*3+uw#@8psh3m$$$)'
+    DEBUG = True
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1", ]
 
 
 

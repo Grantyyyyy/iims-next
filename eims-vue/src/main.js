@@ -8,9 +8,8 @@ import axios from 'axios'
 import './assets/main.css'
 
 // Set up axios default base URL
-axios.defaults.baseURL = process.env.VUE_APP_BASE_URL || 'http://localhost:8000' || 'localhost:8000' ;
+axios.defaults.baseURL = process.env.VUE_APP_BASE_URL
 
-// axios.defaults.baseURL = process.env.VUE_APP_BASE_URL || 'https://iims-django.onrender.com' ;
 
 // Set up axios interceptor for authentication
 axios.interceptors.request.use(config => {
