@@ -20,7 +20,7 @@ if ENV == "production":
 else:
     SECRET_KEY = 'django-insecure-knd%f@mbf#*v2i-^*w%q9qdqzz($nbh68*3+uw#@8psh3m$$$)'
     DEBUG = True
-    ALLOWED_HOSTS = ["localhost", "127.0.0.1", ]
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1", "iims-django.onrender.com" ]
 
 
 
