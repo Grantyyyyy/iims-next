@@ -1,0 +1,499 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ----------------------------------------------------------------------
+// Users Module
+// ----------------------------------------------------------------------
+
+model Department {
+  id    Int    @id @default(autoincrement())
+  name  String
+
+  users User[]
+  rooms Room[]
+}
+
+model Room {
+  id           Int        @id @default(autoincrement())
+  name         String
+  location     String
+  departmentId Int
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  // Relations created by other modules
+  borrowRecords          BorrowRecord[]
+  equipmentAssignments   EquipmentAssignmentRecord[]
+  equipmentBorrowRecords EquipmentBorrowRecord[]
+  apparatusBorrowRecords ApparatusBorrowRecord[]
+  chemicalAssignments    ChemicalAssignment[]
+  chemicalUsages         ChemicalUsage[]
+  transferRequests       TransferRequest[]
+}
+
+model Role {
+  id   Int    @id @default(autoincrement())
+  name String @unique // e.g., 'SUPERUSER', 'ADMIN', 'SECRETARY', 'LABTECH', 'ICTC', 'SUPPLY', 'DEAN', 'STAFF'
+
+  userRoles UserRole[]
+}
+
+model UserRole {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  roleId Int
+  user   User @relation(fields: [userId], references: [id])
+  role   Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+model User {
+  id              Int     @id @default(autoincrement())
+  username        String  @unique
+  email           String  @unique
+  passwordHash    String
+  firstName       String?
+  lastName        String?
+  contactNumber   String?
+  customId        Int?    @unique
+  barcodeValue    String? @unique
+  barcodeImageUrl String?
+  profilePicUrl   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  departmentId    Int?
+  department      Department? @relation(fields: [departmentId], references: [id])
+
+  roles UserRole[]
+
+  // Relations created by other modules
+  currentlyBorrowedItems    BorrowRecord[]              @relation("BorrowRecordBorrower")
+  equipmentAssignments      EquipmentAssignmentRecord[] @relation("EqAssignAssignee")
+  equipmentBorrows          EquipmentBorrowRecord[]     @relation("EqBorrowBorrower")
+  apparatusBorrows          ApparatusBorrowRecord[]     @relation("AppBorrowBorrower")
+  receivedChemicals         ChemicalAssignment[]        @relation("ChemAssignAssignee")
+  processedChemicals        ChemicalAssignment[]        @relation("ChemAssignProcessed")
+  chemicalUsages            ChemicalUsage[]             @relation("ChemUsageBorrower")
+  
+  // Requests
+  transferRequests          TransferRequest[]           @relation("TransferRequestedBy")
+  newTransferAssignments    TransferRequest[]           @relation("TransferNewAssignee")
+  processedTransfers        TransferRequest[]           @relation("TransferProcessedBy")
+  replaceRequests           ReplaceRequest[]            @relation("ReplaceRequestedBy")
+  processedReplaces         ReplaceRequest[]            @relation("ReplaceProcessedBy")
+  disposeRequests           DisposeRequest[]            @relation("DisposeRequestedBy")
+  processedDisposals        DisposeRequest[]            @relation("DisposeProcessedBy")
+}
+
+// ----------------------------------------------------------------------
+// Secretary Module
+// ----------------------------------------------------------------------
+
+model Category {
+  id       Int     @id @default(autoincrement())
+  name     String
+  imageUrl String?
+
+  items Item[]
+}
+
+model Item {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  model       String?
+  itemType    String    @default("Non-Consumables") // Consumables, Non-Consumables
+  quantity    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  categoryId  Int?
+  category    Category? @relation(fields: [categoryId], references: [id])
+
+  instances   ItemInstance[]
+}
+
+model ItemInstance {
+  id               Int       @id @default(autoincrement())
+  unitCost         Float     @default(0)
+  quantity         Int       @default(0)
+  purchaseDate     DateTime?
+  serialNumber     String?   @unique
+  inventoryNumber  String?   @unique
+  currentCondition String?   @default("Good")
+  lastCondition    String?
+  barcodeUrl       String?
+  usefulLife       Int?
+
+  itemId           Int
+  item             Item      @relation(fields: [itemId], references: [id])
+
+  borrowRecords    BorrowRecord[]
+  transferRequests TransferRequest[]
+  replaceRequests       ReplaceRequest[] @relation("ItemReplacementInstance")
+  replaceForRequests    ReplaceRequest[] @relation("ItemReplacementFor")
+  disposeRequests  DisposeRequest[]
+}
+
+model BorrowRecord {
+  id             Int       @id @default(autoincrement())
+  quantity       Int       @default(0)
+  customBorrower String?
+  borrowDate     DateTime  @default(now())
+  duration       Int?
+  returnDate     DateTime?
+  purpose        String?
+
+  itemInstanceId Int
+  itemInstance   ItemInstance @relation(fields: [itemInstanceId], references: [id])
+
+  borrowerId     Int?
+  borrower       User?        @relation("BorrowRecordBorrower", fields: [borrowerId], references: [id])
+
+  roomId         Int?
+  room           Room?        @relation(fields: [roomId], references: [id])
+
+  returnRecord   ReturnRecord?
+}
+
+model ReturnRecord {
+  id                Int      @id @default(autoincrement())
+  returnDate        DateTime @default(now())
+  conditionOnReturn String?
+  notes             String?
+
+  borrowRecordId    Int      @unique
+  borrowRecord      BorrowRecord @relation(fields: [borrowRecordId], references: [id])
+
+  // We could link item_instance, but it's redundant. Keeping to mirror Django model.
+  itemInstanceId    Int
+}
+
+// ----------------------------------------------------------------------
+// Labtech Module
+// ----------------------------------------------------------------------
+
+model Unit {
+  id     Int    @id @default(autoincrement())
+  name   String
+  symbol String
+}
+
+model LabCategory {
+  id       Int     @id @default(autoincrement())
+  name     String
+  imageUrl String?
+
+  equipments Equipment[]
+  apparatus  Apparatus[]
+}
+
+model Subject {
+  id   Int    @id @default(autoincrement())
+  name String
+  code String @unique
+
+  equipmentBorrows EquipmentBorrowRecord[]
+  apparatusBorrows ApparatusBorrowRecord[]
+  chemicalUsages   ChemicalUsage[]
+}
+
+model Equipment {
+  id          Int      @id @default(autoincrement())
+  name        String
+  model       String?
+  description String?
+  quantity    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categoryId  Int?
+  category    LabCategory? @relation(fields: [categoryId], references: [id])
+
+  instances   EquipmentInstance[]
+}
+
+model EquipmentInstance {
+  id               Int       @id @default(autoincrement())
+  quantity         Int       @default(0)
+  unitCost         Float     @default(0)
+  inventoryNumber  String    @unique
+  usefulLife       Int       @default(0)
+  purchaseDate     DateTime?
+  serialNumber     String?   @unique
+  status           String    @default("Inactive") // Inactive, Active
+  currentCondition String?   @default("Good")
+  lastCondition    String?
+  barcodeUrl       String?
+
+  equipmentId      Int
+  equipment        Equipment @relation(fields: [equipmentId], references: [id])
+
+  assignments      EquipmentAssignmentRecord[]
+  borrowRecords    EquipmentBorrowRecord[]
+  returnRecords    EquipmentReturnRecord[]
+}
+
+model EquipmentAssignmentRecord {
+  id               Int       @id @default(autoincrement())
+  inventoryNumber  String    @unique
+  quantity         Int       @default(0)
+  assignedDate     DateTime?
+  unassignedDate   DateTime?
+
+  equipmentInstanceId Int
+  equipmentInstance   EquipmentInstance @relation(fields: [equipmentInstanceId], references: [id])
+
+  assigneeId          Int?
+  assignee            User?             @relation("EqAssignAssignee", fields: [assigneeId], references: [id])
+
+  assignedLocationId  Int?
+  assignedLocation    Room?             @relation(fields: [assignedLocationId], references: [id])
+}
+
+model EquipmentBorrowRecord {
+  id               Int       @id @default(autoincrement())
+  quantity         Int       @default(0)
+  customBorrower   String?
+  borrowedDate     DateTime?
+  returnedDate     DateTime?
+  purpose          String?
+
+  equipmentInstanceId Int
+  equipmentInstance   EquipmentInstance @relation(fields: [equipmentInstanceId], references: [id])
+
+  borrowerId          Int?
+  borrower            User?             @relation("EqBorrowBorrower", fields: [borrowerId], references: [id])
+
+  subjectId           Int?
+  subject             Subject?          @relation(fields: [subjectId], references: [id])
+
+  roomId              Int?
+  room                Room?             @relation(fields: [roomId], references: [id])
+
+  returnRecords EquipmentReturnRecord[]
+}
+
+model EquipmentReturnRecord {
+  id                  Int       @id @default(autoincrement())
+  returnedDate        DateTime?
+  remarks             String?
+
+  equipmentInstanceId Int
+  equipmentInstance   EquipmentInstance @relation(fields: [equipmentInstanceId], references: [id])
+
+  borrowRecordId      Int
+  borrowRecord        EquipmentBorrowRecord @relation(fields: [borrowRecordId], references: [id])
+}
+
+model Apparatus {
+  id            Int     @id @default(autoincrement())
+  name          String
+  apparatusType String  @default("Non-Consumables") // Consumables, Non-Consumables
+  description   String?
+  quantity      Int
+
+  categoryId    Int?
+  category      LabCategory? @relation(fields: [categoryId], references: [id])
+
+  instances     ApparatusInstance[]
+}
+
+model ApparatusInstance {
+  id               Int       @id @default(autoincrement())
+  serialNumber     String?   @unique
+  inventoryNumber  String    @unique
+  unitCost         Float
+  quantity         Int       @default(0)
+  currentCondition String?   @default("Good")
+  lastCondition    String?
+  barcodeUrl       String?
+  purchaseDate     DateTime?
+  usefulLife       Int       @default(0)
+
+  apparatusId      Int
+  apparatus        Apparatus  @relation(fields: [apparatusId], references: [id])
+
+  borrowRecords    ApparatusBorrowRecord[]
+  returnRecords    ApparatusReturnRecord[]
+}
+
+model ApparatusBorrowRecord {
+  id               Int       @id @default(autoincrement())
+  quantity         Int       @default(0)
+  customBorrower   String?
+  borrowedDate     DateTime  @default(now())
+  returnedDate     DateTime?
+  purpose          String?
+
+  apparatusInstanceId Int
+  apparatusInstance   ApparatusInstance @relation(fields: [apparatusInstanceId], references: [id])
+
+  borrowerId          Int
+  borrower            User              @relation("AppBorrowBorrower", fields: [borrowerId], references: [id])
+
+  roomId              Int?
+  room                Room?             @relation(fields: [roomId], references: [id])
+
+  subjectId           Int?
+  subject             Subject?          @relation(fields: [subjectId], references: [id])
+
+  returnRecords       ApparatusReturnRecord[]
+}
+
+model ApparatusReturnRecord {
+  id                  Int      @id @default(autoincrement())
+  returnedDate        DateTime @default(now()) @updatedAt
+  remarks             String?
+
+  apparatusInstanceId Int
+  apparatusInstance   ApparatusInstance @relation(fields: [apparatusInstanceId], references: [id])
+
+  borrowRecordId      Int
+  borrowRecord        ApparatusBorrowRecord @relation(fields: [borrowRecordId], references: [id])
+}
+
+model Chemical {
+  id           Int      @id @default(autoincrement())
+  name         String
+  unit         String?  // l, ml, g, kg, gal
+  description  String?
+  volume       Float    @default(0)
+  reorderLevel Float    @default(0)
+
+  stocks       ChemicalStock[]
+}
+
+model ChemicalStock {
+  id              Int       @id @default(autoincrement())
+  price           Float     @default(0)
+  purchaseDate    DateTime?
+  inventoryNumber String    @unique
+  volume          Float     @default(0)
+  expiryDate      DateTime?
+  barcodeUrl      String?
+
+  chemicalId      Int
+  chemical        Chemical  @relation(fields: [chemicalId], references: [id])
+
+  chemicalAssignments ChemicalAssignment[]
+  chemicalUsages      ChemicalUsage[]
+}
+
+model ChemicalUsage {
+  id                Int      @id @default(autoincrement())
+  quantityUsed      Float    @default(0)
+  quantityRequested Float?
+  requestUnit       String?
+  purpose           String?
+  dateUsed          DateTime @default(now())
+
+  requestedChemicalId Int
+  requestedChemical   ChemicalStock @relation(fields: [requestedChemicalId], references: [id])
+
+  borrowerId          Int
+  borrower            User          @relation("ChemUsageBorrower", fields: [borrowerId], references: [id])
+
+  subjectId           Int?
+  subject             Subject?      @relation(fields: [subjectId], references: [id])
+
+  roomId              Int?
+  room                Room?         @relation(fields: [roomId], references: [id])
+}
+
+// ----------------------------------------------------------------------
+// Supply Module
+// ----------------------------------------------------------------------
+
+model ChemicalAssignment {
+  id              Int       @id @default(autoincrement())
+  assignedVolume  Float
+  remainingVolume Float
+  processedDate   DateTime?
+
+  assigneeId      Int
+  assignee        User      @relation("ChemAssignAssignee", fields: [assigneeId], references: [id])
+
+  roomId          Int?
+  room            Room?     @relation(fields: [roomId], references: [id])
+
+  chemicalStockId Int
+  chemicalStock   ChemicalStock @relation(fields: [chemicalStockId], references: [id])
+
+  processedById   Int?
+  processedBy     User?         @relation("ChemAssignProcessed", fields: [processedById], references: [id])
+}
+
+// ----------------------------------------------------------------------
+// Staff Module
+// ----------------------------------------------------------------------
+
+model TransferRequest {
+  id             Int       @id @default(autoincrement())
+  requestedDate  DateTime  @default(now())
+  transferReason String?
+  processedDate  DateTime?
+  status         String    @default("PENDING") // AWAITING_ASSIGNEE_CONFIRMATION, PENDING, APPROVED, REJECTED, ASSIGNEE_REJECTED
+
+  itemInstanceId Int
+  itemInstance   ItemInstance @relation(fields: [itemInstanceId], references: [id])
+
+  requestedById  Int
+  requestedBy    User         @relation("TransferRequestedBy", fields: [requestedById], references: [id])
+
+  newAssigneeId  Int
+  newAssignee    User         @relation("TransferNewAssignee", fields: [newAssigneeId], references: [id])
+
+  newLocationId  Int
+  newLocation    Room         @relation(fields: [newLocationId], references: [id])
+
+  processedById  Int?
+  processedBy    User?        @relation("TransferProcessedBy", fields: [processedById], references: [id])
+}
+
+model ReplaceRequest {
+  id                 Int       @id @default(autoincrement())
+  requestedDate      DateTime  @default(now())
+  replacementReason  String?
+  processedDate      DateTime?
+  status             String    @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  itemInstanceId     Int
+  itemInstance       ItemInstance @relation("ItemReplacementInstance", fields: [itemInstanceId], references: [id])
+
+  requestedById      Int
+  requestedBy        User         @relation("ReplaceRequestedBy", fields: [requestedById], references: [id])
+
+  replacementItemId  Int?
+  replacementItem    ItemInstance? @relation("ItemReplacementFor", fields: [replacementItemId], references: [id])
+
+  processedById      Int?
+  processedBy        User?        @relation("ReplaceProcessedBy", fields: [processedById], references: [id])
+}
+
+model DisposeRequest {
+  id             Int       @id @default(autoincrement())
+  requestedDate  DateTime  @default(now())
+  disposalReason String?
+  processedDate  DateTime?
+  status         String    @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  itemInstanceId Int
+  itemInstance   ItemInstance @relation(fields: [itemInstanceId], references: [id])
+
+  requestedById  Int
+  requestedBy    User         @relation("DisposeRequestedBy", fields: [requestedById], references: [id])
+
+  processedById  Int?
+  processedBy    User?        @relation("DisposeProcessedBy", fields: [processedById], references: [id])
+}

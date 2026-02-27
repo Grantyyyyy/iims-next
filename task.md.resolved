@@ -1,0 +1,35 @@
+# Next.js Migration Task Tracker
+
+- [x] **Phase 1: Project Setup**
+  - [x] Initialize Next.js 14 App Router project (TypeScript, Tailwind CSS)
+  - [x] Initialize shadcn/ui and add requested components (`sidebar-08`, `login-04`, `signup-04`)
+  - [x] Install Prisma and initialize with SQLite
+
+- [x] **Phase 2: Database Schema & Models Configuration**
+  - [x] Analyze existing Django models
+  - [x] Design improved Prisma schema with Role-Based Access Control (8 roles)
+  - [x] Create core models (User, Department, Room)
+  - [x] Create Secretary models (Items, Categories)
+  - [x] Create Labtech models (Equipment, Chemicals, Apparatus)
+  - [x] Create Supply models (Assigments)
+  - [x] Create Staff models (Requests)
+  - [x] Support Prisma 7: Install driver adapter (`@prisma/adapter-libsql`)
+  - [x] Support Prisma 7: Update [PrismaClient](file:///c:/Users/grant/OneDrive/Desktop/OTW/CapstoneMain/eims-next/node_modules/.prisma/client/index.d.ts#176-569) instantiation in [auth.ts](file:///c:/Users/grant/OneDrive/Desktop/OTW/CapstoneMain/eims-next/src/actions/auth.ts)
+  - [x] Generate Prisma Client and create initial migrations
+
+- [x] **Phase 3: Core UI & Authentication**
+  - [x] Setup layout with Sidebar component
+  - [x] Implement Sign Up page with Server Actions
+  - [x] Implement Login page with Server Actions and session management
+
+- [x] **Phase 4: Module Migration (Foundation Modules)**
+  - [x] Users Module (Role management)
+  - [x] Secretary Module (Equipment/Items management)
+  - [x] Labtech Module (Lab equipment/chemicals)
+
+- [x] **Phase 5: Supply & Staff Modules Migration**
+  - [x] Create [actions/supply.ts](file:///c:/Users/grant/OneDrive/Desktop/OTW/CapstoneMain/eims-next/src/actions/supply.ts) for supply management
+  - [x] Implement Supply Office UI (Categories & Items)
+  - [x] Create [actions/requests.ts](file:///c:/Users/grant/OneDrive/Desktop/OTW/CapstoneMain/eims-next/src/actions/requests.ts) for staff and student requests
+  - [x] Implement Staff Requests UI
+  - [x] Implement Student Requests UI
