@@ -2,9 +2,11 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { requirePermission } from '@/lib/permissions'
 
 // Chemical Assignments (Supply Office)
 export async function getChemicalAssignments() {
+    await requirePermission('manage:chemicals')
     try {
         return await prisma.chemicalAssignment.findMany({
             include: {
@@ -29,6 +31,7 @@ export async function createChemicalAssignment(data: {
     assignedVolume: number,
     roomId?: number
 }) {
+    const { user } = await requirePermission('manage:chemicals')
     try {
         const stock = await prisma.chemicalStock.findUnique({
             where: { id: data.chemicalStockId }
@@ -43,7 +46,7 @@ export async function createChemicalAssignment(data: {
                 ...data,
                 remainingVolume: data.assignedVolume,
                 processedDate: new Date(),
-                processedById: 1 // Placeholder for current user ID
+                processedById: user.id
             }
         })
 

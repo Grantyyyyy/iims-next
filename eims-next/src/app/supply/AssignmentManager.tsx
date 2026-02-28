@@ -12,16 +12,15 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ClipboardList, UserPlus, Droplets } from 'lucide-react'
+import { ClipboardList, UserPlus, Droplets, Check, X, Box, User, FlaskConical, MapPin } from 'lucide-react'
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
+    Sheet, SheetContent, SheetDescription, SheetHeader,
+    SheetTitle, SheetFooter, SheetTrigger
+} from "@/components/ui/sheet"
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { createChemicalAssignment } from '@/actions/supply'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
@@ -35,7 +34,7 @@ interface AssignmentManagerProps {
 }
 
 export function AssignmentManager({ assignments, stocks, users, rooms }: AssignmentManagerProps) {
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [isSheetOpen, setIsSheetOpen] = useState(false)
     const [isPending, setIsPending] = useState(false)
     const [formData, setFormData] = useState({
         chemicalStockId: '',
@@ -58,7 +57,7 @@ export function AssignmentManager({ assignments, stocks, users, rooms }: Assignm
 
         if (result.success) {
             toast.success('Assignment created successfully')
-            setIsDialogOpen(false)
+            setIsSheetOpen(false)
             setFormData({ chemicalStockId: '', assigneeId: '', assignedVolume: 0, roomId: '' })
         } else {
             toast.error(result.error || 'Failed to create assignment')
@@ -69,83 +68,119 @@ export function AssignmentManager({ assignments, stocks, users, rooms }: Assignm
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Chemical Assignments</h3>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
+                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                    <SheetTrigger asChild>
+                        <Button className="shadow-sm">
                             <UserPlus className="mr-2 h-4 w-4" />
                             New Assignment
                         </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Create Chemical Assignment</DialogTitle>
-                            <DialogDescription>
-                                Assign specific volumes of chemicals to personnel for long-term use.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <Select
-                                value={formData.chemicalStockId}
-                                onValueChange={(v) => setFormData({ ...formData, chemicalStockId: v })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Chemical Stock" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {stocks.map(stock => (
-                                        <SelectItem key={stock.id} value={stock.id.toString()}>
-                                            {stock.chemical.name} (SN: {stock.inventoryNumber}) - {stock.volume} left
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                    </SheetTrigger>
+                    <SheetContent className="flex flex-col gap-0 sm:max-w-md border-l shadow-2xl">
+                        <SheetHeader className="pb-6 border-b bg-muted/20 px-1">
+                            <SheetTitle className="text-2xl font-bold tracking-tight">Create Chemical Assignment</SheetTitle>
+                            <SheetDescription className="text-sm text-muted-foreground">
+                                Assign volumes of chemicals to personnel.
+                            </SheetDescription>
+                        </SheetHeader>
+                        <div className="flex-1 overflow-y-auto py-8 space-y-6 px-1">
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
+                                    <FlaskConical className="h-4 w-4 text-primary/70" />
+                                    Chemical Stock
+                                </label>
+                                <Select
+                                    value={formData.chemicalStockId}
+                                    onValueChange={(v) => setFormData({ ...formData, chemicalStockId: v })}
+                                >
+                                    <SelectTrigger className="h-11 transition-all focus:ring-2 focus:ring-primary/20">
+                                        <SelectValue placeholder="Select Chemical Stock" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {stocks.map(stock => (
+                                            <SelectItem key={stock.id} value={stock.id.toString()}>
+                                                {stock.chemical.name} (SN: {stock.inventoryNumber}) - {stock.volume} left
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                            <Select
-                                value={formData.assigneeId}
-                                onValueChange={(v) => setFormData({ ...formData, assigneeId: v })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Assignee" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {users.map(user => (
-                                        <SelectItem key={user.id} value={user.id.toString()}>
-                                            {user.username}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
+                                    <User className="h-4 w-4 text-primary/70" />
+                                    Assignee
+                                </label>
+                                <Select
+                                    value={formData.assigneeId}
+                                    onValueChange={(v) => setFormData({ ...formData, assigneeId: v })}
+                                >
+                                    <SelectTrigger className="h-11 transition-all focus:ring-2 focus:ring-primary/20">
+                                        <SelectValue placeholder="Select Assignee" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {users.map(user => (
+                                            <SelectItem key={user.id} value={user.id.toString()}>
+                                                {user.username}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                            <Input
-                                type="number"
-                                placeholder="Volume to Assign"
-                                value={formData.assignedVolume}
-                                onChange={(e) => setFormData({ ...formData, assignedVolume: parseFloat(e.target.value) })}
-                            />
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
+                                    <Droplets className="h-4 w-4 text-primary/70" />
+                                    Volume to Assign
+                                </label>
+                                <Input
+                                    type="number"
+                                    placeholder="e.g. 500"
+                                    value={formData.assignedVolume}
+                                    onChange={(e) => setFormData({ ...formData, assignedVolume: parseFloat(e.target.value) })}
+                                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
 
-                            <Select
-                                value={formData.roomId}
-                                onValueChange={(v) => setFormData({ ...formData, roomId: v })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Room (Optional)" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {rooms.map(room => (
-                                        <SelectItem key={room.id} value={room.id.toString()}>
-                                            {room.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
+                                    <MapPin className="h-4 w-4 text-primary/70" />
+                                    Room (Optional)
+                                </label>
+                                <Select
+                                    value={formData.roomId}
+                                    onValueChange={(v) => setFormData({ ...formData, roomId: v })}
+                                >
+                                    <SelectTrigger className="h-11 transition-all focus:ring-2 focus:ring-primary/20">
+                                        <SelectValue placeholder="Select Room" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {rooms.map(room => (
+                                            <SelectItem key={room.id} value={room.id.toString()}>
+                                                {room.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                        <DialogFooter>
-                            <Button onClick={handleCreate} disabled={isPending || !formData.chemicalStockId || !formData.assigneeId}>
-                                {isPending ? 'Processing...' : 'Assign Chemical'}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <SheetFooter className="pt-6 border-t bg-muted/10">
+                            <div className="flex w-full justify-end gap-3">
+                                <Button variant="ghost" onClick={() => setIsSheetOpen(false)} className="px-6 h-11 shrink-0">
+                                    <X className="mr-2 h-4 w-4" /> Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleCreate}
+                                    disabled={isPending || !formData.chemicalStockId || !formData.assigneeId}
+                                    className="px-8 h-11 shadow-md hover:shadow-lg transition-all ring-offset-2 shrink-0"
+                                >
+                                    {isPending ? 'Processing...' : (
+                                        <><Check className="mr-2 h-4 w-4" /> Assign Chemical</>
+                                    )}
+                                </Button>
+                            </div>
+                        </SheetFooter>
+                    </SheetContent>
+                </Sheet>
             </div>
 
             <div className="rounded-md border">
@@ -157,6 +192,7 @@ export function AssignmentManager({ assignments, stocks, users, rooms }: Assignm
                             <TableHead>Volume</TableHead>
                             <TableHead>Date</TableHead>
                             <TableHead>Location</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -173,6 +209,25 @@ export function AssignmentManager({ assignments, stocks, users, rooms }: Assignm
                                 <TableCell>{ass.assignedVolume} {ass.chemicalStock.chemical.unit}</TableCell>
                                 <TableCell>{new Date(ass.processedDate).toLocaleDateString()}</TableCell>
                                 <TableCell>{ass.room?.name || 'In Transit'}</TableCell>
+                                <TableCell className="text-right">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="cursor-pointer">
+                                                <Pencil className="mr-2 h-4 w-4" /> Edit Assignment
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground">
+                                                <Trash2 className="mr-2 h-4 w-4" /> Revoke Assignment
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
                             </TableRow>
                         ))}
                         {assignments.length === 0 && (
