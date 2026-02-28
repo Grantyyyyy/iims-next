@@ -1,8 +1,10 @@
 'use server'
 
 import prisma from '@/lib/prisma'
+import { requireAuth } from '@/lib/permissions'
 
 export async function getDashboardStats() {
+    await requireAuth()
     try {
         const [
             totalUsers,
