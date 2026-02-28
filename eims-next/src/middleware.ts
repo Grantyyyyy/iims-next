@@ -2,10 +2,16 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 // Update this list to include routes that don't require authentication
-const publicRoutes = ['/login', '/signup']
+const publicRoutes = ['/login']
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
+
+    // Explicitly redirect /signup to /login since registration is disabled.
+    if (pathname.startsWith('/signup')) {
+        return NextResponse.redirect(new URL('/login', request.url))
+    }
+
     const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
 
     const session = request.cookies.get('session')?.value
