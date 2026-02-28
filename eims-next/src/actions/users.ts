@@ -2,8 +2,10 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { requirePermission } from '@/lib/permissions'
 
 export async function getUsers() {
+    await requirePermission('manage:users')
     try {
         return await prisma.user.findMany({
             include: {
@@ -25,6 +27,7 @@ export async function getUsers() {
 }
 
 export async function updateUserRoles(userId: number, roleNames: string[]) {
+    await requirePermission('manage:users')
     try {
         // Find existing role IDs for the names
         const roles = await prisma.role.findMany({
@@ -33,7 +36,7 @@ export async function updateUserRoles(userId: number, roleNames: string[]) {
             }
         })
 
-        const roleIds = roles.map(r => r.id)
+        const roleIds = roles.map((r: { id: number }) => r.id)
 
         // Reset roles for this user
         await prisma.userRole.deleteMany({
@@ -42,7 +45,7 @@ export async function updateUserRoles(userId: number, roleNames: string[]) {
 
         // Add new roles
         await prisma.userRole.createMany({
-            data: roleIds.map(roleId => ({
+            data: roleIds.map((roleId: number) => ({
                 userId,
                 roleId
             }))
@@ -57,6 +60,7 @@ export async function updateUserRoles(userId: number, roleNames: string[]) {
 }
 
 export async function getDepartments() {
+    await requirePermission('manage:users')
     try {
         return await prisma.department.findMany({
             include: {
@@ -72,6 +76,7 @@ export async function getDepartments() {
 }
 
 export async function createDepartment(name: string) {
+    await requirePermission('manage:users')
     try {
         await prisma.department.create({
             data: { name }

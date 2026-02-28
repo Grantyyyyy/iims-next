@@ -13,17 +13,16 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
+    Sheet, SheetContent, SheetDescription, SheetHeader,
+    SheetTitle, SheetFooter, SheetTrigger
+} from "@/components/ui/sheet"
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { updateUserRoles } from '@/actions/users'
 import { toast } from 'sonner'
-import { Search } from 'lucide-react'
+import { Search, Pencil, Shield, Check, X, User, MoreHorizontal } from 'lucide-react'
 
 interface UserListTableProps {
     users: any[]
@@ -34,6 +33,7 @@ const AVAILABLE_ROLES = [
 ]
 
 export function UserListTable({ users }: UserListTableProps) {
+    const [isEditOpen, setIsEditOpen] = useState(false)
     const [selectedUser, setSelectedUser] = useState<any>(null)
     const [selectedRoles, setSelectedRoles] = useState<string[]>([])
     const [isPending, setIsPending] = useState(false)
@@ -58,10 +58,17 @@ export function UserListTable({ users }: UserListTableProps) {
 
         if (result.success) {
             toast.success('Roles updated successfully')
+            setIsEditOpen(false)
             setSelectedUser(null)
         } else {
             toast.error(result.error || 'Failed to update roles')
         }
+    }
+
+    const openEdit = (user: any) => {
+        setSelectedUser(user)
+        setSelectedRoles(user.roles.map((ur: any) => ur.role.name))
+        setIsEditOpen(true)
     }
 
     const toggleRole = (role: string) => {
@@ -95,7 +102,14 @@ export function UserListTable({ users }: UserListTableProps) {
                     <TableBody>
                         {filteredUsers.map((user) => (
                             <TableRow key={user.id}>
-                                <TableCell className="font-medium">{user.username}</TableCell>
+                                <TableCell className="font-medium">
+                                    <button
+                                        onClick={() => openEdit(user)}
+                                        className="hover:underline text-foreground hover:text-primary transition-colors text-left"
+                                    >
+                                        {user.username}
+                                    </button>
+                                </TableCell>
                                 <TableCell>{user.email}</TableCell>
                                 <TableCell>{user.department?.name || 'N/A'}</TableCell>
                                 <TableCell>
@@ -108,52 +122,20 @@ export function UserListTable({ users }: UserListTableProps) {
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Dialog>
-                                        <DialogTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setSelectedUser(user)
-                                                    setSelectedRoles(user.roles.map((ur: any) => ur.role.name))
-                                                }}
-                                            >
-                                                Edit Roles
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                <MoreHorizontal className="h-4 w-4" />
                                             </Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Edit Roles for {user.username}</DialogTitle>
-                                                <DialogDescription>
-                                                    Select the roles for this user. Multiple roles are supported.
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                            <div className="grid grid-cols-2 gap-2 py-4">
-                                                {AVAILABLE_ROLES.map((role) => (
-                                                    <div key={role} className="flex items-center space-x-2">
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`${user.id}-${role}`}
-                                                            checked={selectedRoles.includes(role)}
-                                                            onChange={() => toggleRole(role)}
-                                                            className="h-4 w-4 rounded border-gray-300"
-                                                        />
-                                                        <label htmlFor={`${user.id}-${role}`} className="text-sm font-medium leading-none">
-                                                            {role}
-                                                        </label>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <DialogFooter>
-                                                <Button
-                                                    onClick={handleRoleUpdate}
-                                                    disabled={isPending}
-                                                >
-                                                    {isPending ? 'Saving...' : 'Save Changes'}
-                                                </Button>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={() => openEdit(user)} className="cursor-pointer">
+                                                <Pencil className="mr-2 h-4 w-4" /> Edit Roles
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -167,6 +149,69 @@ export function UserListTable({ users }: UserListTableProps) {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Edit Roles Sheet */}
+            <Sheet open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <SheetContent className="flex flex-col gap-0 sm:max-w-md border-l shadow-2xl">
+                    <SheetHeader className="pb-6 border-b bg-muted/20 px-1">
+                        <SheetTitle className="text-2xl font-bold tracking-tight">Edit User Roles</SheetTitle>
+                        <SheetDescription className="text-sm text-muted-foreground">
+                            Update roles for <strong>{selectedUser?.username}</strong>.
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto py-8 space-y-6 px-1">
+                        <div className="space-y-4">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
+                                <Shield className="h-4 w-4 text-primary/70" />
+                                Available Roles
+                            </label>
+                            <div className="grid grid-cols-1 gap-3">
+                                {AVAILABLE_ROLES.map((role) => (
+                                    <div
+                                        key={role}
+                                        className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
+                                            selectedRoles.includes(role)
+                                                ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/10'
+                                                : 'bg-card border-border hover:border-primary/20'
+                                        }`}
+                                        onClick={() => toggleRole(role)}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-md ${selectedRoles.includes(role) ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                                                <User className="h-4 w-4" />
+                                            </div>
+                                            <span className="text-sm font-medium">{role}</span>
+                                        </div>
+                                        <div className={`h-5 w-5 rounded-full border flex items-center justify-center transition-all ${
+                                            selectedRoles.includes(role)
+                                                ? 'bg-primary border-primary text-primary-foreground'
+                                                : 'border-muted-foreground/30'
+                                        }`}>
+                                            {selectedRoles.includes(role) && <Check className="h-3 w-3" />}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <SheetFooter className="pt-6 border-t bg-muted/10">
+                        <div className="flex w-full justify-end gap-3">
+                            <Button variant="ghost" onClick={() => setIsEditOpen(false)} className="px-6 h-11 shrink-0">
+                                <X className="mr-2 h-4 w-4" /> Cancel
+                            </Button>
+                            <Button
+                                onClick={handleRoleUpdate}
+                                disabled={isPending}
+                                className="px-8 h-11 shadow-md hover:shadow-lg transition-all ring-offset-2 shrink-0"
+                            >
+                                {isPending ? 'Processing...' : (
+                                    <><Check className="mr-2 h-4 w-4" /> Save Changes</>
+                                )}
+                            </Button>
+                        </div>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }
