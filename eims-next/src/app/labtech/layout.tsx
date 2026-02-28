@@ -13,15 +13,25 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { requirePermission } from "@/lib/permissions"
 
-export default function LabtechLayout({
+import Link from "next/link"
+
+export default async function LabtechLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+    const { user, roles } = await requirePermission('manage:equipment')
+    const sidebarUser = {
+        name: user.username,
+        email: user.email,
+        avatar: user.profilePicUrl || '/avatars/user.jpg',
+    }
+
     return (
         <SidebarProvider>
-            <AppSidebar />
+            <AppSidebar user={sidebarUser} userRoles={roles} />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 border-b">
                     <div className="flex items-center gap-2 px-4">
@@ -33,7 +43,9 @@ export default function LabtechLayout({
                         <Breadcrumb>
                             <BreadcrumbList>
                                 <BreadcrumbItem>
-                                    <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                                    <BreadcrumbLink asChild>
+                                        <Link href="/dashboard">Dashboard</Link>
+                                    </BreadcrumbLink>
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator />
                                 <BreadcrumbItem>

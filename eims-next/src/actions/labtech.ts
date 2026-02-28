@@ -2,9 +2,11 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { requirePermission } from '@/lib/permissions'
 
 // Lab Categories
 export async function getLabCategories() {
+    await requirePermission('manage:equipment')
     try {
         return await prisma.labCategory.findMany({
             include: {
@@ -21,6 +23,7 @@ export async function getLabCategories() {
 }
 
 export async function createLabCategory(name: string, imageUrl?: string) {
+    await requirePermission('manage:equipment')
     try {
         await prisma.labCategory.create({
             data: { name, imageUrl }
@@ -35,6 +38,7 @@ export async function createLabCategory(name: string, imageUrl?: string) {
 
 // Lab Equipment
 export async function getLabEquipment() {
+    await requirePermission('manage:equipment')
     try {
         return await prisma.equipment.findMany({
             include: {
@@ -51,6 +55,7 @@ export async function getLabEquipment() {
 
 // Apparatus
 export async function getApparatus() {
+    await requirePermission('manage:equipment')
     try {
         return await prisma.apparatus.findMany({
             include: {
@@ -66,6 +71,7 @@ export async function getApparatus() {
 
 // Chemicals & Stock Tracking
 export async function getChemicals() {
+    await requirePermission('manage:chemicals')
     try {
         return await prisma.chemical.findMany({
             include: {
@@ -92,6 +98,7 @@ export async function addChemicalStock(data: {
     purchaseDate?: Date,
     expiryDate?: Date
 }) {
+    await requirePermission('manage:chemicals')
     try {
         await prisma.chemicalStock.create({
             data
@@ -121,6 +128,7 @@ export async function recordChemicalUsage(data: {
     roomId?: number,
     subjectId?: number
 }) {
+    await requirePermission('use:chemicals')
     try {
         // Create usage record
         await prisma.chemicalUsage.create({
