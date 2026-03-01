@@ -30,7 +30,8 @@ import {
 } from "@/components/ui/pagination"
 import { createCategory } from '@/actions/secretary'
 import { toast } from 'sonner'
-import { Plus, Search, Tag, Check, X, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Search, Tag, Check, X, MoreHorizontal, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface CategoryManagerProps {
     categories: any[]
@@ -86,57 +87,80 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
         <div className="space-y-4">
             <div className="flex justify-between items-center gap-4">
                 <div className="relative w-80">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search categories..."
                         value={searchTerm}
                         onChange={handleSearch}
-                        className="pl-9"
+                        className="pl-10 h-11 rounded-xl bg-muted/30 focus-visible:ring-primary/20 transition-all border-muted-foreground/20"
                     />
                 </div>
                 <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                     <SheetTrigger asChild>
-                        <Button className="shadow-sm">
+                        <Button className="h-11 px-6 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
                             <Plus className="mr-2 h-4 w-4" />
                             Add Category
                         </Button>
                     </SheetTrigger>
-                    <SheetContent className="flex flex-col gap-0 sm:max-w-md border-l shadow-2xl">
-                        <SheetHeader className="pb-6 border-b bg-muted/20 px-1">
-                            <SheetTitle className="text-2xl font-bold tracking-tight">Create New Category</SheetTitle>
-                            <SheetDescription className="text-sm text-muted-foreground">
-                                Register a new category for inventory items.
-                            </SheetDescription>
+                    <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
+                        <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
+                            {/* Subtle Glow Effect */}
+                            <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                            <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
+
+                            <div className="relative z-10 text-left">
+                                <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                    Create New Category
+                                </SheetTitle>
+                                <SheetDescription className="text-sm font-medium mt-1">
+                                    Register a new category for inventory items.
+                                </SheetDescription>
+                            </div>
                         </SheetHeader>
-                        <div className="flex-1 overflow-y-auto py-8 space-y-6 px-1">
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                    <Tag className="h-4 w-4 text-primary/70" />
-                                    Category Name
-                                </label>
-                                <Input
-                                    placeholder="e.g. Office Supplies"
-                                    value={newCatName}
-                                    onChange={(e) => setNewCatName(e.target.value)}
-                                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
-                                />
+
+                        <ScrollArea className="flex-1 px-6 py-8">
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                        <Tag className="h-3 w-3 text-primary/70" />
+                                        Category Name
+                                    </label>
+                                    <Input
+                                        placeholder="e.g. Office Supplies"
+                                        value={newCatName}
+                                        onChange={(e) => setNewCatName(e.target.value)}
+                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <SheetFooter className="pt-6 border-t bg-muted/10">
-                            <div className="flex w-full justify-end gap-3">
-                                <Button variant="ghost" onClick={() => setIsSheetOpen(false)} className="px-6 h-11 shrink-0">
-                                    <X className="mr-2 h-4 w-4" /> Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleCreate}
-                                    disabled={isPending || !newCatName}
-                                    className="px-8 h-11 shadow-md hover:shadow-lg transition-all ring-offset-2 shrink-0"
-                                >
-                                    {isPending ? 'Processing...' : (
-                                        <><Check className="mr-2 h-4 w-4" /> Create Category</>
-                                    )}
-                                </Button>
-                            </div>
+                        </ScrollArea>
+
+                        <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsSheetOpen(false)}
+                                className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
+                            >
+                                <X className="h-4 w-4" />
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleCreate}
+                                disabled={isPending || !newCatName}
+                                className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
+                            >
+                                {isPending ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="h-4 w-4" />
+                                        Create Category
+                                    </>
+                                )}
+                            </Button>
                         </SheetFooter>
                     </SheetContent>
                 </Sheet>

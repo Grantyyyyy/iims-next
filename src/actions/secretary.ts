@@ -132,6 +132,61 @@ export async function deleteItem(id: number) {
     }
 }
 
+export async function getDeletedItems() {
+    await requirePermission('manage:items')
+    try {
+        return await prisma.item.findMany({
+            where: {
+                deletedAt: { not: null }
+            },
+            include: {
+                category: true,
+                instances: true
+            },
+            orderBy: { deletedAt: 'desc' }
+        })
+    } catch (error) {
+        console.error('Error fetching deleted items:', error)
+        return []
+    }
+}
+
+export async function restoreItem(id: number) {
+    await requirePermission('manage:items')
+    try {
+        await prisma.item.update({
+            where: { id },
+            data: { deletedAt: null }
+        })
+        revalidatePath('/secretary/items')
+        return { success: true }
+    } catch (error) {
+        console.error('Error restoring item:', error)
+        return { error: 'Failed to restore item.' }
+    }
+}
+
+export async function permanentlyDeleteItem(id: number) {
+    await requirePermission('manage:items')
+    try {
+        await prisma.$transaction(async (tx) => {
+            // Delete instances first
+            await tx.itemInstance.deleteMany({
+                where: { itemId: id }
+            })
+            await tx.item.delete({
+                where: { id }
+            })
+        })
+        revalidatePath('/secretary/items')
+        return { success: true }
+    } catch (error) {
+        console.error('Error permanently deleting item:', error)
+        return { error: 'Failed to permanently delete item. It may have related records.' }
+    }
+}
+
+
 // Item Instances & Inventory
 export async function addItemInstance(data: {
     itemId: number,
