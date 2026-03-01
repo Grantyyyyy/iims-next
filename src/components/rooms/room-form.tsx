@@ -4,13 +4,6 @@ import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import {
-    Field,
-    FieldContent,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,8 +16,7 @@ import {
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { createRoom, updateRoom } from '@/app/actions/rooms'
-import { Home, MapPin, Warehouse, Check, X } from 'lucide-react'
-import { SheetFooter } from '@/components/ui/sheet'
+import { Home, MapPin, Warehouse, Check, X, Loader2 } from 'lucide-react'
 
 const roomFormSchema = z.object({
     name: z.string().min(1, 'Room name is required'),
@@ -119,36 +111,46 @@ export function RoomForm({ mode, initialData, departments, onSuccess, onCancel }
         <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col">
             <div className="flex-1 space-y-6">
                 <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                        <Home className="h-4 w-4 text-primary/70" />
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                        <Home className="h-3 w-3 text-primary/70" />
                         Room Name
                     </label>
-                    <Input id="name" {...register('name')} placeholder="e.g. IT Lab 1" className="h-11 transition-all focus:ring-2 focus:ring-primary/20" />
+                    <Input
+                        id="name"
+                        {...register('name')}
+                        placeholder="e.g. IT Lab 1"
+                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                    />
                     {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                        <MapPin className="h-4 w-4 text-primary/70" />
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                        <MapPin className="h-3 w-3 text-primary/70" />
                         Location
                     </label>
-                    <Input id="location" {...register('location')} placeholder="e.g. 3rd Floor, IT Building" className="h-11 transition-all focus:ring-2 focus:ring-primary/20" />
+                    <Input
+                        id="location"
+                        {...register('location')}
+                        placeholder="e.g. 3rd Floor, IT Building"
+                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                    />
                     {errors.location && <p className="text-xs text-destructive">{errors.location.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                        <Warehouse className="h-4 w-4 text-primary/70" />
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                        <Warehouse className="h-3 w-3 text-primary/70" />
                         Department
                     </label>
                     <Select
                         value={selectedDept}
                         onValueChange={(val) => setValue('departmentId', val)}
                     >
-                        <SelectTrigger id="departmentId" className="h-11 transition-all focus:ring-2 focus:ring-primary/20">
+                        <SelectTrigger id="departmentId" className="h-11 rounded-xl bg-muted/20 border-border/50 transition-all">
                             <SelectValue placeholder="Select Department" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl">
                             {departments.map((dept) => (
                                 <SelectItem key={dept.id} value={dept.id.toString()}>
                                     {dept.name}
@@ -160,23 +162,34 @@ export function RoomForm({ mode, initialData, departments, onSuccess, onCancel }
                 </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t">
-                <div className="flex w-full justify-end gap-3">
-                    {onCancel && (
-                        <Button type="button" variant="ghost" onClick={onCancel} className="px-6 h-11 shrink-0">
-                            <X className="mr-2 h-4 w-4" /> Cancel
-                        </Button>
-                    )}
+            <div className="mt-8 pt-6 border-t flex w-full justify-end gap-3">
+                {onCancel && (
                     <Button
-                        type="submit"
-                        disabled={isPending}
-                        className="px-8 h-11 shadow-md hover:shadow-lg transition-all ring-offset-2 shrink-0"
+                        type="button"
+                        variant="outline"
+                        onClick={onCancel}
+                        className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
                     >
-                        {isPending ? 'Processing...' : (
-                            <><Check className="mr-2 h-4 w-4" /> {mode === 'create' ? 'Create Room' : 'Save Changes'}</>
-                        )}
+                        <X className="h-4 w-4" /> Cancel
                     </Button>
-                </div>
+                )}
+                <Button
+                    type="submit"
+                    disabled={isPending}
+                    className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
+                >
+                    {isPending ? (
+                        <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Processing...
+                        </>
+                    ) : (
+                        <>
+                            <Check className="h-4 w-4" />
+                            {mode === 'create' ? 'Create Room' : 'Save Changes'}
+                        </>
+                    )}
+                </Button>
             </div>
         </form>
     )

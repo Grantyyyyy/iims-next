@@ -5,6 +5,7 @@ import {
     Sheet, SheetContent, SheetDescription, SheetHeader,
     SheetTitle
 } from "@/components/ui/sheet"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { RoomForm } from "./room-form"
 
 interface EditRoomSheetProps {
@@ -17,14 +18,22 @@ interface EditRoomSheetProps {
 export function EditRoomSheet({ room, departments, open, onOpenChange }: EditRoomSheetProps) {
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="flex flex-col gap-0 sm:max-w-md border-l shadow-2xl">
-                <SheetHeader className="pb-6 border-b bg-muted/20 px-1">
-                    <SheetTitle className="text-2xl font-bold tracking-tight">Edit Room Details</SheetTitle>
-                    <SheetDescription className="text-sm text-muted-foreground">
-                        Update the information for <strong>{room?.name}</strong>.
-                    </SheetDescription>
+            <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
+                <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
+                    {/* Subtle Glow Effect */}
+                    <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                    <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
+
+                    <div className="relative z-10 text-left">
+                        <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                            Edit Room Details
+                        </SheetTitle>
+                        <SheetDescription className="text-sm font-medium mt-1">
+                            Update the information for <strong>{room?.name}</strong>.
+                        </SheetDescription>
+                    </div>
                 </SheetHeader>
-                <div className="flex-1 overflow-y-auto py-8 px-1">
+                <ScrollArea className="flex-1 px-6 py-8">
                     {room && (
                         <RoomForm
                             mode="edit"
@@ -34,7 +43,7 @@ export function EditRoomSheet({ room, departments, open, onOpenChange }: EditRoo
                             onCancel={() => onOpenChange(false)}
                         />
                     )}
-                </div>
+                </ScrollArea>
             </SheetContent>
         </Sheet>
     )
