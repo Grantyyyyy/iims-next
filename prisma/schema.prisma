@@ -531,6 +531,7 @@ model ChemicalUsageRecord {
   distributedUnit   String?
   distributedAmount Float?
   purpose           String?
+  sessionId         String?
   dateUsed          DateTime      @default(now())
   recordedById      Int
   recordedBy        User          @relation("ChemRecordedBy", fields: [recordedById], references: [id])

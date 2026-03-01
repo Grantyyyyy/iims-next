@@ -216,7 +216,13 @@ async function main() {
         }
 
         const totalVol = await prisma.chemicalBatch.aggregate({
-            where: { chemicalId: chemical.id },
+            where: {
+                chemicalId: chemical.id,
+                OR: [
+                    { expiryDate: null },
+                    { expiryDate: { gt: new Date() } }
+                ]
+            },
             _sum: { remainingVolume: true }
         })
         await prisma.chemical.update({
