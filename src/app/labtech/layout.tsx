@@ -14,7 +14,6 @@ import {
     SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { requirePermission } from "@/lib/permissions"
-
 import Link from "next/link"
 
 export default async function LabtechLayout({
