@@ -15,7 +15,7 @@ import {
   determineBaseUnit,
   formatVolume,
   CONVERSION_FACTORS
-} from '../unit-conversion.ts'
+} from '../unit-conversion'
 
 // Helper to match Jest's expect API
 const expect = (actual: any) => ({
@@ -218,11 +218,11 @@ describe('Unit Conversion System', () => {
       // Requirements 1.1, 1.5, 1.7, 14.2
       const originalAmount = 0.5
       const originalUnit = 'GAL'
-      
+
       const baseAmount = convertToBaseUnit(originalAmount, originalUnit)
       const baseUnit = determineBaseUnit(originalUnit)
       const display = formatVolume(baseAmount, baseUnit, originalAmount, originalUnit)
-      
+
       expect(baseAmount).toBeCloseTo(1892.71, 2)
       expect(baseUnit).toBe('ML')
       expect(display).toBe('1,892.71 ML (0.5 GAL)')
@@ -232,11 +232,11 @@ describe('Unit Conversion System', () => {
       // Requirements 1.2, 1.5, 1.7, 14.2
       const originalAmount = 2
       const originalUnit = 'L'
-      
+
       const baseAmount = convertToBaseUnit(originalAmount, originalUnit)
       const baseUnit = determineBaseUnit(originalUnit)
       const display = formatVolume(baseAmount, baseUnit, originalAmount, originalUnit)
-      
+
       expect(baseAmount).toBe(2000)
       expect(baseUnit).toBe('ML')
       expect(display).toBe('2,000 ML (2 L)')
@@ -246,11 +246,11 @@ describe('Unit Conversion System', () => {
       // Requirements 1.3, 1.6, 1.7, 14.2
       const originalAmount = 1.5
       const originalUnit = 'KG'
-      
+
       const baseAmount = convertToBaseUnit(originalAmount, originalUnit)
       const baseUnit = determineBaseUnit(originalUnit)
       const display = formatVolume(baseAmount, baseUnit, originalAmount, originalUnit)
-      
+
       expect(baseAmount).toBe(1500)
       expect(baseUnit).toBe('G')
       expect(display).toBe('1,500 G (1.5 KG)')
@@ -260,11 +260,11 @@ describe('Unit Conversion System', () => {
       // Requirements 1.4, 14.5
       const originalAmount = 1500
       const originalUnit = 'ML'
-      
+
       const baseAmount = convertToBaseUnit(originalAmount, originalUnit)
       const baseUnit = determineBaseUnit(originalUnit)
       const display = formatVolume(baseAmount, baseUnit, originalAmount, originalUnit)
-      
+
       expect(baseAmount).toBe(1500)
       expect(baseUnit).toBe('ML')
       expect(display).toBe('1,500 ML')
@@ -289,10 +289,10 @@ describe('Unit Conversion System', () => {
               // Convert to base unit
               const baseAmount = convertToBaseUnit(amount, unit)
               const baseUnit = determineBaseUnit(unit)
-              
+
               // Convert back to original unit
               const backConverted = convertFromBaseUnit(baseAmount, baseUnit, unit)
-              
+
               // Should be equal within 0.01 precision
               const difference = Math.abs(backConverted - amount)
               expect(difference).toBeLessThan(0.01)
@@ -310,7 +310,7 @@ describe('Unit Conversion System', () => {
               const baseAmount = convertToBaseUnit(0, unit)
               const baseUnit = determineBaseUnit(unit)
               const backConverted = convertFromBaseUnit(baseAmount, baseUnit, unit)
-              
+
               expect(backConverted).toBe(0)
             }
           ),
@@ -327,7 +327,7 @@ describe('Unit Conversion System', () => {
               const baseAmount = convertToBaseUnit(amount, unit)
               const baseUnit = determineBaseUnit(unit)
               const backConverted = convertFromBaseUnit(baseAmount, baseUnit, unit)
-              
+
               const difference = Math.abs(backConverted - amount)
               expect(difference).toBeLessThan(0.01)
             }
@@ -345,7 +345,7 @@ describe('Unit Conversion System', () => {
               const baseAmount = convertToBaseUnit(amount, unit)
               const baseUnit = determineBaseUnit(unit)
               const backConverted = convertFromBaseUnit(baseAmount, baseUnit, unit)
-              
+
               const difference = Math.abs(backConverted - amount)
               expect(difference).toBeLessThan(0.01)
             }
@@ -363,7 +363,7 @@ describe('Unit Conversion System', () => {
               const baseAmount = convertToBaseUnit(amount, unit)
               const baseUnit = determineBaseUnit(unit)
               const backConverted = convertFromBaseUnit(baseAmount, baseUnit, unit)
-              
+
               // For base units, should be exactly equal
               expect(backConverted).toBe(amount)
             }
@@ -380,10 +380,10 @@ describe('Unit Conversion System', () => {
             (amount, unit) => {
               const baseAmount = convertToBaseUnit(amount, unit)
               const baseUnit = determineBaseUnit(unit)
-              
+
               // Base unit should always be ML for liquids
               expect(baseUnit).toBe('ML')
-              
+
               // Convert back should preserve quantity
               const backConverted = convertFromBaseUnit(baseAmount, baseUnit, unit)
               const difference = Math.abs(backConverted - amount)
@@ -402,10 +402,10 @@ describe('Unit Conversion System', () => {
             (amount, unit) => {
               const baseAmount = convertToBaseUnit(amount, unit)
               const baseUnit = determineBaseUnit(unit)
-              
+
               // Base unit should always be G for solids
               expect(baseUnit).toBe('G')
-              
+
               // Convert back should preserve quantity
               const backConverted = convertFromBaseUnit(baseAmount, baseUnit, unit)
               const difference = Math.abs(backConverted - amount)
@@ -456,16 +456,16 @@ describe('Unit Conversion System', () => {
             fc.constantFrom('GAL', 'L', 'ML', 'KG', 'G'),
             (unit) => {
               const baseUnit = determineBaseUnit(unit)
-              
+
               // Base unit must be either ML or G
               const isValidBaseUnit = baseUnit === 'ML' || baseUnit === 'G'
               assert.ok(isValidBaseUnit, `Base unit must be ML or G, got ${baseUnit}`)
-              
+
               // Liquid units should map to ML
               if (['GAL', 'L', 'ML'].includes(unit)) {
                 expect(baseUnit).toBe('ML')
               }
-              
+
               // Solid units should map to G
               if (['KG', 'G'].includes(unit)) {
                 expect(baseUnit).toBe('G')
@@ -484,7 +484,7 @@ describe('Unit Conversion System', () => {
               const firstCall = determineBaseUnit(unit)
               const secondCall = determineBaseUnit(unit)
               const thirdCall = determineBaseUnit(unit)
-              
+
               expect(secondCall).toBe(firstCall)
               expect(thirdCall).toBe(firstCall)
             }
@@ -501,11 +501,11 @@ describe('Unit Conversion System', () => {
             (unit, amount) => {
               // Base unit determination should not depend on amount
               const baseUnit = determineBaseUnit(unit)
-              
+
               // Verify by converting and checking consistency
               const baseAmount = convertToBaseUnit(amount, unit)
               const determinedBaseUnit = determineBaseUnit(unit)
-              
+
               expect(determinedBaseUnit).toBe(baseUnit)
             }
           ),
