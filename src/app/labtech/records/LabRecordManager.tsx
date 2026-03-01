@@ -24,6 +24,7 @@ import { Search, Download, MoreHorizontal, RotateCcw, FileText, X, Check } from 
 import { format } from 'date-fns'
 import { processLabReturn } from './actions'
 import { toast } from 'sonner'
+import { User, BookOpen, MapPin } from 'lucide-react'
 
 interface LabRecordManagerProps {
     type: 'BORROW' | 'CHEMICAL' | 'DISTRIBUTION'
@@ -95,15 +96,41 @@ export function LabRecordManager({ type, records }: LabRecordManagerProps) {
         })
     }, [records, searchTerm, type])
 
-    const filteredDistributionRecords = React.useMemo(() => {
-        if (type !== 'DISTRIBUTION') return []
-        if (!searchTerm) return records
-        const term = searchTerm.toLowerCase()
-        return records.filter(r => {
+    const groupedDistributions = React.useMemo(() => {
+        if (type !== 'DISTRIBUTION') return { groups: [], ungrouped: [] }
+
+        const filtered = !searchTerm ? records : records.filter(r => {
             const chem = r.chemicalBatch?.chemical?.name || ''
             const recipient = `${r.recipient?.firstName || ''} ${r.recipient?.lastName || ''}`.trim() || r.recipient?.username || ''
-            return chem.toLowerCase().includes(term) || recipient.toLowerCase().includes(term)
+            const purpose = r.purpose || ''
+            return chem.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                purpose.toLowerCase().includes(searchTerm.toLowerCase())
         })
+
+        const groups: { [key: string]: any[] } = {}
+        const ungrouped: any[] = []
+
+        filtered.forEach(r => {
+            if (r.sessionId) {
+                if (!groups[r.sessionId]) groups[r.sessionId] = []
+                groups[r.sessionId].push(r)
+            } else {
+                ungrouped.push(r)
+            }
+        })
+
+        const groupList = Object.entries(groups).map(([id, items]) => ({
+            id,
+            items,
+            date: items[0].dateUsed,
+            recipient: items[0].recipient,
+            room: items[0].room,
+            subject: items[0].subject,
+            purpose: items[0].purpose
+        })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+        return { groups: groupList, ungrouped }
     }, [records, searchTerm, type])
 
     const getStatusBadge = (status: string) => {
@@ -423,11 +450,71 @@ export function LabRecordManager({ type, records }: LabRecordManagerProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredDistributionRecords.map((record) => (
+                        {/* Render Grouped Sessions */}
+                        {groupedDistributions.groups.map((group) => (
+                            <React.Fragment key={group.id}>
+                                <TableRow className="bg-muted/30 border-y-2 border-primary/10">
+                                    <TableCell colSpan={7} className="py-2.5">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-bold px-3">
+                                                    SESSION: {group.items.length} ITEM{group.items.length !== 1 ? 'S' : ''}
+                                                </Badge>
+                                                <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-tighter">
+                                                    <User className="h-3 w-3" />
+                                                    {group.recipient ? `${group.recipient.firstName || ''} ${group.recipient.lastName || ''}`.trim() || group.recipient.username : 'N/A'}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-tighter">
+                                                    <BookOpen className="h-3 w-3" />
+                                                    {group.subject?.code || 'N/A'}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-tighter">
+                                                    <MapPin className="h-3 w-3" />
+                                                    {group.room?.name || 'N/A'}
+                                                </div>
+                                            </div>
+                                            <div className="text-[10px] font-medium text-muted-foreground">
+                                                {format(new Date(group.date), 'MMM dd, yyyy HH:mm')}
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                                {group.items.map((record) => (
+                                    <TableRow key={record.id} className="border-l-4 border-l-primary/30">
+                                        <TableCell className="font-bold text-foreground pl-6">
+                                            {record.chemicalBatch?.chemical?.name || 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground text-xs italic">
+                                            - (Session) -
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                                                {(record.distributedAmount || record.quantityUsed).toFixed(2)} {record.distributedUnit || record.unit || 'ML'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground font-mono text-[10px]">
+                                            {record.subject?.code || 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground font-medium text-xs">
+                                            {record.room?.name || 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="max-w-xs truncate text-xs italic text-muted-foreground">
+                                            {record.purpose || 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground text-xs">
+                                            {format(new Date(record.dateUsed), 'HH:mm')}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </React.Fragment>
+                        ))}
+
+                        {/* Render Ungrouped Records */}
+                        {groupedDistributions.ungrouped.map((record) => (
                             <TableRow key={record.id}>
                                 <TableCell className="font-bold text-foreground">{record.chemicalBatch?.chemical?.name || 'N/A'}</TableCell>
                                 <TableCell className="font-medium">
-                                    {record.recipient 
+                                    {record.recipient
                                         ? `${record.recipient.firstName || ''} ${record.recipient.lastName || ''}`.trim() || record.recipient.username
                                         : 'N/A'}
                                 </TableCell>
@@ -442,10 +529,14 @@ export function LabRecordManager({ type, records }: LabRecordManagerProps) {
                                 <TableCell className="text-muted-foreground">{format(new Date(record.dateUsed), 'MMM dd, yyyy HH:mm')}</TableCell>
                             </TableRow>
                         ))}
-                        {filteredDistributionRecords.length === 0 && (
+
+                        {groupedDistributions.groups.length === 0 && groupedDistributions.ungrouped.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                                    No distribution records found.
+                                <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <Info className="h-8 w-8 text-muted-foreground/30" />
+                                        <p>No distribution records found.</p>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         )}

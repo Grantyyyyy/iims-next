@@ -9,7 +9,7 @@ import { searchStaffUsers } from '@/app/actions/labtech'
 interface RecipientSelectorProps {
   value: string
   onChange: (userId: string) => void
-  onUserSelect: (user: { id: number; departmentId: number | null }) => void
+  onUserSelect: (user: { id: number; departmentId: number | null; name: string }) => void
 }
 
 interface StaffUser {
@@ -89,12 +89,12 @@ export function RecipientSelector({ value, onChange, onUserSelect }: RecipientSe
     const newValue = e.target.value
     setSearchTerm(newValue)
     setIsOpen(true)
-    
+
     // If user clears the input, clear the selection
     if (!newValue) {
       setSelectedUser(null)
       onChange('')
-      onUserSelect({ id: 0, departmentId: null })
+      onUserSelect({ id: 0, departmentId: null, name: '' })
     }
   }
 
@@ -105,7 +105,8 @@ export function RecipientSelector({ value, onChange, onUserSelect }: RecipientSe
     onChange(user.id.toString())
     onUserSelect({
       id: user.id,
-      departmentId: user.department?.id || null
+      departmentId: user.department?.id || null,
+      name: getFullName(user)
     })
   }
 
@@ -115,7 +116,7 @@ export function RecipientSelector({ value, onChange, onUserSelect }: RecipientSe
     setResults([])
     setIsOpen(false)
     onChange('')
-    onUserSelect({ id: 0, departmentId: null })
+    onUserSelect({ id: 0, departmentId: null, name: '' })
     inputRef.current?.focus()
   }
 

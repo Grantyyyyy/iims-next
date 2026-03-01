@@ -9,6 +9,7 @@ import { searchSubjects } from '@/app/actions/labtech'
 interface SubjectSelectorProps {
   value: string
   onChange: (subjectId: string) => void
+  onSelect?: (subject: { id: number; code: string; name: string }) => void
 }
 
 interface Subject {
@@ -17,7 +18,7 @@ interface Subject {
   name: string
 }
 
-export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
+export function SubjectSelector({ value, onChange, onSelect }: SubjectSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [results, setResults] = useState<Subject[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -83,11 +84,12 @@ export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
     const newValue = e.target.value
     setSearchTerm(newValue)
     setIsOpen(true)
-    
+
     // If user clears the input, clear the selection
     if (!newValue) {
       setSelectedSubject(null)
       onChange('')
+      onSelect?.({ id: 0, code: '', name: '' })
     }
   }
 
@@ -96,6 +98,7 @@ export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
     setSearchTerm(`${subject.code} - ${subject.name}`)
     setIsOpen(false)
     onChange(subject.id.toString())
+    onSelect?.(subject)
   }
 
   const handleClear = () => {
@@ -104,6 +107,7 @@ export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
     setResults([])
     setIsOpen(false)
     onChange('')
+    onSelect?.({ id: 0, code: '', name: '' })
     inputRef.current?.focus()
   }
 

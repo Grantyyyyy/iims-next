@@ -32,6 +32,18 @@ const getRecentDistributionSchema = z.object({
   recipientId: z.number().int().positive(),
 })
 
+const distributeMultipleChemicalsSchema = z.object({
+  recipientId: z.number().int().positive(),
+  subject: z.string().min(1, 'Subject is required'),
+  room: z.string().min(1, 'Room is required'),
+  purpose: z.string().min(1, 'Purpose is required'),
+  items: z.array(z.object({
+    id: z.number().int().positive(),
+    quantity: z.number().positive('Quantity must be greater than zero'),
+    unit: z.enum(['GAL', 'L', 'ML', 'KG', 'G']),
+  })).min(1, 'At least one item is required'),
+})
+
 // ---------------------------------------------------------------------------
 // Actions
 // ---------------------------------------------------------------------------
@@ -47,7 +59,7 @@ const getRecentDistributionSchema = z.object({
  */
 export async function searchStaffUsers(query: string) {
   await requirePermission('manage:chemicals')
-  
+
   if (!query || query.length < 2) {
     return []
   }
@@ -63,7 +75,7 @@ export async function searchStaffUsers(query: string) {
         ]
       },
       take: 8,
-      include: { 
+      include: {
         department: {
           select: {
             id: true,
@@ -95,7 +107,7 @@ export async function searchStaffUsers(query: string) {
  */
 export async function searchRooms(query: string, departmentId?: number | null) {
   await requirePermission('manage:chemicals')
-  
+
   if (!query || query.length < 2) {
     return []
   }
@@ -215,7 +227,7 @@ export async function distributeChemical(data: {
     const result = await prisma.$transaction(async (tx) => {
       // Deduct from batches using FIFO
       const deductionResult = await deductFromBatches(chemicalId, amountInBaseUnit, tx)
-      
+
       if (!deductionResult.success) {
         throw new Error(deductionResult.error || 'Failed to deduct from batches')
       }
@@ -263,7 +275,10 @@ export async function distributeChemical(data: {
       const batches = await tx.chemicalBatch.findMany({
         where: {
           chemicalId,
-          expiryDate: { gt: new Date() }
+          OR: [
+            { expiryDate: null },
+            { expiryDate: { gt: new Date() } }
+          ]
         },
         select: {
           remainingVolume: true
@@ -302,7 +317,7 @@ export async function distributeChemical(data: {
 
   } catch (error) {
     console.error('Distribution error:', error)
-    
+
     // Return user-friendly error message
     if (error instanceof Error) {
       return {
@@ -310,10 +325,170 @@ export async function distributeChemical(data: {
         error: error.message
       }
     }
-    
+
     return {
       success: false,
       error: 'An error occurred while processing the distribution. Please try again.'
+    }
+  }
+}
+
+/**
+ * Distribute multiple chemicals in a single transaction
+ * 
+ * Takes an array of chemicals from a cart and processes them all at once:
+ * - Validates all items have positive quantity
+ * - Executes all deductions within a single atomic Prisma transaction
+ * - Groups all resulting usage records under a common sessionId
+ * - Updates total volumes for all affected chemicals
+ */
+export async function distributeMultipleChemicals(data: {
+  recipientId: number
+  subject: string
+  room: string
+  purpose: string
+  items: Array<{
+    id: number
+    quantity: number
+    unit: string
+  }>
+}) {
+  try {
+    // Validate permission
+    const { user: currentUser } = await requirePermission('manage:chemicals')
+
+    // Validate input data
+    const validated = distributeMultipleChemicalsSchema.safeParse(data)
+    if (!validated.success) {
+      return {
+        success: false,
+        error: validated.error.issues[0]?.message || 'Invalid input data'
+      }
+    }
+
+    const { recipientId, subject, room, purpose, items } = validated.data
+
+    // Generate a session ID for grouping
+    const sessionId = `dist_session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+
+    // Validate recipient has STAFF role
+    const recipient = await prisma.user.findUnique({
+      where: { id: recipientId },
+      include: {
+        roles: {
+          include: {
+            role: true
+          }
+        }
+      }
+    })
+
+    if (!recipient) {
+      return {
+        success: false,
+        error: 'Recipient not found'
+      }
+    }
+
+    const recipientRoles = recipient.roles.map(ur => ur.role.name)
+    if (!recipientRoles.includes('STAFF')) {
+      return {
+        success: false,
+        error: 'Recipient must have STAFF role'
+      }
+    }
+
+    // Parse subject and room IDs
+    const subjectId = parseInt(subject)
+    const roomId = parseInt(room)
+
+    // Execute all distributions within one transaction
+    await prisma.$transaction(async (tx) => {
+      for (const item of items) {
+        const amountInBaseUnit = convertToBaseUnit(item.quantity, item.unit)
+
+        // 1. Deduct from batches using FIFO
+        const deductionResult = await deductFromBatches(item.id, amountInBaseUnit, tx)
+        if (!deductionResult.success) {
+          // This will rollback the entire transaction
+          throw new Error(`Insufficient stock for chemical ID ${item.id}: ${deductionResult.error}`)
+        }
+
+        // 2. Get a batch for record linking (use the first non-expired batch)
+        const firstBatch = await tx.chemicalBatch.findFirst({
+          where: {
+            chemicalId: item.id,
+            remainingVolume: { gte: 0 },
+            OR: [
+              { expiryDate: null },
+              { expiryDate: { gt: new Date() } }
+            ]
+          },
+          orderBy: { purchaseDate: 'asc' }
+        })
+
+        if (!firstBatch) {
+          throw new Error(`No valid batch found for chemical ID ${item.id}`)
+        }
+
+        // 3. Create ChemicalUsageRecord with sessionId
+        await (tx.chemicalUsageRecord as any).create({
+          data: {
+            chemicalBatchId: firstBatch.id,
+            recipientId,
+            isDistribution: true,
+            distributedAmount: item.quantity,
+            distributedUnit: item.unit,
+            quantityUsed: amountInBaseUnit,
+            quantityRequested: amountInBaseUnit,
+            unit: (firstBatch as any).baseUnit,
+            subjectId: isNaN(subjectId) ? null : subjectId,
+            roomId: isNaN(roomId) ? null : roomId,
+            purpose,
+            recordedById: currentUser.id,
+            sessionId,
+            dateUsed: new Date()
+          }
+        })
+
+        // 4. Update Chemical total volume
+        const batches = await tx.chemicalBatch.findMany({
+          where: {
+            chemicalId: item.id,
+            OR: [
+              { expiryDate: null },
+              { expiryDate: { gt: new Date() } }
+            ]
+          },
+          select: {
+            remainingVolume: true
+          }
+        })
+
+        const newTotalVolume = batches.reduce((sum, batch) => sum + batch.remainingVolume, 0)
+
+        await tx.chemical.update({
+          where: { id: item.id },
+          data: { volume: newTotalVolume }
+        })
+      }
+    })
+
+    // Revalidate paths
+    revalidatePath('/labtech/chemicals')
+    revalidatePath('/labtech/records')
+    revalidatePath('/labtech/usage')
+
+    return {
+      success: true,
+      sessionId
+    }
+
+  } catch (error) {
+    console.error('Multi-distribution error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An error occurred during multi-chemical distribution'
     }
   }
 }
@@ -354,7 +529,10 @@ export async function previewDistribution(data: {
       where: {
         chemicalId,
         remainingVolume: { gt: 0 },
-        expiryDate: { gt: new Date() }
+        OR: [
+          { expiryDate: null },
+          { expiryDate: { gt: new Date() } }
+        ]
       },
       orderBy: { purchaseDate: 'asc' },
       select: {
@@ -396,14 +574,14 @@ export async function previewDistribution(data: {
 
   } catch (error) {
     console.error('Preview distribution error:', error)
-    
+
     if (error instanceof Error) {
       return {
         success: false,
         error: error.message
       }
     }
-    
+
     return {
       success: false,
       error: 'An error occurred while calculating the preview. Please try again.'
@@ -490,7 +668,7 @@ export async function getRecentDistribution(data: {
 
   } catch (error) {
     console.error('Get recent distribution error:', error)
-    
+
     return {
       found: false,
       error: error instanceof Error ? error.message : 'An error occurred while checking for recent distributions'
@@ -510,7 +688,7 @@ export async function getRecentDistribution(data: {
  */
 export async function getChemicalDistributionHistory(chemicalId: number, limit: number = 10) {
   await requirePermission('manage:chemicals')
-  
+
   try {
     const distributions = await (prisma.chemicalUsageRecord as any).findMany({
       where: {
@@ -547,7 +725,7 @@ export async function getChemicalDistributionHistory(chemicalId: number, limit: 
 
     return distributions.map((dist: any) => ({
       id: dist.id,
-      recipientName: dist.recipient 
+      recipientName: dist.recipient
         ? `${dist.recipient.firstName || ''} ${dist.recipient.lastName || ''}`.trim() || dist.recipient.username
         : 'Unknown',
       amount: dist.distributedAmount || dist.quantityUsed,
@@ -574,11 +752,11 @@ export async function getChemicalDistributionHistory(chemicalId: number, limit: 
  */
 export async function searchSubjects(query: string) {
   await requirePermission('manage:chemicals')
-  
+
   if (!query || query.length < 2) {
     return []
   }
-  
+
   const subjects = await prisma.subject.findMany({
     where: {
       OR: [
@@ -594,6 +772,6 @@ export async function searchSubjects(query: string) {
     orderBy: { code: 'asc' },
     take: 10
   })
-  
+
   return subjects
 }

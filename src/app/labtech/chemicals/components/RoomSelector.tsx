@@ -10,6 +10,7 @@ interface RoomSelectorProps {
   value: string
   onChange: (roomId: string) => void
   departmentId: number | null
+  onSelect?: (room: { id: number; name: string }) => void
 }
 
 interface Room {
@@ -22,7 +23,7 @@ interface Room {
   }
 }
 
-export function RoomSelector({ value, onChange, departmentId }: RoomSelectorProps) {
+export function RoomSelector({ value, onChange, departmentId, onSelect }: RoomSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [results, setResults] = useState<Room[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -52,7 +53,7 @@ export function RoomSelector({ value, onChange, departmentId }: RoomSelectorProp
       try {
         const rooms = await searchRooms(searchTerm, departmentId)
         setResults(rooms)
-        
+
         // Check if department has no rooms
         if (departmentId && rooms.length === 0) {
           // Try searching without department filter to show notice
@@ -113,11 +114,12 @@ export function RoomSelector({ value, onChange, departmentId }: RoomSelectorProp
     const newValue = e.target.value
     setSearchTerm(newValue)
     setIsOpen(true)
-    
+
     // If user clears the input, clear the selection
     if (!newValue) {
       setSelectedRoom(null)
       onChange('')
+      onSelect?.({ id: 0, name: '' })
     }
   }
 
@@ -126,6 +128,7 @@ export function RoomSelector({ value, onChange, departmentId }: RoomSelectorProp
     setSearchTerm(room.name)
     setIsOpen(false)
     onChange(room.id.toString())
+    onSelect?.(room)
   }
 
   const handleClear = () => {
@@ -135,6 +138,7 @@ export function RoomSelector({ value, onChange, departmentId }: RoomSelectorProp
     setIsOpen(false)
     setShowDepartmentNotice(false)
     onChange('')
+    onSelect?.({ id: 0, name: '' })
     inputRef.current?.focus()
   }
 
@@ -180,7 +184,7 @@ export function RoomSelector({ value, onChange, departmentId }: RoomSelectorProp
               Recipient's department has no matching rooms. Showing all rooms.
             </div>
           )}
-          
+
           {isSearching ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
               Searching...

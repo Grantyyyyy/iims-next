@@ -11,6 +11,9 @@ import {
     Sheet, SheetContent, SheetDescription, SheetHeader,
     SheetTitle, SheetFooter, SheetTrigger
 } from "@/components/ui/sheet"
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select"
 import { Badge } from '@/components/ui/badge'
 import { Plus, ChevronLeft, Barcode, DollarSign, Calendar, Clock, Check, X, Package, Droplet, AlertTriangle, History, Loader2 } from 'lucide-react'
 import Link from 'next/link'
@@ -21,7 +24,7 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { DistributionSheet } from '../components/DistributionSheet'
+import { convertToBaseUnit, determineBaseUnit } from '@/lib/unit-conversion'
 
 interface ChemicalDetailViewProps {
     chemical: any
@@ -39,11 +42,16 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
     const [newBatch, setNewBatch] = useState({
         originalVolume: '',
         unitCost: '',
+        unit: chemical.unit || '',
         purchaseDate: '',
         expiryDate: '',
         inventoryNumber: '',
         notes: ''
     })
+
+    const baseUnit = chemical.unit ? determineBaseUnit(chemical.unit) : 'ML';
+    const showPreview = newBatch.unit && newBatch.unit !== baseUnit && newBatch.originalVolume && !isNaN(parseFloat(newBatch.originalVolume));
+    const previewVolume = showPreview ? convertToBaseUnit(parseFloat(newBatch.originalVolume), newBatch.unit) : 0;
 
     // Fetch usage history on mount
     useEffect(() => {
@@ -82,7 +90,7 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
     }, [chemical.id])
 
     const handleAddBatch = async () => {
-        if (!newBatch.originalVolume || !newBatch.unitCost || !newBatch.expiryDate || !newBatch.inventoryNumber) {
+        if (!newBatch.originalVolume || !newBatch.unitCost || !newBatch.expiryDate || !newBatch.inventoryNumber || !newBatch.unit) {
             toast.error('All fields except purchase date and notes are required')
             return
         }
@@ -91,6 +99,7 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
         const result = await addChemicalBatch({
             chemicalId: chemical.id,
             originalVolume: parseFloat(newBatch.originalVolume),
+            unit: newBatch.unit,
             unitCost: parseFloat(newBatch.unitCost),
             purchaseDate: newBatch.purchaseDate ? new Date(newBatch.purchaseDate) : undefined,
             expiryDate: new Date(newBatch.expiryDate),
@@ -104,6 +113,7 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
             setNewBatch({
                 originalVolume: '',
                 unitCost: '',
+                unit: chemical.unit || '',
                 purchaseDate: '',
                 expiryDate: '',
                 inventoryNumber: '',
@@ -143,154 +153,172 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
                     </Link>
                 </Button>
                 <div className="flex items-center gap-3">
-                    <DistributionSheet
-                        chemical={{
-                            id: chemical.id,
-                            name: chemical.name,
-                            volume: chemical.volume,
-                            unit: chemical.unit,
-                            reorderLevel: chemical.reorderLevel
-                        }}
-                        trigger={
-                            <Button variant="outline" className="h-10 px-5 rounded-xl font-bold border-2 hover:bg-primary/5 transition-all active:scale-95">
-                                <Droplet className="mr-2 h-4 w-4" />
-                                Distribute
-                            </Button>
-                        }
-                    />
                     <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
-                    <SheetTrigger asChild>
-                        <Button className="h-10 px-5 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Stock Batch
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
-                        <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
-                            {/* Subtle Glow Effect */}
-                            <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
-                            <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
+                        <SheetTrigger asChild>
+                            <Button className="h-10 px-5 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Stock Batch
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
+                            <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
+                                {/* Subtle Glow Effect */}
+                                <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                                <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
 
-                            <div className="relative z-10 text-left">
-                                <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                    Add Chemical Batch
-                                </SheetTitle>
-                                <SheetDescription className="text-sm font-medium mt-1">
-                                    Register a new supply batch for <span className="text-foreground font-bold">{chemical.name}</span>.
-                                </SheetDescription>
-                            </div>
-                        </SheetHeader>
+                                <div className="relative z-10 text-left">
+                                    <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                        Add Chemical Batch
+                                    </SheetTitle>
+                                    <SheetDescription className="text-sm font-medium mt-1">
+                                        Register a new supply batch for <span className="text-foreground font-bold">{chemical.name}</span>.
+                                    </SheetDescription>
+                                </div>
+                            </SheetHeader>
 
-                        <ScrollArea className="flex-1 px-6 py-8">
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                        <Barcode className="h-3 w-3 text-primary/70" />
-                                        Inventory Number
-                                    </label>
-                                    <Input
-                                        placeholder="e.g. CHEM-HA-001"
-                                        value={newBatch.inventoryNumber}
-                                        onChange={(e) => setNewBatch({ ...newBatch, inventoryNumber: e.target.value })}
-                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                        <Droplet className="h-3 w-3 text-primary/70" />
-                                        Original Volume ({chemical.unit})
-                                    </label>
-                                    <Input
-                                        type="number"
-                                        placeholder="e.g. 2.5"
-                                        value={newBatch.originalVolume}
-                                        onChange={(e) => setNewBatch({ ...newBatch, originalVolume: e.target.value })}
-                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                        <DollarSign className="h-3 w-3 text-primary/70" />
-                                        Unit Cost
-                                    </label>
-                                    <Input
-                                        type="number"
-                                        placeholder="e.g. 450.00"
-                                        value={newBatch.unitCost}
-                                        onChange={(e) => setNewBatch({ ...newBatch, unitCost: e.target.value })}
-                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
+                            <ScrollArea className="flex-1 px-6 py-8">
+                                <div className="space-y-6">
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <Calendar className="h-3 w-3 text-primary/70" />
-                                            Purchase Date
+                                            <Barcode className="h-3 w-3 text-primary/70" />
+                                            Inventory Number
                                         </label>
                                         <Input
-                                            type="date"
-                                            value={newBatch.purchaseDate}
-                                            onChange={(e) => setNewBatch({ ...newBatch, purchaseDate: e.target.value })}
+                                            placeholder="e.g. CHEM-HA-001"
+                                            value={newBatch.inventoryNumber}
+                                            onChange={(e) => setNewBatch({ ...newBatch, inventoryNumber: e.target.value })}
                                             className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
                                         />
                                     </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Droplet className="h-3 w-3 text-primary/70" />
+                                                Original Volume
+                                            </label>
+                                            <Input
+                                                type="number"
+                                                placeholder="e.g. 2.5"
+                                                value={newBatch.originalVolume}
+                                                onChange={(e) => setNewBatch({ ...newBatch, originalVolume: e.target.value })}
+                                                className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Package className="h-3 w-3 text-primary/70" />
+                                                Unit
+                                            </label>
+                                            <Select
+                                                value={newBatch.unit}
+                                                onValueChange={(value) => setNewBatch({ ...newBatch, unit: value })}
+                                            >
+                                                <SelectTrigger className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300">
+                                                    <SelectValue placeholder="Unit" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {baseUnit === 'ML' ? (
+                                                        <>
+                                                            <SelectItem value="ML">ML</SelectItem>
+                                                            <SelectItem value="L">L</SelectItem>
+                                                            <SelectItem value="GAL">GAL</SelectItem>
+                                                        </>
+                                                    ) : (
+                                                        <SelectItem value="KG">KG</SelectItem>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    {showPreview && (
+                                        <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg ml-1">
+                                            Will be stored as {previewVolume.toLocaleString(undefined, { maximumFractionDigits: 2 })} {baseUnit}
+                                        </div>
+                                    )}
+
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <AlertTriangle className="h-3 w-3 text-primary/70" />
-                                            Expiry Date
+                                            <DollarSign className="h-3 w-3 text-primary/70" />
+                                            Unit Cost
                                         </label>
                                         <Input
-                                            type="date"
-                                            value={newBatch.expiryDate}
-                                            onChange={(e) => setNewBatch({ ...newBatch, expiryDate: e.target.value })}
-                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-orange-200 focus:border-orange-500 transition-all duration-300"
+                                            type="number"
+                                            placeholder="e.g. 450.00"
+                                            value={newBatch.unitCost}
+                                            onChange={(e) => setNewBatch({ ...newBatch, unitCost: e.target.value })}
+                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Calendar className="h-3 w-3 text-primary/70" />
+                                                Purchase Date
+                                            </label>
+                                            <Input
+                                                type="date"
+                                                value={newBatch.purchaseDate}
+                                                onChange={(e) => setNewBatch({ ...newBatch, purchaseDate: e.target.value })}
+                                                className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <AlertTriangle className="h-3 w-3 text-primary/70" />
+                                                Expiry Date
+                                            </label>
+                                            <Input
+                                                type="date"
+                                                value={newBatch.expiryDate}
+                                                onChange={(e) => setNewBatch({ ...newBatch, expiryDate: e.target.value })}
+                                                className="h-11 rounded-xl bg-muted/20 focus:bg-background border-orange-200 focus:border-orange-500 transition-all duration-300"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                            <Package className="h-3 w-3 text-primary/70" />
+                                            Notes <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
+                                        </label>
+                                        <Input
+                                            placeholder="Additional batch info..."
+                                            value={newBatch.notes}
+                                            onChange={(e) => setNewBatch({ ...newBatch, notes: e.target.value })}
+                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                        <Package className="h-3 w-3 text-primary/70" />
-                                        Notes <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
-                                    </label>
-                                    <Input
-                                        placeholder="Additional batch info..."
-                                        value={newBatch.notes}
-                                        onChange={(e) => setNewBatch({ ...newBatch, notes: e.target.value })}
-                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                    />
-                                </div>
-                            </div>
-                        </ScrollArea>
+                            </ScrollArea>
 
-                        <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsAddOpen(false)}
-                                className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
-                            >
-                                <X className="h-4 w-4" />
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleAddBatch}
-                                disabled={isPending || !newBatch.originalVolume || !newBatch.unitCost || !newBatch.expiryDate || !newBatch.inventoryNumber}
-                                className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
-                            >
-                                {isPending ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Adding...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check className="h-4 w-4" />
-                                        Add Batch
-                                    </>
-                                )}
-                            </Button>
-                        </SheetFooter>
-                    </SheetContent>
-                </Sheet>
+                            <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsAddOpen(false)}
+                                    className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
+                                >
+                                    <X className="h-4 w-4" />
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleAddBatch}
+                                    disabled={isPending || !newBatch.originalVolume || !newBatch.unitCost || !newBatch.expiryDate || !newBatch.inventoryNumber}
+                                    className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
+                                >
+                                    {isPending ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Adding...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check className="h-4 w-4" />
+                                            Add Batch
+                                        </>
+                                    )}
+                                </Button>
+                            </SheetFooter>
+                        </SheetContent>
+                    </Sheet>
                 </div>
             </div>
 

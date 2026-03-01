@@ -9,7 +9,7 @@ export async function getChemicals(filters?: {
     search?: string
 }) {
     await requirePermission('manage:chemicals')
-    
+
     const chemicals = await prisma.chemical.findMany({
         where: {
             deletedAt: null,
@@ -25,7 +25,7 @@ export async function getChemicals(filters?: {
                         {
                             OR: [
                                 { expiryDate: null },
-                                { expiryDate: { gte: new Date() } }
+                                { expiryDate: { gt: new Date() } }
                             ]
                         }
                     ]
@@ -34,17 +34,17 @@ export async function getChemicals(filters?: {
         },
         orderBy: { name: 'asc' }
     })
-    
+
     return chemicals.map(chem => ({
         ...chem,
-        status: chem.volume === 0 ? 'OUT_OF_STOCK' : 
-                chem.volume <= chem.reorderLevel ? 'LOW_STOCK' : 'OK'
+        status: chem.volume === 0 ? 'OUT_OF_STOCK' :
+            chem.volume <= chem.reorderLevel ? 'LOW_STOCK' : 'OK'
     }))
 }
 
 export async function getChemicalWithBatches(id: number) {
     await requirePermission('manage:chemicals')
-    
+
     const chemical = await prisma.chemical.findUnique({
         where: { id },
         include: {
@@ -56,21 +56,21 @@ export async function getChemicalWithBatches(id: number) {
             }
         }
     })
-    
+
     if (!chemical) return null
-    
+
     const now = new Date()
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
-    
+
     const batchesWithStatus = chemical.batches.map(batch => {
         let status = 'ACTIVE'
         if (batch.remainingVolume === 0) status = 'EXHAUSTED'
         else if (batch.expiryDate && batch.expiryDate < now) status = 'EXPIRED'
         else if (batch.expiryDate && batch.expiryDate <= thirtyDaysFromNow) status = 'EXPIRING'
-        
+
         return { ...batch, status }
     })
-    
+
     return {
         ...chemical,
         batches: batchesWithStatus
@@ -84,7 +84,7 @@ export async function createChemical(data: {
     reorderLevel: number
 }) {
     await requirePermission('manage:chemicals')
-    
+
     try {
         await prisma.chemical.create({
             data: {
@@ -108,7 +108,7 @@ export async function updateChemical(id: number, data: {
     reorderLevel?: number
 }) {
     await requirePermission('manage:chemicals')
-    
+
     try {
         await prisma.chemical.update({
             where: { id },
@@ -123,7 +123,7 @@ export async function updateChemical(id: number, data: {
 
 export async function deleteChemical(id: number) {
     await requirePermission('manage:chemicals')
-    
+
     try {
         await prisma.chemical.update({
             where: { id },
@@ -139,6 +139,7 @@ export async function deleteChemical(id: number) {
 export async function addChemicalBatch(data: {
     chemicalId: number
     originalVolume: number
+    unit: string
     unitCost: number
     purchaseDate?: Date
     expiryDate: Date
@@ -147,10 +148,10 @@ export async function addChemicalBatch(data: {
     userId: number
 }) {
     await requirePermission('manage:chemicals')
-    
+
     try {
         await prisma.$transaction(async (tx) => {
-            // Get the chemical to determine its unit
+            // Get the chemical to determine its base unit
             const chemical = await tx.chemical.findUnique({
                 where: { id: data.chemicalId },
                 select: { unit: true }
@@ -160,16 +161,16 @@ export async function addChemicalBatch(data: {
                 throw new Error('Chemical not found')
             }
 
-            const originalUnit = chemical.unit
-            const baseUnit = determineBaseUnit(originalUnit)
+            const originalUnit = data.unit
+            const baseUnit = determineBaseUnit(chemical.unit || 'ML')
             const remainingVolume = convertToBaseUnit(data.originalVolume, originalUnit)
 
             const count = await tx.chemicalBatch.count({
                 where: { chemicalId: data.chemicalId }
             })
-            
+
             const batchNumber = `CHEM-${data.chemicalId}-${String(count + 1).padStart(3, '0')}`
-            
+
             await tx.chemicalBatch.create({
                 data: {
                     chemicalId: data.chemicalId,
@@ -186,26 +187,26 @@ export async function addChemicalBatch(data: {
                     addedById: data.userId
                 }
             })
-            
+
             // Recalculate total volume (non-expired only)
             const nonExpiredBatches = await tx.chemicalBatch.findMany({
                 where: {
                     chemicalId: data.chemicalId,
                     OR: [
                         { expiryDate: null },
-                        { expiryDate: { gte: new Date() } }
+                        { expiryDate: { gt: new Date() } }
                     ]
                 }
             })
-            
+
             const totalVolume = nonExpiredBatches.reduce((sum, b) => sum + b.remainingVolume, 0)
-            
+
             await tx.chemical.update({
                 where: { id: data.chemicalId },
                 data: { volume: totalVolume }
             })
         })
-        
+
         revalidatePath('/labtech/chemicals')
         return { success: true }
     } catch (error) {
@@ -224,7 +225,7 @@ export async function recordChemicalUsage(data: {
     recordedById: number
 }) {
     await requirePermission('manage:chemicals')
-    
+
     try {
         await prisma.$transaction(async (tx) => {
             // Get non-expired batches ordered by purchase date (FIFO)
@@ -234,26 +235,26 @@ export async function recordChemicalUsage(data: {
                     remainingVolume: { gt: 0 },
                     OR: [
                         { expiryDate: null },
-                        { expiryDate: { gte: new Date() } }
+                        { expiryDate: { gt: new Date() } }
                     ]
                 },
                 orderBy: { purchaseDate: 'asc' }
             })
-            
+
             // Calculate total available
             const totalAvailable = batches.reduce((sum, b) => sum + b.remainingVolume, 0)
-            
+
             if (totalAvailable < data.quantityUsed) {
                 throw new Error(`Insufficient stock. Available: ${totalAvailable}, Requested: ${data.quantityUsed}`)
             }
-            
+
             // FIFO deduction
             let remaining = data.quantityUsed
             for (const batch of batches) {
                 if (remaining <= 0) break
-                
+
                 const deduct = Math.min(batch.remainingVolume, remaining)
-                
+
                 // Create usage record
                 await tx.chemicalUsageRecord.create({
                     data: {
@@ -268,35 +269,35 @@ export async function recordChemicalUsage(data: {
                         recordedById: data.recordedById
                     }
                 })
-                
+
                 // Update batch
                 await tx.chemicalBatch.update({
                     where: { id: batch.id },
                     data: { remainingVolume: batch.remainingVolume - deduct }
                 })
-                
+
                 remaining -= deduct
             }
-            
+
             // Recalculate chemical total volume (non-expired only)
             const updatedBatches = await tx.chemicalBatch.findMany({
                 where: {
                     chemicalId: data.chemicalId,
                     OR: [
                         { expiryDate: null },
-                        { expiryDate: { gte: new Date() } }
+                        { expiryDate: { gt: new Date() } }
                     ]
                 }
             })
-            
+
             const totalVolume = updatedBatches.reduce((sum, b) => sum + b.remainingVolume, 0)
-            
+
             await tx.chemical.update({
                 where: { id: data.chemicalId },
                 data: { volume: totalVolume }
             })
         })
-        
+
         revalidatePath('/labtech/chemicals')
         return { success: true }
     } catch (error: any) {
@@ -306,14 +307,14 @@ export async function recordChemicalUsage(data: {
 
 export async function getChemicalAlerts() {
     await requirePermission('manage:chemicals')
-    
+
     const now = new Date()
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
-    
+
     const [expiredBatches, expiringSoonBatches, lowStockChemicals] = await Promise.all([
         prisma.chemicalBatch.count({
             where: {
-                expiryDate: { lt: now },
+                expiryDate: { lte: now },
                 remainingVolume: { gt: 0 }
             }
         }),
@@ -333,7 +334,7 @@ export async function getChemicalAlerts() {
             }
         })
     ])
-    
+
     return {
         expired: expiredBatches,
         expiringSoon: expiringSoonBatches,

@@ -71,10 +71,10 @@ export function calculateBatchDeductions(
 ): BatchDeduction[] {
   const deductions: BatchDeduction[] = []
   let remaining = amountInBaseUnit
-  
+
   for (const batch of batches) {
     if (remaining <= 0) break
-    
+
     const deductAmount = Math.min(batch.remainingVolume, remaining)
     deductions.push({
       batchNumber: batch.batchNumber,
@@ -82,10 +82,10 @@ export function calculateBatchDeductions(
       amountToDeduct: deductAmount,
       willDeplete: deductAmount === batch.remainingVolume
     })
-    
+
     remaining -= deductAmount
   }
-  
+
   return deductions
 }
 
@@ -124,14 +124,17 @@ export async function deductFromBatches(
     where: {
       chemicalId,
       remainingVolume: { gt: 0 },
-      expiryDate: { gt: new Date() }
+      OR: [
+        { expiryDate: null },
+        { expiryDate: { gt: new Date() } }
+      ]
     },
     orderBy: { purchaseDate: 'asc' }
   })
-  
+
   // Calculate total available volume
   const totalAvailable = batches.reduce((sum, b) => sum + b.remainingVolume, 0)
-  
+
   // Check for insufficient stock
   if (totalAvailable < amountInBaseUnit) {
     return {
@@ -139,20 +142,20 @@ export async function deductFromBatches(
       error: `Insufficient stock. Available: ${totalAvailable.toFixed(2)}, Requested: ${amountInBaseUnit.toFixed(2)}`
     }
   }
-  
+
   // Deduct from batches in FIFO order
   let remaining = amountInBaseUnit
   for (const batch of batches) {
     if (remaining <= 0) break
-    
+
     const deductAmount = Math.min(batch.remainingVolume, remaining)
     await tx.chemicalBatch.update({
       where: { id: batch.id },
       data: { remainingVolume: batch.remainingVolume - deductAmount }
     })
-    
+
     remaining -= deductAmount
   }
-  
+
   return { success: true }
 }
