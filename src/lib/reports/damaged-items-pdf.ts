@@ -28,8 +28,8 @@ export const formatDate = (date: Date | string | null | undefined) => {
 };
 
 export const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('en-PH', { 
-    style: 'currency', 
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
     currency: 'PHP',
     minimumFractionDigits: 2
   }).format(value);
@@ -40,15 +40,15 @@ const imageToBase64 = (url: string): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    
-    img.onload = function() {
+
+    img.onload = function () {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) return resolve('');
       canvas.width = (this as HTMLImageElement).width;
       canvas.height = (this as HTMLImageElement).height;
       ctx.drawImage(this as CanvasImageSource, 0, 0);
-      
+
       try {
         const dataURL = canvas.toDataURL('image/png');
         resolve(dataURL);
@@ -57,28 +57,28 @@ const imageToBase64 = (url: string): Promise<string> => {
         resolve('');
       }
     };
-    
-    img.onerror = function() {
+
+    img.onerror = function () {
       // Intentionally not rejecting to allow fallback logic
       resolve('');
     };
-    
+
     img.src = url;
   });
 };
 
 const getHeaderFooterImages = async () => {
-    // In Next.js, images are in /public/images/
-    const headerUrl = `${window.location.origin}/images/header.png`;
-    const footerUrl = `${window.location.origin}/images/footer.png`;
-    
-    const [headerBase64, footerBase64] = await Promise.all([
-      imageToBase64(headerUrl),
-      imageToBase64(footerUrl)
-    ]);
-    
-    return { headerBase64, footerBase64 };
-  };
+  // In Next.js, images are in /public/images/
+  const headerUrl = `${window.location.origin}/images/header.png`;
+  const footerUrl = `${window.location.origin}/images/footer.png`;
+
+  const [headerBase64, footerBase64] = await Promise.all([
+    imageToBase64(headerUrl),
+    imageToBase64(footerUrl)
+  ]);
+
+  return { headerBase64, footerBase64 };
+};
 
 // Add header to PDF page
 const addHeader = (doc: jsPDF, headerBase64: string, pageWidth: number) => {
@@ -103,8 +103,8 @@ const addFooter = (doc: jsPDF, footerBase64: string, pageWidth: number, pageHeig
     const footerWidth = pageWidth;
     doc.addImage(footerBase64, 'PNG', 0, pageHeight - 90, footerWidth, footerHeight);
   }
-  
-  const totalPages = doc.internal.getNumberOfPages();
+
+  const totalPages = (doc as any).internal.getNumberOfPages();
   const pageNum = (doc as any).internal.getCurrentPageInfo().pageNumber;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -146,16 +146,16 @@ const addSignatureSection = (doc: jsPDF, currentY: number, pageWidth: number, us
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  
+
   // Center alignment helpers
   const textX = pageWidth / 2;
 
   doc.text(fullName, textX, currentY + 30, { align: 'center' });
   doc.text('Printed Name & Signature', textX, currentY + 45, { align: 'center' });
-  
+
   doc.text(position, textX, currentY + 60, { align: 'center' });
   doc.text('Position/Office', textX, currentY + 73, { align: 'center' });
-  
+
   doc.text(dateStr, textX, currentY + 87, { align: 'center' });
   doc.text('Date & Time', textX, currentY + 101, { align: 'center' });
 
@@ -163,7 +163,7 @@ const addSignatureSection = (doc: jsPDF, currentY: number, pageWidth: number, us
 };
 
 export const generateDamagedItemsPDF = async (
-  items: DamagedItemRow[], 
+  items: DamagedItemRow[],
   options: {
     title?: string
     user: { firstName: string, lastName: string }
@@ -190,7 +190,7 @@ export const generateDamagedItemsPDF = async (
     item.quantity.toString(),
     `${item.itemName}${item.description ? '\n' + item.description : ''}${item.serialNumber ? '\nSN#: ' + item.serialNumber : ''}`,
     item.inventoryNumber,
-    item.lastBorrowRecord 
+    item.lastBorrowRecord
       ? `${item.lastBorrowRecord.borrowerName}\nRet: ${formatDate(item.lastBorrowRecord.returnDate)}\nRm: ${item.lastBorrowRecord.roomName || 'N/A'}`
       : 'No Record'
   ]);
@@ -223,7 +223,7 @@ export const generateDamagedItemsPDF = async (
     didDrawPage: (data) => {
       addHeader(doc, headerBase64, pageWidth);
       addFooter(doc, footerBase64, pageWidth, pageHeight);
-      
+
       // Title on first page
       if (data.pageNumber === 1) {
         doc.setFontSize(14);

@@ -66,7 +66,10 @@ export default async function ReportsPage({
                             <DamagedItemsReport 
                                 data={damagedData} 
                                 categories={categories} 
-                                user={user} 
+                                user={{
+                                    firstName: user.firstName || 'Unknown',
+                                    lastName: user.lastName || 'User'
+                                }}
                                 userRole={primaryRole}
                                 isDean={isDean}
                             />
