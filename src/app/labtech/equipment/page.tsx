@@ -1,4 +1,4 @@
-import { getEquipment } from "./actions"
+import { getEquipment, getDeletedEquipment } from "./actions"
 import { getLabCategories } from "../categories/actions"
 import { LabEquipmentManager } from "./LabEquipmentManager"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default async function LabtechEquipmentPage() {
     const equipment = await getEquipment()
     const categories = await getLabCategories()
+    const deletedEquipment = await getDeletedEquipment()
 
     return (
         <div className="space-y-4">
@@ -17,7 +18,7 @@ export default async function LabtechEquipmentPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <LabEquipmentManager equipment={equipment} categories={categories} />
+                    <LabEquipmentManager equipment={equipment} categories={categories} deletedEquipment={deletedEquipment} />
                 </CardContent>
             </Card>
         </div>

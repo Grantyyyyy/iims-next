@@ -153,3 +153,56 @@ export async function addEquipmentInstance(data: {
         return { success: false, error: 'Failed to add instance' }
     }
 }
+
+export async function getDeletedEquipment() {
+    await requirePermission('manage:equipment')
+
+    return await prisma.equipment.findMany({
+        where: {
+            deletedAt: { not: null }
+        },
+        include: {
+            category: true,
+            instances: true
+        },
+        orderBy: { deletedAt: 'desc' }
+    })
+}
+
+export async function restoreEquipment(id: number) {
+    if (!id || isNaN(id)) return { success: false, error: 'Invalid ID' }
+    await requirePermission('manage:equipment')
+
+    try {
+        await prisma.equipment.update({
+            where: { id },
+            data: { deletedAt: null }
+        })
+        revalidatePath('/labtech/equipment')
+        return { success: true }
+    } catch (error) {
+        return { success: false, error: 'Failed to restore equipment' }
+    }
+}
+
+export async function permanentlyDeleteEquipment(id: number) {
+    if (!id || isNaN(id)) return { success: false, error: 'Invalid ID' }
+    await requirePermission('manage:equipment')
+
+    try {
+        await prisma.$transaction(async (tx) => {
+            // Delete all instances first
+            await tx.equipmentInstance.deleteMany({
+                where: { equipmentId: id }
+            })
+            await tx.equipment.delete({
+                where: { id }
+            })
+        })
+        revalidatePath('/labtech/equipment')
+        return { success: true }
+    } catch (error) {
+        return { success: false, error: 'Failed to permanently delete equipment. It may have related records.' }
+    }
+}
+

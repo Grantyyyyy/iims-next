@@ -1,4 +1,4 @@
-import { getLabBorrowRecords, getChemicalUsageRecords } from "./actions"
+import { getLabBorrowRecords, getChemicalUsageRecords, getDistributionRecords } from "./actions"
 import { LabRecordManager } from "./LabRecordManager"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -22,6 +22,11 @@ export default async function LabtechRecordsPage({
     const cFrom = searchParams.cFrom ? new Date(searchParams.cFrom) : undefined
     const cTo = searchParams.cTo ? new Date(searchParams.cTo) : undefined
 
+    // Distribution Filters
+    const dSearch = searchParams.dSearch
+    const dFrom = searchParams.dFrom ? new Date(searchParams.dFrom) : undefined
+    const dTo = searchParams.dTo ? new Date(searchParams.dTo) : undefined
+
     const borrowRecords = tab === 'borrows' ? await getLabBorrowRecords({
         search: bSearch,
         status: bStatus,
@@ -36,13 +41,19 @@ export default async function LabtechRecordsPage({
         dateTo: cTo
     }) : []
 
+    const distributionRecords = tab === 'distributions' ? await getDistributionRecords({
+        search: dSearch,
+        dateFrom: dFrom,
+        dateTo: dTo
+    }) : []
+
     return (
         <div className="space-y-4">
             <Card>
                 <CardHeader>
                     <CardTitle>Laboratory Records</CardTitle>
                     <CardDescription>
-                        Track equipment/apparatus borrows and chemical usage records.
+                        Track equipment/apparatus borrows, chemical usage, and chemical distributions.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -50,6 +61,7 @@ export default async function LabtechRecordsPage({
                         <TabsList className="mb-4">
                             <TabsTrigger value="borrows">Borrow Records</TabsTrigger>
                             <TabsTrigger value="chemicals">Chemical Usage</TabsTrigger>
+                            <TabsTrigger value="distributions">Chemical Distribution</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="borrows">
@@ -58,6 +70,10 @@ export default async function LabtechRecordsPage({
 
                         <TabsContent value="chemicals">
                             <LabRecordManager type="CHEMICAL" records={chemicalUsageRecords} />
+                        </TabsContent>
+
+                        <TabsContent value="distributions">
+                            <LabRecordManager type="DISTRIBUTION" records={distributionRecords} />
                         </TabsContent>
                     </Tabs>
                 </CardContent>

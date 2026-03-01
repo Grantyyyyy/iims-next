@@ -10,7 +10,7 @@ export async function getApparatus(filters?: {
     type?: string
 }) {
     await requirePermission('manage:equipment')
-    
+
     return await prisma.apparatus.findMany({
         where: {
             deletedAt: null,
@@ -35,7 +35,7 @@ export async function getApparatus(filters?: {
 
 export async function getApparatusWithDetails(id: number) {
     await requirePermission('manage:equipment')
-    
+
     return await prisma.apparatus.findUnique({
         where: { id },
         include: {
@@ -70,7 +70,7 @@ export async function createApparatus(data: {
     categoryId?: number
 }) {
     await requirePermission('manage:equipment')
-    
+
     try {
         await prisma.apparatus.create({
             data: {
@@ -94,7 +94,7 @@ export async function updateApparatus(id: number, data: {
     categoryId?: number
 }) {
     await requirePermission('manage:equipment')
-    
+
     try {
         await prisma.apparatus.update({
             where: { id },
@@ -109,7 +109,7 @@ export async function updateApparatus(id: number, data: {
 
 export async function deleteApparatus(id: number) {
     await requirePermission('manage:equipment')
-    
+
     try {
         await prisma.apparatus.update({
             where: { id },
@@ -131,7 +131,7 @@ export async function addApparatusInstance(data: {
     usefulLife?: number
 }) {
     await requirePermission('manage:equipment')
-    
+
     try {
         await prisma.$transaction(async (tx) => {
             await tx.apparatusInstance.create({
@@ -145,13 +145,13 @@ export async function addApparatusInstance(data: {
                     currentCondition: 'Good'
                 }
             })
-            
+
             await tx.apparatus.update({
                 where: { id: data.apparatusId },
                 data: { quantity: { increment: 1 } }
             })
         })
-        
+
         revalidatePath('/labtech/apparatus')
         return { success: true }
     } catch (error) {
@@ -168,15 +168,15 @@ export async function addApparatusBatch(data: {
     userId: number
 }) {
     await requirePermission('manage:equipment')
-    
+
     try {
         await prisma.$transaction(async (tx) => {
             const count = await tx.apparatusBatch.count({
                 where: { apparatusId: data.apparatusId }
             })
-            
+
             const batchNumber = `APP-${data.apparatusId}-${String(count + 1).padStart(3, '0')}`
-            
+
             await tx.apparatusBatch.create({
                 data: {
                     apparatusId: data.apparatusId,
@@ -189,16 +189,72 @@ export async function addApparatusBatch(data: {
                     addedById: data.userId
                 }
             })
-            
+
             await tx.apparatus.update({
                 where: { id: data.apparatusId },
                 data: { quantity: { increment: data.originalQty } }
             })
         })
-        
+
         revalidatePath('/labtech/apparatus')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to add batch' }
     }
 }
+
+export async function getDeletedApparatus() {
+    await requirePermission('manage:equipment')
+
+    return await prisma.apparatus.findMany({
+        where: {
+            deletedAt: { not: null }
+        },
+        include: {
+            category: true,
+            instances: true,
+            batches: true
+        },
+        orderBy: { deletedAt: 'desc' }
+    })
+}
+
+export async function restoreApparatus(id: number) {
+    if (!id || isNaN(id)) return { success: false, error: 'Invalid ID' }
+    await requirePermission('manage:equipment')
+
+    try {
+        await prisma.apparatus.update({
+            where: { id },
+            data: { deletedAt: null }
+        })
+        revalidatePath('/labtech/apparatus')
+        return { success: true }
+    } catch (error) {
+        return { success: false, error: 'Failed to restore apparatus' }
+    }
+}
+
+export async function permanentlyDeleteApparatus(id: number) {
+    if (!id || isNaN(id)) return { success: false, error: 'Invalid ID' }
+    await requirePermission('manage:equipment')
+
+    try {
+        await prisma.$transaction(async (tx) => {
+            await tx.apparatusInstance.deleteMany({
+                where: { apparatusId: id }
+            })
+            await tx.apparatusBatch.deleteMany({
+                where: { apparatusId: id }
+            })
+            await tx.apparatus.delete({
+                where: { id }
+            })
+        })
+        revalidatePath('/labtech/apparatus')
+        return { success: true }
+    } catch (error) {
+        return { success: false, error: 'Failed to permanently delete apparatus. It may have related records.' }
+    }
+}
+

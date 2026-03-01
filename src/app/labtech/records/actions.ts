@@ -235,3 +235,43 @@ export async function getChemicalUsageRecords(filters?: {
         orderBy: { dateUsed: 'desc' }
     })
 }
+
+export async function getDistributionRecords(filters?: {
+    search?: string
+    dateFrom?: Date
+    dateTo?: Date
+}) {
+    await requirePermission('manage:chemicals')
+    
+    return await (prisma.chemicalUsageRecord as any).findMany({
+        where: {
+            isDistribution: true,
+            ...(filters?.search && {
+                OR: [
+                    { chemicalBatch: { chemical: { name: { contains: filters.search } } } },
+                    { recipient: { 
+                        OR: [
+                            { username: { contains: filters.search } },
+                            { firstName: { contains: filters.search } },
+                            { lastName: { contains: filters.search } }
+                        ]
+                    }}
+                ]
+            }),
+            ...(filters?.dateFrom && { dateUsed: { gte: filters.dateFrom } }),
+            ...(filters?.dateTo && { dateUsed: { lte: filters.dateTo } })
+        },
+        include: {
+            chemicalBatch: {
+                include: {
+                    chemical: true
+                }
+            },
+            recipient: true,
+            subject: true,
+            room: true,
+            recordedBy: true
+        },
+        orderBy: { dateUsed: 'desc' }
+    })
+}

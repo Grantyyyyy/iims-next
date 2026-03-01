@@ -12,11 +12,12 @@ import {
     SheetTitle, SheetFooter, SheetTrigger
 } from "@/components/ui/sheet"
 import { Badge } from '@/components/ui/badge'
-import { Plus, ChevronLeft, Barcode, DollarSign, Calendar, Clock, Check, X, Layers } from 'lucide-react'
+import { Plus, ChevronLeft, Barcode, DollarSign, Calendar, Clock, Check, X, Layers, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { addEquipmentInstance } from '../actions'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface EquipmentDetailViewProps {
     equipment: any
@@ -92,97 +93,120 @@ export function EquipmentDetailView({ equipment }: EquipmentDetailViewProps) {
                 </Button>
                 <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="default" className="shadow-sm">
+                        <Button className="h-10 px-5 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
                             <Plus className="mr-2 h-4 w-4" />
                             Add Instance
                         </Button>
                     </SheetTrigger>
-                    <SheetContent className="flex flex-col gap-0 sm:max-w-md border-l shadow-2xl">
-                        <SheetHeader className="pb-6 border-b bg-muted/20 px-1">
-                            <SheetTitle className="text-2xl font-bold tracking-tight">Add Equipment Instance</SheetTitle>
-                            <SheetDescription className="text-sm text-muted-foreground">
-                                Register a new instance of {equipment.name}.
-                            </SheetDescription>
+                    <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
+                        <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
+                            {/* Subtle Glow Effect */}
+                            <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                            <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
+
+                            <div className="relative z-10 text-left">
+                                <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                    Add Equipment Instance
+                                </SheetTitle>
+                                <SheetDescription className="text-sm font-medium mt-1">
+                                    Register a new instance of <span className="text-foreground font-bold">{equipment.name}</span>.
+                                </SheetDescription>
+                            </div>
                         </SheetHeader>
-                        <div className="flex-1 overflow-y-auto py-8 space-y-6 px-1">
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                    <Barcode className="h-4 w-4 text-primary/70" />
-                                    Inventory Number
-                                </label>
-                                <Input
-                                    placeholder="e.g. LAB-MIC-001"
-                                    value={newInstance.inventoryNumber}
-                                    onChange={(e) => setNewInstance({ ...newInstance, inventoryNumber: e.target.value })}
-                                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
-                                />
+
+                        <ScrollArea className="flex-1 px-6 py-8">
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                        <Barcode className="h-3 w-3 text-primary/70" />
+                                        Inventory Number
+                                    </label>
+                                    <Input
+                                        placeholder="e.g. LAB-MIC-001"
+                                        value={newInstance.inventoryNumber}
+                                        onChange={(e) => setNewInstance({ ...newInstance, inventoryNumber: e.target.value })}
+                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                        <Barcode className="h-3 w-3 text-primary/70" />
+                                        Serial Number <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
+                                    </label>
+                                    <Input
+                                        placeholder="e.g. SN-MIC-001"
+                                        value={newInstance.serialNumber}
+                                        onChange={(e) => setNewInstance({ ...newInstance, serialNumber: e.target.value })}
+                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                        <DollarSign className="h-3 w-3 text-primary/70" />
+                                        Unit Cost
+                                    </label>
+                                    <Input
+                                        type="number"
+                                        placeholder="e.g. 15000"
+                                        value={newInstance.unitCost}
+                                        onChange={(e) => setNewInstance({ ...newInstance, unitCost: e.target.value })}
+                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                        <Calendar className="h-3 w-3 text-primary/70" />
+                                        Purchase Date <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
+                                    </label>
+                                    <Input
+                                        type="date"
+                                        value={newInstance.purchaseDate}
+                                        onChange={(e) => setNewInstance({ ...newInstance, purchaseDate: e.target.value })}
+                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                        <Clock className="h-3 w-3 text-primary/70" />
+                                        Useful Life (Years) <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
+                                    </label>
+                                    <Input
+                                        type="number"
+                                        placeholder="e.g. 10"
+                                        value={newInstance.usefulLife}
+                                        onChange={(e) => setNewInstance({ ...newInstance, usefulLife: e.target.value })}
+                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                    <Barcode className="h-4 w-4 text-primary/70" />
-                                    Serial Number <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
-                                </label>
-                                <Input
-                                    placeholder="e.g. SN-MIC-001"
-                                    value={newInstance.serialNumber}
-                                    onChange={(e) => setNewInstance({ ...newInstance, serialNumber: e.target.value })}
-                                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                    <DollarSign className="h-4 w-4 text-primary/70" />
-                                    Unit Cost
-                                </label>
-                                <Input
-                                    type="number"
-                                    placeholder="e.g. 15000"
-                                    value={newInstance.unitCost}
-                                    onChange={(e) => setNewInstance({ ...newInstance, unitCost: e.target.value })}
-                                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                    <Calendar className="h-4 w-4 text-primary/70" />
-                                    Purchase Date <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
-                                </label>
-                                <Input
-                                    type="date"
-                                    value={newInstance.purchaseDate}
-                                    onChange={(e) => setNewInstance({ ...newInstance, purchaseDate: e.target.value })}
-                                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                    <Clock className="h-4 w-4 text-primary/70" />
-                                    Useful Life (Years) <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
-                                </label>
-                                <Input
-                                    type="number"
-                                    placeholder="e.g. 10"
-                                    value={newInstance.usefulLife}
-                                    onChange={(e) => setNewInstance({ ...newInstance, usefulLife: e.target.value })}
-                                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
-                        </div>
-                        <SheetFooter className="pt-6 border-t bg-muted/10">
-                            <div className="flex w-full justify-end gap-3">
-                                <Button variant="ghost" onClick={() => setIsAddOpen(false)} className="px-6 h-11 shrink-0">
-                                    <X className="mr-2 h-4 w-4" /> Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleAddInstance}
-                                    disabled={isPending || !newInstance.inventoryNumber || !newInstance.unitCost}
-                                    className="px-8 h-11 shadow-md hover:shadow-lg transition-all ring-offset-2 shrink-0"
-                                >
-                                    {isPending ? 'Processing...' : (
-                                        <><Check className="mr-2 h-4 w-4" /> Add Instance</>
-                                    )}
-                                </Button>
-                            </div>
+                        </ScrollArea>
+
+                        <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsAddOpen(false)}
+                                className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
+                            >
+                                <X className="h-4 w-4" />
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleAddInstance}
+                                disabled={isPending || !newInstance.inventoryNumber || !newInstance.unitCost}
+                                className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
+                            >
+                                {isPending ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Registering...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="h-4 w-4" />
+                                        Add Instance
+                                    </>
+                                )}
+                            </Button>
                         </SheetFooter>
                     </SheetContent>
                 </Sheet>
