@@ -56,11 +56,27 @@ interface UserFormProps {
     departments: any[]
     currentUserId?: number
     onSuccess?: () => void
+    formId?: string
+    showFooter?: boolean
+    isLoading?: (loading: boolean) => void
 }
 
-export function UserForm({ mode, initialData, departments, currentUserId, onSuccess }: UserFormProps) {
+export function UserForm({
+    mode,
+    initialData,
+    departments,
+    currentUserId,
+    onSuccess,
+    formId = "user-form",
+    showFooter = true,
+    isLoading
+}: UserFormProps) {
     const router = useRouter()
     const [isPending, setIsPending] = React.useState(false)
+
+    React.useEffect(() => {
+        if (isLoading) isLoading(isPending)
+    }, [isPending, isLoading])
 
     const defaultValues = React.useMemo(() => {
         if (mode === 'edit' && initialData) {
@@ -153,45 +169,45 @@ export function UserForm({ mode, initialData, departments, currentUserId, onSucc
     }
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form id={formId} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Field>
-                    <FieldLabel htmlFor="firstName">First Name</FieldLabel>
-                    <Input id="firstName" {...register('firstName')} placeholder="John" />
+                    <FieldLabel htmlFor="firstName" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">First Name</FieldLabel>
+                    <Input id="firstName" {...register('firstName')} placeholder="John" className="rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300 h-11" />
                     <FieldError errors={[errors.firstName]} />
                 </Field>
                 <Field>
-                    <FieldLabel htmlFor="lastName">Last Name</FieldLabel>
-                    <Input id="lastName" {...register('lastName')} placeholder="Doe" />
+                    <FieldLabel htmlFor="lastName" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Last Name</FieldLabel>
+                    <Input id="lastName" {...register('lastName')} placeholder="Doe" className="rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300 h-11" />
                     <FieldError errors={[errors.lastName]} />
                 </Field>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Field>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
-                    <Input id="email" type="email" {...register('email')} placeholder="john.doe@example.com" />
+                    <FieldLabel htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Email</FieldLabel>
+                    <Input id="email" type="email" {...register('email')} placeholder="john.doe@example.com" className="rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300 h-11" />
                     <FieldError errors={[errors.email]} />
                 </Field>
                 <Field>
-                    <FieldLabel htmlFor="username">Username</FieldLabel>
-                    <Input id="username" {...register('username')} placeholder="johndoe" />
+                    <FieldLabel htmlFor="username" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Username</FieldLabel>
+                    <Input id="username" {...register('username')} placeholder="johndoe" className="rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300 h-11" />
                     <FieldError errors={[errors.username]} />
                 </Field>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Field>
-                    <FieldLabel htmlFor="password">
+                    <FieldLabel htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">
                         {mode === 'create' ? 'Password' : 'New Password (optional)'}
                     </FieldLabel>
-                    <Input id="password" type="password" {...register('password')} />
+                    <Input id="password" type="password" {...register('password')} className="rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300 h-11" />
                     <FieldError errors={[errors.password]} />
                 </Field>
                 {mode === 'create' && (
                     <Field>
-                        <FieldLabel htmlFor="confirmPassword">Confirm Password</FieldLabel>
-                        <Input id="confirmPassword" type="password" {...register('confirmPassword')} />
+                        <FieldLabel htmlFor="confirmPassword" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Confirm Password</FieldLabel>
+                        <Input id="confirmPassword" type="password" {...register('confirmPassword')} className="rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300 h-11" />
                         <FieldError errors={[(errors as any).confirmPassword]} />
                     </Field>
                 )}
@@ -199,13 +215,13 @@ export function UserForm({ mode, initialData, departments, currentUserId, onSucc
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Field>
-                    <FieldLabel htmlFor="role">Role</FieldLabel>
+                    <FieldLabel htmlFor="role" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Role</FieldLabel>
                     <Select
                         value={selectedRole}
                         onValueChange={(val) => setValue('role', val as any)}
                         disabled={mode === 'edit' && initialData?.id === currentUserId}
                     >
-                        <SelectTrigger id="role" className="w-full">
+                        <SelectTrigger id="role" className="w-full h-11 rounded-xl bg-muted/20 border-border/50">
                             <SelectValue placeholder="Select a role" />
                         </SelectTrigger>
                         <SelectContent>
@@ -224,12 +240,12 @@ export function UserForm({ mode, initialData, departments, currentUserId, onSucc
                     <FieldError errors={[errors.role]} />
                 </Field>
                 <Field>
-                    <FieldLabel htmlFor="departmentId">Department</FieldLabel>
+                    <FieldLabel htmlFor="departmentId" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Department</FieldLabel>
                     <Select
                         value={selectedDept || "none"}
                         onValueChange={(val) => setValue('departmentId', val)}
                     >
-                        <SelectTrigger id="departmentId" className="w-full">
+                        <SelectTrigger id="departmentId" className="w-full h-11 rounded-xl bg-muted/20 border-border/50">
                             <SelectValue placeholder="Select Department (Optional)" />
                         </SelectTrigger>
                         <SelectContent>
@@ -246,26 +262,29 @@ export function UserForm({ mode, initialData, departments, currentUserId, onSucc
             </div>
 
             <Field>
-                <FieldLabel htmlFor="contactNumber">Contact Number (Optional)</FieldLabel>
-                <Input id="contactNumber" {...register('contactNumber')} placeholder="09123456789" />
+                <FieldLabel htmlFor="contactNumber" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Contact Number (Optional)</FieldLabel>
+                <Input id="contactNumber" {...register('contactNumber')} placeholder="09123456789" className="rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300 h-11" />
                 <FieldError errors={[errors.contactNumber]} />
             </Field>
 
-            <div className="flex justify-end gap-4">
-                {!onSuccess && (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => router.push('/dashboard/users')}
-                        disabled={isPending}
-                    >
-                        Cancel
+            {showFooter && (
+                <div className="flex justify-end gap-4">
+                    {!onSuccess && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => router.push('/dashboard/users')}
+                            disabled={isPending}
+                            className="rounded-xl h-11"
+                        >
+                            Cancel
+                        </Button>
+                    )}
+                    <Button type="submit" disabled={isPending} className="w-full sm:w-auto rounded-xl h-11 bg-gradient-to-r from-primary to-primary/80 border-none shadow-md hover:shadow-lg transition-all active:scale-95">
+                        {isPending ? 'Saving...' : mode === 'create' ? 'Create User' : 'Update User'}
                     </Button>
-                )}
-                <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
-                    {isPending ? 'Saving...' : mode === 'create' ? 'Create User' : 'Update User'}
-                </Button>
-            </div>
+                </div>
+            )}
         </form>
     )
 }

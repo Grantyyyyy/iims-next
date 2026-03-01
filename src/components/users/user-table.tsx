@@ -117,7 +117,7 @@ export function UserTable({ users: initialUsers, currentUserId, departments }: U
                             placeholder="Search users..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 h-10 rounded-lg bg-muted/30 focus-visible:ring-primary/20 transition-all border-muted-foreground/20"
+                            className="pl-10 h-11 rounded-xl bg-muted/30 focus-visible:ring-primary/20 transition-all border-muted-foreground/20"
                         />
                     </div>
                 </div>
