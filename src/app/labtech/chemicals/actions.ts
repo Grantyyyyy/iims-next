@@ -3,6 +3,7 @@
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/permissions'
+import { convertToBaseUnit, determineBaseUnit } from '@/lib/unit-conversion'
 
 export async function getChemicals(filters?: {
     search?: string
@@ -149,6 +150,20 @@ export async function addChemicalBatch(data: {
     
     try {
         await prisma.$transaction(async (tx) => {
+            // Get the chemical to determine its unit
+            const chemical = await tx.chemical.findUnique({
+                where: { id: data.chemicalId },
+                select: { unit: true }
+            })
+
+            if (!chemical) {
+                throw new Error('Chemical not found')
+            }
+
+            const originalUnit = chemical.unit
+            const baseUnit = determineBaseUnit(originalUnit)
+            const remainingVolume = convertToBaseUnit(data.originalVolume, originalUnit)
+
             const count = await tx.chemicalBatch.count({
                 where: { chemicalId: data.chemicalId }
             })
@@ -160,7 +175,9 @@ export async function addChemicalBatch(data: {
                     chemicalId: data.chemicalId,
                     batchNumber,
                     originalVolume: data.originalVolume,
-                    remainingVolume: data.originalVolume,
+                    originalUnit,
+                    remainingVolume,
+                    baseUnit,
                     unitCost: data.unitCost,
                     purchaseDate: data.purchaseDate,
                     expiryDate: data.expiryDate,

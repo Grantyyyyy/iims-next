@@ -12,13 +12,16 @@ import {
     SheetTitle, SheetFooter, SheetTrigger
 } from "@/components/ui/sheet"
 import { Badge } from '@/components/ui/badge'
-import { Plus, ChevronLeft, Barcode, DollarSign, Calendar, Clock, Check, X, Package, Droplet, AlertTriangle, History } from 'lucide-react'
+import { Plus, ChevronLeft, Barcode, DollarSign, Calendar, Clock, Check, X, Package, Droplet, AlertTriangle, History, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { addChemicalBatch } from '../actions'
 import { getChemicalUsageHistory } from '@/app/labtech/usage/actions'
+import { getChemicalDistributionHistory } from '@/app/actions/labtech'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { DistributionSheet } from '../components/DistributionSheet'
 
 interface ChemicalDetailViewProps {
     chemical: any
@@ -30,6 +33,8 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
     const [isPending, setIsPending] = useState(false)
     const [usageHistory, setUsageHistory] = useState<any[]>([])
     const [isLoadingUsage, setIsLoadingUsage] = useState(true)
+    const [distributionHistory, setDistributionHistory] = useState<any[]>([])
+    const [isLoadingDistributions, setIsLoadingDistributions] = useState(true)
 
     const [newBatch, setNewBatch] = useState({
         originalVolume: '',
@@ -56,6 +61,24 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
         }
 
         fetchUsageHistory()
+    }, [chemical.id])
+
+    // Fetch distribution history on mount
+    useEffect(() => {
+        const fetchDistributionHistory = async () => {
+            try {
+                setIsLoadingDistributions(true)
+                const history = await getChemicalDistributionHistory(chemical.id, 10)
+                setDistributionHistory(history)
+            } catch (error) {
+                console.error('Failed to fetch distribution history:', error)
+                toast.error('Failed to load distribution history')
+            } finally {
+                setIsLoadingDistributions(false)
+            }
+        }
+
+        fetchDistributionHistory()
     }, [chemical.id])
 
     const handleAddBatch = async () => {
@@ -119,37 +142,62 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
                         Back to Chemicals
                     </Link>
                 </Button>
-                <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
+                <div className="flex items-center gap-3">
+                    <DistributionSheet
+                        chemical={{
+                            id: chemical.id,
+                            name: chemical.name,
+                            volume: chemical.volume,
+                            unit: chemical.unit,
+                            reorderLevel: chemical.reorderLevel
+                        }}
+                        trigger={
+                            <Button variant="outline" className="h-10 px-5 rounded-xl font-bold border-2 hover:bg-primary/5 transition-all active:scale-95">
+                                <Droplet className="mr-2 h-4 w-4" />
+                                Distribute
+                            </Button>
+                        }
+                    />
+                    <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="default" className="shadow-sm">
+                        <Button className="h-10 px-5 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
                             <Plus className="mr-2 h-4 w-4" />
                             Add Stock Batch
                         </Button>
                     </SheetTrigger>
-                    <SheetContent className="flex flex-col gap-0 sm:max-w-md border-l shadow-2xl">
-                        <SheetHeader className="pb-6 border-b bg-muted/20 px-1">
-                            <SheetTitle className="text-2xl font-bold tracking-tight">Add Chemical Batch</SheetTitle>
-                            <SheetDescription className="text-sm text-muted-foreground">
-                                Register a new supply batch for {chemical.name}.
-                            </SheetDescription>
+                    <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
+                        <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
+                            {/* Subtle Glow Effect */}
+                            <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                            <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
+
+                            <div className="relative z-10 text-left">
+                                <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                    Add Chemical Batch
+                                </SheetTitle>
+                                <SheetDescription className="text-sm font-medium mt-1">
+                                    Register a new supply batch for <span className="text-foreground font-bold">{chemical.name}</span>.
+                                </SheetDescription>
+                            </div>
                         </SheetHeader>
-                        <div className="flex-1 overflow-y-auto py-8 space-y-6 px-1">
-                            <div className="space-y-4">
+
+                        <ScrollArea className="flex-1 px-6 py-8">
+                            <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                        <Barcode className="h-4 w-4 text-primary/70" />
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                        <Barcode className="h-3 w-3 text-primary/70" />
                                         Inventory Number
                                     </label>
                                     <Input
                                         placeholder="e.g. CHEM-HA-001"
                                         value={newBatch.inventoryNumber}
                                         onChange={(e) => setNewBatch({ ...newBatch, inventoryNumber: e.target.value })}
-                                        className="h-11"
+                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                        <Droplet className="h-4 w-4 text-primary/70" />
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                        <Droplet className="h-3 w-3 text-primary/70" />
                                         Original Volume ({chemical.unit})
                                     </label>
                                     <Input
@@ -157,12 +205,12 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
                                         placeholder="e.g. 2.5"
                                         value={newBatch.originalVolume}
                                         onChange={(e) => setNewBatch({ ...newBatch, originalVolume: e.target.value })}
-                                        className="h-11"
+                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                        <DollarSign className="h-4 w-4 text-primary/70" />
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                        <DollarSign className="h-3 w-3 text-primary/70" />
                                         Unit Cost
                                     </label>
                                     <Input
@@ -170,67 +218,80 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
                                         placeholder="e.g. 450.00"
                                         value={newBatch.unitCost}
                                         onChange={(e) => setNewBatch({ ...newBatch, unitCost: e.target.value })}
-                                        className="h-11"
+                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                            <Calendar className="h-4 w-4 text-primary/70" />
+                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                            <Calendar className="h-3 w-3 text-primary/70" />
                                             Purchase Date
                                         </label>
                                         <Input
                                             type="date"
                                             value={newBatch.purchaseDate}
                                             onChange={(e) => setNewBatch({ ...newBatch, purchaseDate: e.target.value })}
-                                            className="h-11"
+                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                            <AlertTriangle className="h-4 w-4 text-primary/70" />
+                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                            <AlertTriangle className="h-3 w-3 text-primary/70" />
                                             Expiry Date
                                         </label>
                                         <Input
                                             type="date"
                                             value={newBatch.expiryDate}
                                             onChange={(e) => setNewBatch({ ...newBatch, expiryDate: e.target.value })}
-                                            className="h-11 border-orange-200 focus:border-orange-500"
+                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-orange-200 focus:border-orange-500 transition-all duration-300"
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-foreground/90">
-                                        <Package className="h-4 w-4 text-primary/70" />
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                        <Package className="h-3 w-3 text-primary/70" />
                                         Notes <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
                                     </label>
                                     <Input
                                         placeholder="Additional batch info..."
                                         value={newBatch.notes}
                                         onChange={(e) => setNewBatch({ ...newBatch, notes: e.target.value })}
-                                        className="h-11"
+                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
                                     />
                                 </div>
                             </div>
-                        </div>
-                        <SheetFooter className="pt-6 border-t bg-muted/10">
-                            <div className="flex w-full justify-end gap-3">
-                                <Button variant="ghost" onClick={() => setIsAddOpen(false)} className="px-6 h-11 shrink-0">
-                                    <X className="mr-2 h-4 w-4" /> Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleAddBatch}
-                                    disabled={isPending || !newBatch.originalVolume || !newBatch.unitCost || !newBatch.expiryDate || !newBatch.inventoryNumber}
-                                    className="px-8 h-11 shadow-md hover:shadow-lg transition-all ring-offset-2 shrink-0"
-                                >
-                                    {isPending ? 'Processing...' : (
-                                        <><Check className="mr-2 h-4 w-4" /> Add Batch</>
-                                    )}
-                                </Button>
-                            </div>
+                        </ScrollArea>
+
+                        <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsAddOpen(false)}
+                                className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
+                            >
+                                <X className="h-4 w-4" />
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleAddBatch}
+                                disabled={isPending || !newBatch.originalVolume || !newBatch.unitCost || !newBatch.expiryDate || !newBatch.inventoryNumber}
+                                className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
+                            >
+                                {isPending ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Adding...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="h-4 w-4" />
+                                        Add Batch
+                                    </>
+                                )}
+                            </Button>
                         </SheetFooter>
                     </SheetContent>
                 </Sheet>
+                </div>
             </div>
 
             {/* Header Card */}
@@ -360,7 +421,7 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
                                             {record.quantityUsed.toFixed(2)} {record.unit || chemical.unit}
                                         </TableCell>
                                         <TableCell>
-                                            {record.usedBy 
+                                            {record.usedBy
                                                 ? `${record.usedBy.firstName || ''} ${record.usedBy.lastName || ''}`.trim() || record.usedBy.username
                                                 : 'Internal'}
                                         </TableCell>
@@ -372,6 +433,69 @@ export function ChemicalDetailView({ chemical }: ChemicalDetailViewProps) {
                                         </TableCell>
                                         <TableCell className="max-w-xs truncate">
                                             {record.purpose || 'N/A'}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Distribution History Section */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <CardTitle className="flex items-center gap-2">
+                                <Droplet className="h-5 w-5 text-muted-foreground" />
+                                Distribution History
+                            </CardTitle>
+                            <CardDescription>Recent chemical distributions to STAFF users</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {isLoadingDistributions ? (
+                        <div className="text-center py-6 text-muted-foreground">
+                            Loading distribution history...
+                        </div>
+                    ) : distributionHistory.length === 0 ? (
+                        <div className="text-center py-6 text-muted-foreground">
+                            No distribution records
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="font-semibold text-foreground/80">Date</TableHead>
+                                    <TableHead className="font-semibold text-foreground/80">Recipient</TableHead>
+                                    <TableHead className="font-semibold text-foreground/80">Amount</TableHead>
+                                    <TableHead className="font-semibold text-foreground/80">Subject</TableHead>
+                                    <TableHead className="font-semibold text-foreground/80">Room</TableHead>
+                                    <TableHead className="font-semibold text-foreground/80">Purpose</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {distributionHistory.map((record: any) => (
+                                    <TableRow key={record.id}>
+                                        <TableCell>
+                                            {format(new Date(record.date), 'MMM dd, yyyy HH:mm')}
+                                        </TableCell>
+                                        <TableCell className="font-medium">
+                                            {record.recipientName}
+                                        </TableCell>
+                                        <TableCell>
+                                            {record.amount.toFixed(2)} {record.unit}
+                                        </TableCell>
+                                        <TableCell>
+                                            {record.subject}
+                                        </TableCell>
+                                        <TableCell>
+                                            {record.room}
+                                        </TableCell>
+                                        <TableCell className="max-w-xs truncate">
+                                            {record.purpose}
                                         </TableCell>
                                     </TableRow>
                                 ))}
