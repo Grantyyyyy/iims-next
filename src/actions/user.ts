@@ -28,3 +28,40 @@ export async function getCurrentUser() {
         return null
     }
 }
+
+export async function getReceivedChemicals(limit: number = 10) {
+    const session = await verifySession()
+    if (!session?.userId) return []
+
+    try {
+        const distributions = await (prisma.chemicalUsageRecord as any).findMany({
+            where: {
+                recipientId: session.userId,
+                isDistribution: true
+            },
+            orderBy: {
+                dateUsed: 'desc'
+            },
+            take: limit,
+            include: {
+                chemicalBatch: {
+                    include: {
+                        chemical: true
+                    }
+                }
+            }
+        })
+
+        return distributions.map((dist: any) => ({
+            id: dist.id,
+            chemicalName: dist.chemicalBatch?.chemical?.name || 'Unknown',
+            amount: dist.distributedAmount || dist.quantityUsed,
+            unit: dist.distributedUnit || dist.unit || 'ML',
+            date: dist.dateUsed,
+            purpose: dist.purpose || 'N/A'
+        }))
+    } catch (error) {
+        console.error('Error fetching received chemicals:', error)
+        return []
+    }
+}

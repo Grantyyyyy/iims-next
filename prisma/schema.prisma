@@ -75,6 +75,7 @@ model User {
   chemicalUsages         ChemicalUsage[]             @relation("ChemUsageBorrower")
   chemRecorded           ChemicalUsageRecord[]       @relation("ChemRecordedBy")
   chemUsages             ChemicalUsageRecord[]       @relation("ChemUsedBy")
+  chemReceived           ChemicalUsageRecord[]       @relation("ChemReceived")
   batchesAdded           ConsumableBatch[]           @relation("BatchAddedBy")
   disposeRequests        DisposeRequest[]            @relation("DisposeRequestedBy")
   processedDisposals     DisposeRequest[]            @relation("DisposeProcessedBy")
@@ -499,7 +500,9 @@ model ChemicalBatch {
   chemicalId      Int
   batchNumber     String
   originalVolume  Float                 @default(0)
+  originalUnit    String
   remainingVolume Float                 @default(0)
+  baseUnit        String
   unitCost        Float                 @default(0)
   purchaseDate    DateTime?
   expiryDate      DateTime?
@@ -510,17 +513,23 @@ model ChemicalBatch {
   addedBy         User                  @relation("ChemBatchAddedBy", fields: [addedById], references: [id])
   chemical        Chemical              @relation(fields: [chemicalId], references: [id])
   usages          ChemicalUsageRecord[]
+
+  @@index([chemicalId, expiryDate, remainingVolume])
 }
 
 model ChemicalUsageRecord {
   id                Int           @id @default(autoincrement())
   chemicalBatchId   Int
   usedById          Int?
+  recipientId       Int?
   subjectId         Int?
   roomId            Int?
   quantityUsed      Float
   quantityRequested Float
   unit              String?
+  isDistribution    Boolean       @default(false)
+  distributedUnit   String?
+  distributedAmount Float?
   purpose           String?
   dateUsed          DateTime      @default(now())
   recordedById      Int
@@ -528,7 +537,11 @@ model ChemicalUsageRecord {
   room              Room?         @relation(fields: [roomId], references: [id])
   subject           Subject?      @relation(fields: [subjectId], references: [id])
   usedBy            User?         @relation("ChemUsedBy", fields: [usedById], references: [id])
+  recipient         User?         @relation("ChemReceived", fields: [recipientId], references: [id])
   chemicalBatch     ChemicalBatch @relation(fields: [chemicalBatchId], references: [id])
+
+  @@index([chemicalBatchId, recipientId, dateUsed])
+  @@index([recipientId, isDistribution])
 }
 
 model LabBorrowRecord {

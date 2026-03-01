@@ -100,7 +100,7 @@ async function main() {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    // Define sample usage scenarios
+    // Define sample usage scenarios (regular usage)
     const usageScenarios = [
         {
             chemicalIndex: 0,
@@ -172,6 +172,40 @@ async function main() {
             roomIndex: 1,
             purpose: 'Microscopy slide preparation',
             usedById: null, // Internal usage
+            dateUsed: randomDate(thirtyDaysAgo, now)
+        }
+    ]
+
+    // Define sample distribution scenarios (isDistribution=true)
+    const distributionScenarios = [
+        {
+            chemicalIndex: 0,
+            quantity: 500,
+            unit: 'ML',
+            subjectIndex: 0, // CHEM-101
+            roomIndex: 0,
+            purpose: 'Distribution for student lab experiment - acid-base titration',
+            recipientId: staff?.id || null,
+            dateUsed: randomDate(thirtyDaysAgo, now)
+        },
+        {
+            chemicalIndex: 1,
+            quantity: 1,
+            unit: 'L',
+            subjectIndex: 1, // BIO-101
+            roomIndex: 1,
+            purpose: 'Distribution for bacterial culture preparation',
+            recipientId: staff?.id || null,
+            dateUsed: randomDate(thirtyDaysAgo, now)
+        },
+        {
+            chemicalIndex: 2,
+            quantity: 250,
+            unit: 'G',
+            subjectIndex: 3, // CHEM-201
+            roomIndex: 2,
+            purpose: 'Distribution for organic synthesis lab',
+            recipientId: staff?.id || null,
             dateUsed: randomDate(thirtyDaysAgo, now)
         }
     ]
@@ -289,6 +323,139 @@ async function main() {
     console.log(`✓ Successfully created ${successCount} usage records`)
     if (skipCount > 0) {
         console.log(`⚠ Skipped ${skipCount} scenarios`)
+    }
+
+    // 5. Create sample distribution records
+    console.log('\nCreating sample distribution records...')
+    
+    let distributionSuccessCount = 0
+    let distributionSkipCount = 0
+
+    for (const scenario of distributionScenarios) {
+        // Ensure indices are valid
+        if (scenario.chemicalIndex >= chemicals.length) {
+            console.log(`⚠ Skipping distribution: chemical index ${scenario.chemicalIndex} out of range`)
+            distributionSkipCount++
+            continue
+        }
+        if (scenario.subjectIndex >= subjects.length) {
+            console.log(`⚠ Skipping distribution: subject index ${scenario.subjectIndex} out of range`)
+            distributionSkipCount++
+            continue
+        }
+        if (scenario.roomIndex >= rooms.length) {
+            console.log(`⚠ Skipping distribution: room index ${scenario.roomIndex} out of range`)
+            distributionSkipCount++
+            continue
+        }
+        if (!scenario.recipientId) {
+            console.log(`⚠ Skipping distribution: no recipient available`)
+            distributionSkipCount++
+            continue
+        }
+
+        const chemical = chemicals[scenario.chemicalIndex]
+        const subject = subjects[scenario.subjectIndex]
+        const room = rooms[scenario.roomIndex]
+
+        // Convert to base unit for deduction
+        const conversionFactors: Record<string, number> = {
+            'GAL': 3785.41,
+            'L': 1000,
+            'ML': 1,
+            'KG': 1000,
+            'G': 1
+        }
+        const amountInBaseUnit = scenario.quantity * (conversionFactors[scenario.unit] || 1)
+
+        // Calculate available stock
+        const availableStock = chemical.batches.reduce((sum, b) => sum + b.remainingVolume, 0)
+
+        if (availableStock < amountInBaseUnit) {
+            console.log(`⚠ Skipping distribution of ${chemical.name}: insufficient stock (available: ${availableStock}, requested: ${amountInBaseUnit})`)
+            distributionSkipCount++
+            continue
+        }
+
+        try {
+            // Execute FIFO deduction for distribution
+            await prisma.$transaction(async (tx) => {
+                // Fetch fresh batches in FIFO order
+                const batches = await tx.chemicalBatch.findMany({
+                    where: {
+                        chemicalId: chemical.id,
+                        remainingVolume: { gt: 0 },
+                        OR: [
+                            { expiryDate: null },
+                            { expiryDate: { gte: new Date() } }
+                        ]
+                    },
+                    orderBy: { purchaseDate: 'asc' }
+                })
+
+                let remaining = amountInBaseUnit
+                for (const batch of batches) {
+                    if (remaining <= 0) break
+
+                    const deduction = Math.min(batch.remainingVolume, remaining)
+
+                    // Create distribution record with isDistribution=true
+                    await tx.chemicalUsageRecord.create({
+                        data: {
+                            chemicalBatchId: batch.id,
+                            quantityUsed: deduction,
+                            quantityRequested: amountInBaseUnit,
+                            unit: scenario.unit,
+                            isDistribution: true,
+                            recipientId: scenario.recipientId,
+                            subjectId: subject.id,
+                            roomId: room.id,
+                            purpose: scenario.purpose,
+                            recordedById: labtech.id,
+                            dateUsed: scenario.dateUsed
+                        }
+                    })
+
+                    // Update batch remaining volume
+                    await tx.chemicalBatch.update({
+                        where: { id: batch.id },
+                        data: { remainingVolume: batch.remainingVolume - deduction }
+                    })
+
+                    remaining -= deduction
+                }
+
+                // Recalculate chemical volume
+                const updatedBatches = await tx.chemicalBatch.findMany({
+                    where: {
+                        chemicalId: chemical.id,
+                        OR: [
+                            { expiryDate: null },
+                            { expiryDate: { gte: new Date() } }
+                        ]
+                    }
+                })
+
+                const newVolume = updatedBatches.reduce((sum, b) => sum + b.remainingVolume, 0)
+
+                await tx.chemical.update({
+                    where: { id: chemical.id },
+                    data: { volume: newVolume }
+                })
+            })
+
+            console.log(`✓ Distributed ${scenario.quantity} ${scenario.unit} of ${chemical.name} to recipient (${subject.code})`)
+            distributionSuccessCount++
+        } catch (error: any) {
+            console.error(`✗ Failed to record distribution for ${chemical.name}:`, error.message)
+            distributionSkipCount++
+        }
+    }
+
+    console.log(`\n--- Distribution Records Seed Completed ---`)
+    console.log(`✓ Successfully created ${distributionSuccessCount} distribution records`)
+    if (distributionSkipCount > 0) {
+        console.log(`⚠ Skipped ${distributionSkipCount} distribution scenarios`)
     }
 }
 

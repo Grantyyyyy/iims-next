@@ -165,25 +165,38 @@ async function main() {
     // 6. Chemicals
     console.log('Seeding Chemicals...')
     const chemicals = [
-        { name: 'Hydrochloric Acid', unit: 'mL', reorder: 1000 },
-        { name: 'Sodium Hydroxide', unit: 'g', reorder: 500 },
-        { name: 'Ethanol (95%)', unit: 'mL', reorder: 2000 }
+        { name: 'Hydrochloric Acid', unit: 'ML', reorder: 1000, originalUnit: 'GAL', originalVolume: 2, baseUnit: 'ML' },
+        { name: 'Sodium Hydroxide', unit: 'G', reorder: 500, originalUnit: 'KG', originalVolume: 5, baseUnit: 'G' },
+        { name: 'Ethanol (95%)', unit: 'ML', reorder: 2000, originalUnit: 'L', originalVolume: 10, baseUnit: 'ML' },
+        { name: 'Sulfuric Acid', unit: 'ML', reorder: 1500, originalUnit: 'ML', originalVolume: 5000, baseUnit: 'ML' },
+        { name: 'Potassium Chloride', unit: 'G', reorder: 800, originalUnit: 'G', originalVolume: 2000, baseUnit: 'G' }
     ]
+
+    // Conversion factors for unit conversion
+    const conversionFactors: Record<string, number> = {
+        'GAL': 3785.41,
+        'L': 1000,
+        'ML': 1,
+        'KG': 1000,
+        'G': 1
+    }
 
     for (const chem of chemicals) {
         const chemical = await prisma.chemical.create({
             data: {
                 name: chem.name,
-                unit: chem.unit,
+                unit: chem.baseUnit, // Store in base unit
                 reorderLevel: chem.reorder,
                 volume: 0
             }
         })
 
-        // Seed batches
+        // Seed batches with various units
         for (let i = 1; i <= 2; i++) {
-            const originalVolume = i === 1 ? 5000 : 2500
-            const remainingVolume = i === 1 ? (Math.random() * originalVolume) : originalVolume
+            const originalVolume = i === 1 ? chem.originalVolume : chem.originalVolume * 0.5
+            const conversionFactor = conversionFactors[chem.originalUnit] || 1
+            const volumeInBaseUnit = originalVolume * conversionFactor
+            const remainingVolume = i === 1 ? (volumeInBaseUnit * 0.7) : volumeInBaseUnit
 
             await prisma.chemicalBatch.create({
                 data: {
@@ -191,7 +204,9 @@ async function main() {
                     batchNumber: `CH-BAT-${chemical.id}-${i}`,
                     inventoryNumber: `INV-CHEM-${chemical.id}-${i}`,
                     originalVolume: originalVolume,
+                    originalUnit: chem.originalUnit,
                     remainingVolume: remainingVolume,
+                    baseUnit: chem.baseUnit,
                     unitCost: 150 * i,
                     purchaseDate: new Date(2023, 5, 20),
                     expiryDate: new Date(2025, 5, 20),
