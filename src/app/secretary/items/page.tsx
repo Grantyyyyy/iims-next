@@ -1,10 +1,11 @@
-import { getItems, getCategories } from "@/actions/secretary"
+import { getItems, getCategories, getDeletedItems } from "@/actions/secretary"
 import { ItemManager } from "./ItemManager"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default async function SecretaryItemsPage() {
     const items = await getItems()
     const categories = await getCategories()
+    const deletedItems = await getDeletedItems()
 
     return (
         <div className="space-y-4">
@@ -16,7 +17,7 @@ export default async function SecretaryItemsPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ItemManager items={items} categories={categories} />
+                    <ItemManager items={items} categories={categories} deletedItems={deletedItems} />
                 </CardContent>
             </Card>
         </div>

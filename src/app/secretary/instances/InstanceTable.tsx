@@ -10,6 +10,15 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+    SheetFooter,
+} from '@/components/ui/sheet'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -20,25 +29,29 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
     Search,
-    FilterX,
+    Filter,
+    X,
+    ChevronDown,
+    MoreHorizontal,
+    Pencil,
+    Trash2,
     Copy,
     ExternalLink,
     ArrowRight,
     RotateCcw,
     AlertCircle,
-    Package
+    Package,
+    Check,
+    Loader2,
+    Clock,
+    User,
+    ClipboardList,
+    FilterX
 } from 'lucide-react'
+import { format } from 'date-fns'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { returnItem } from '@/actions/secretary'
@@ -352,71 +365,130 @@ export function InstanceTable({ initialData, categories, filters }: InstanceTabl
                                                     </Link>
                                                 </Button>
                                                 {isBorrowed && (
-                                                    <Dialog open={isReturnDialogOpen && selectedInstance?.id === inst.id} onOpenChange={(open) => {
+                                                    <Sheet open={isReturnDialogOpen && selectedInstance?.id === inst.id} onOpenChange={(open) => {
                                                         if (!open) setSelectedInstance(null)
                                                         setIsReturnDialogOpen(open)
                                                     }}>
-                                                        <DialogTrigger asChild>
+                                                        <SheetTrigger asChild>
                                                             <Button
                                                                 variant="outline"
                                                                 size="sm"
-                                                                className="h-8 text-[10px] font-bold uppercase transition-all hover:bg-primary hover:text-white"
+                                                                className="h-8 text-[10px] font-bold uppercase transition-all hover:bg-primary hover:text-white rounded-lg px-3"
                                                                 onClick={() => setSelectedInstance(inst)}
                                                             >
-                                                                <RotateCcw className="h-3 w-3 mr-1" />
+                                                                <RotateCcw className="h-3.5 w-3.5 mr-1" />
                                                                 Return
                                                             </Button>
-                                                        </DialogTrigger>
-                                                        <DialogContent>
-                                                            <DialogHeader>
-                                                                <DialogTitle>Process Return</DialogTitle>
-                                                                <DialogDescription>
-                                                                    Returning <strong>{inst.item.name}</strong> from <strong>{currentBorrow.borrower ? `${currentBorrow.borrower.firstName} ${currentBorrow.borrower.lastName}` : currentBorrow.customBorrower || 'Staff'}</strong>.
-                                                                </DialogDescription>
-                                                            </DialogHeader>
-                                                            <div className="space-y-4 py-4">
-                                                                <div className="space-y-2">
-                                                                    <label className="text-sm font-medium">Condition on Return</label>
-                                                                    <Select
-                                                                        value={returnDetails.conditionOnReturn}
-                                                                        onValueChange={(v) => setReturnDetails({ ...returnDetails, conditionOnReturn: v })}
-                                                                    >
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Condition" />
-                                                                        </SelectTrigger>
-                                                                        <SelectContent>
-                                                                            <SelectItem value="Good">Good</SelectItem>
-                                                                            <SelectItem value="Fair">Fair</SelectItem>
-                                                                            <SelectItem value="Damaged">Damaged</SelectItem>
-                                                                            <SelectItem value="Lost">Lost</SelectItem>
-                                                                        </SelectContent>
-                                                                    </Select>
+                                                        </SheetTrigger>
+                                                        <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
+                                                            <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
+                                                                {/* Subtle Glow Effect */}
+                                                                <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                                                                <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
+
+                                                                <div className="relative z-10 text-left">
+                                                                    <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                                                        Process Return
+                                                                    </SheetTitle>
+                                                                    <SheetDescription className="text-sm font-medium mt-1">
+                                                                        Returning <span className="text-foreground font-bold">{inst.item.name}</span> from <span className="text-foreground font-bold">{currentBorrow.borrower ? `${currentBorrow.borrower.firstName} ${currentBorrow.borrower.lastName}` : currentBorrow.customBorrower || 'Staff'}</span>.
+                                                                    </SheetDescription>
                                                                 </div>
-                                                                <div className="space-y-2">
-                                                                    <label className="text-sm font-medium">Notes / Remarks</label>
-                                                                    <textarea
-                                                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                                        placeholder="Describe any issues or notes..."
-                                                                        rows={3}
-                                                                        value={returnDetails.notes}
-                                                                        onChange={(e) => setReturnDetails({ ...returnDetails, notes: e.target.value })}
-                                                                    />
+                                                            </SheetHeader>
+
+                                                            <ScrollArea className="flex-1 px-6 py-8">
+                                                                <div className="space-y-6">
+                                                                    {/* Info Card */}
+                                                                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50 flex flex-col gap-3">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                                                                <User className="h-5 w-5 text-primary" />
+                                                                            </div>
+                                                                            <div className="flex flex-col">
+                                                                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Borrower</span>
+                                                                                <span className="font-semibold text-sm">
+                                                                                    {currentBorrow.borrower ? `${currentBorrow.borrower.firstName} ${currentBorrow.borrower.lastName}` : currentBorrow.customBorrower || 'Staff/External'}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                                                                <Clock className="h-5 w-5 text-primary" />
+                                                                            </div>
+                                                                            <div className="flex flex-col">
+                                                                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Borrowed Since</span>
+                                                                                <span className="font-semibold text-sm">
+                                                                                    {format(new Date(currentBorrow.borrowDate), 'PPP')}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="space-y-2">
+                                                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                                            <ClipboardList className="h-3 w-3 text-primary/70" />
+                                                                            Condition on Return
+                                                                        </label>
+                                                                        <Select
+                                                                            value={returnDetails.conditionOnReturn}
+                                                                            onValueChange={(v) => setReturnDetails({ ...returnDetails, conditionOnReturn: v })}
+                                                                        >
+                                                                            <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-border/50 focus:bg-background transition-all duration-300">
+                                                                                <SelectValue placeholder="Condition" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                <SelectItem value="Good">Good</SelectItem>
+                                                                                <SelectItem value="Fair">Fair</SelectItem>
+                                                                                <SelectItem value="Damaged">Damaged</SelectItem>
+                                                                                <SelectItem value="Lost">Lost</SelectItem>
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </div>
+                                                                    <div className="space-y-2">
+                                                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                                            <AlertCircle className="h-3 w-3 text-primary/70" />
+                                                                            Notes / Remarks
+                                                                        </label>
+                                                                        <textarea
+                                                                            className="w-full min-h-[120px] rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-sm focus-visible:outline-none focus:bg-background focus-visible:ring-1 focus-visible:ring-primary transition-all duration-300 resize-none"
+                                                                            placeholder="Describe any issues, findings, or special notes..."
+                                                                            value={returnDetails.notes}
+                                                                            onChange={(e) => setReturnDetails({ ...returnDetails, notes: e.target.value })}
+                                                                        />
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <DialogFooter>
+                                                            </ScrollArea>
+
+                                                            <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
                                                                 <Button
                                                                     variant="outline"
                                                                     onClick={() => setIsReturnDialogOpen(false)}
                                                                     disabled={isPending}
+                                                                    className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
                                                                 >
+                                                                    <X className="h-4 w-4" />
                                                                     Cancel
                                                                 </Button>
-                                                                <Button onClick={handleReturn} disabled={isPending}>
-                                                                    {isPending ? 'Processing...' : 'Complete Return'}
+                                                                <Button
+                                                                    onClick={handleReturn}
+                                                                    disabled={isPending}
+                                                                    className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[170px]"
+                                                                >
+                                                                    {isPending ? (
+                                                                        <>
+                                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                                            Processing...
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <Check className="h-4 w-4" />
+                                                                            Complete Return
+                                                                        </>
+                                                                    )}
                                                                 </Button>
-                                                            </DialogFooter>
-                                                        </DialogContent>
-                                                    </Dialog>
+                                                            </SheetFooter>
+                                                        </SheetContent>
+                                                    </Sheet>
                                                 )}
                                             </div>
                                         </TableCell>

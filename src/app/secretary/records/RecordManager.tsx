@@ -40,7 +40,18 @@ import {
 } from "@/components/ui/pagination"
 import { returnItem } from '@/actions/secretary'
 import { toast } from 'sonner'
-import { Download, Search, FilterX } from 'lucide-react'
+import { Download, Search, FilterX, Loader2, Check, X, ClipboardList, Info } from 'lucide-react'
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "@/components/ui/sheet"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Textarea } from "@/components/ui/textarea"
 
 interface RecordManagerProps {
     type: 'BORROW' | 'DISTRIBUTION'
@@ -200,7 +211,7 @@ export function RecordManager({ type, records }: RecordManagerProps) {
                                 placeholder="Search by name..."
                                 value={localName}
                                 onChange={(e) => setLocalName(e.target.value)}
-                                className="pl-9 bg-background h-9"
+                                className="pl-9 bg-background h-10 rounded-xl border-border/50 focus-visible:ring-primary/20 transition-all font-medium"
                             />
                         </div>
                     </div>
@@ -322,56 +333,121 @@ export function RecordManager({ type, records }: RecordManagerProps) {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {!record.returnRecord && (
-                                                <Dialog open={isReturnDialogOpen && selectedRecord?.id === record.id} onOpenChange={(open) => {
+                                                <Sheet open={isReturnDialogOpen && selectedRecord?.id === record.id} onOpenChange={(open) => {
                                                     if (!open) setSelectedRecord(null)
                                                     setIsReturnDialogOpen(open)
                                                 }}>
-                                                    <DialogTrigger asChild>
+                                                    <SheetTrigger asChild>
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
                                                             onClick={() => setSelectedRecord(record)}
+                                                            className="rounded-lg h-8 px-3 font-semibold hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-all active:scale-95"
                                                         >
                                                             Process Return
                                                         </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent>
-                                                        <DialogHeader>
-                                                            <DialogTitle>Process Return for {record.itemInstance?.item?.name}</DialogTitle>
-                                                            <DialogDescription>
-                                                                Confirm the item condition and add optional notes.
-                                                            </DialogDescription>
-                                                        </DialogHeader>
-                                                        <div className="space-y-4 py-4">
-                                                            <Select
-                                                                value={returnDetails.conditionOnReturn}
-                                                                onValueChange={(v) => setReturnDetails({ ...returnDetails, conditionOnReturn: v })}
+                                                    </SheetTrigger>
+                                                    <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
+                                                        <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
+                                                            {/* Subtle Glow Effect */}
+                                                            <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                                                            <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
+
+                                                            <div className="relative z-10 text-left">
+                                                                <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-2">
+                                                                    Process Return
+                                                                </SheetTitle>
+                                                                <SheetDescription className="text-sm font-medium mt-1">
+                                                                    Complete the return process for <span className="text-foreground font-bold">{record.itemInstance?.item?.name}</span>
+                                                                </SheetDescription>
+                                                            </div>
+                                                        </SheetHeader>
+
+                                                        <ScrollArea className="flex-1 px-6 py-8">
+                                                            <div className="space-y-6">
+                                                                <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-3">
+                                                                    <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+                                                                        <Info className="h-3.5 w-3.5" />
+                                                                        Item Details
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                                                        <div>
+                                                                            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tighter">Serial Number</p>
+                                                                            <p className="font-mono font-medium">{record.itemInstance?.serialNumber || 'N/A'}</p>
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tighter">Borrower</p>
+                                                                            <p className="font-medium">{record.borrower?.firstName} {record.borrower?.lastName}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="space-y-4 pt-2">
+                                                                    <div className="space-y-2">
+                                                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                                            <ClipboardList className="h-3 w-3 text-primary/70" />
+                                                                            Condition on Return
+                                                                        </label>
+                                                                        <Select
+                                                                            value={returnDetails.conditionOnReturn}
+                                                                            onValueChange={(v) => setReturnDetails({ ...returnDetails, conditionOnReturn: v })}
+                                                                        >
+                                                                            <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-border/50 focus:bg-background transition-all">
+                                                                                <SelectValue placeholder="Select Condition" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent className="rounded-xl border-border/50">
+                                                                                <SelectItem value="Good">Good</SelectItem>
+                                                                                <SelectItem value="Fair">Fair</SelectItem>
+                                                                                <SelectItem value="Damaged">Damaged</SelectItem>
+                                                                                <SelectItem value="Lost">Lost</SelectItem>
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </div>
+
+                                                                    <div className="space-y-2">
+                                                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                                                                            Notes & Remarks
+                                                                        </label>
+                                                                        <Textarea
+                                                                            className="min-h-[120px] rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all resize-none p-4"
+                                                                            placeholder="Add any specific notes about the item's condition or return details..."
+                                                                            value={returnDetails.notes}
+                                                                            onChange={(e) => setReturnDetails({ ...returnDetails, notes: e.target.value })}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </ScrollArea>
+
+                                                        <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
+                                                            <Button
+                                                                variant="outline"
+                                                                onClick={() => setIsReturnDialogOpen(false)}
+                                                                className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
                                                             >
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="Condition" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="Good">Good</SelectItem>
-                                                                    <SelectItem value="Fair">Fair</SelectItem>
-                                                                    <SelectItem value="Damaged">Damaged</SelectItem>
-                                                                    <SelectItem value="Lost">Lost</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <textarea
-                                                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                                placeholder="Notes/Remarks"
-                                                                rows={3}
-                                                                value={returnDetails.notes}
-                                                                onChange={(e) => setReturnDetails({ ...returnDetails, notes: e.target.value })}
-                                                            />
-                                                        </div>
-                                                        <DialogFooter>
-                                                            <Button onClick={handleReturn} disabled={isPending}>
-                                                                {isPending ? 'Processing...' : 'Mark as Returned'}
+                                                                <X className="h-4 w-4" />
+                                                                Cancel
                                                             </Button>
-                                                        </DialogFooter>
-                                                    </DialogContent>
-                                                </Dialog>
+                                                            <Button
+                                                                onClick={handleReturn}
+                                                                disabled={isPending}
+                                                                className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[160px]"
+                                                            >
+                                                                {isPending ? (
+                                                                    <>
+                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                        Processing...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Check className="h-4 w-4" />
+                                                                        Complete Return
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        </SheetFooter>
+                                                    </SheetContent>
+                                                </Sheet>
                                             )}
                                         </TableCell>
                                     </>
