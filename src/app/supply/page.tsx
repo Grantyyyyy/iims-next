@@ -1,5 +1,4 @@
 import { getChemicalAssignments } from "@/actions/supply"
-import { getChemicals } from "@/actions/labtech"
 import { getUsers } from "@/actions/users"
 import prisma from "@/lib/prisma"
 import { AssignmentManager } from "./AssignmentManager"

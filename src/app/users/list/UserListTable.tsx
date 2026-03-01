@@ -169,11 +169,10 @@ export function UserListTable({ users }: UserListTableProps) {
                                 {AVAILABLE_ROLES.map((role) => (
                                     <div
                                         key={role}
-                                        className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
-                                            selectedRoles.includes(role)
+                                        className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${selectedRoles.includes(role)
                                                 ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/10'
                                                 : 'bg-card border-border hover:border-primary/20'
-                                        }`}
+                                            }`}
                                         onClick={() => toggleRole(role)}
                                     >
                                         <div className="flex items-center gap-3">
@@ -182,11 +181,10 @@ export function UserListTable({ users }: UserListTableProps) {
                                             </div>
                                             <span className="text-sm font-medium">{role}</span>
                                         </div>
-                                        <div className={`h-5 w-5 rounded-full border flex items-center justify-center transition-all ${
-                                            selectedRoles.includes(role)
+                                        <div className={`h-5 w-5 rounded-full border flex items-center justify-center transition-all ${selectedRoles.includes(role)
                                                 ? 'bg-primary border-primary text-primary-foreground'
                                                 : 'border-muted-foreground/30'
-                                        }`}>
+                                            }`}>
                                             {selectedRoles.includes(role) && <Check className="h-3 w-3" />}
                                         </div>
                                     </div>

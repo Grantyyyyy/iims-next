@@ -121,131 +121,129 @@ export function RoomTable({ rooms, departments }: RoomTableProps) {
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center gap-2">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search rooms..."
-                        className="pl-8"
-                        value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value)
-                            setCurrentPage(1)
-                        }}
-                    />
+        <div className="space-y-6">
+            <div className="flex flex-col gap-6 bg-card p-6 rounded-xl border shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="relative flex-1 min-w-[300px] max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search rooms..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value)
+                                setCurrentPage(1)
+                            }}
+                            className="pl-10 h-10 rounded-lg bg-muted/30 focus-visible:ring-primary/20 transition-all border-muted-foreground/20"
+                        />
+                    </div>
                 </div>
-            </div>
 
-            <div className="rounded-md border bg-white">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="font-semibold text-foreground">Room Name</TableHead>
-                            <TableHead className="font-semibold text-foreground">Location</TableHead>
-                            <TableHead className="font-semibold text-foreground">Department</TableHead>
-                            <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {paginatedRooms.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                                    No rooms matching your search.
-                                </TableCell>
+                <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
+                    <Table>
+                        <TableHeader className="bg-muted/50">
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="font-semibold text-foreground/80">Room Name</TableHead>
+                                <TableHead className="font-semibold text-foreground/80">Location</TableHead>
+                                <TableHead className="font-semibold text-foreground/80">Department</TableHead>
+                                <TableHead className="text-right font-semibold text-foreground/80">Actions</TableHead>
                             </TableRow>
-                        ) : (
-                            paginatedRooms.map((room) => (
-                                <TableRow key={room.id} className="hover:bg-muted/30 transition-colors">
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground font-medium">
-                                                {room.name.charAt(0).toUpperCase()}
-                                            </div>
-                                            <button
-                                                onClick={() => openEdit(room)}
-                                                className="font-medium hover:underline text-foreground hover:text-primary transition-colors text-left"
-                                            >
-                                                {room.name}
-                                            </button>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                            <span className="text-sm text-muted-foreground">{room.location}</span>
-                                    </TableCell>
-                                    <TableCell>
-                                        <span className="text-sm">{room.department?.name || '---'}</span>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem onClick={() => openEdit(room)} className="cursor-pointer">
-                                                    <Pencil className="mr-2 h-4 w-4" /> Edit Details
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => openDelete(room)} className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground">
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Room
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                        </TableHeader>
+                        <TableBody>
+                            {paginatedRooms.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                                        No rooms matching your search.
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between px-2">
-                    <p className="text-sm text-muted-foreground italic">
-                        Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-                        <span className="font-medium">
-                            {Math.min(startIndex + itemsPerPage, filteredRooms.length)}
-                        </span>{' '}
-                        of <span className="font-medium">{filteredRooms.length}</span> rooms
-                    </p>
-                    <Pagination className="justify-end w-auto mx-0">
-                        <PaginationContent>
-                            <PaginationItem>
-                                <PaginationPrevious
-                                    className={cn(
-                                        "cursor-pointer",
-                                        currentPage === 1 && "pointer-events-none opacity-50"
-                                    )}
-                                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                />
-                            </PaginationItem>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                <PaginationItem key={page}>
-                                    <PaginationLink
-                                        className="cursor-pointer"
-                                        isActive={currentPage === page}
-                                        onClick={() => setCurrentPage(page)}
-                                    >
-                                        {page}
-                                    </PaginationLink>
-                                </PaginationItem>
-                            ))}
-                            <PaginationItem>
-                                <PaginationNext
-                                    className={cn(
-                                        "cursor-pointer",
-                                        currentPage === totalPages && "pointer-events-none opacity-50"
-                                    )}
-                                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                />
-                            </PaginationItem>
-                        </PaginationContent>
-                    </Pagination>
+                            ) : (
+                                paginatedRooms.map((room) => (
+                                    <TableRow key={room.id} className="hover:bg-muted/30 transition-colors">
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground font-medium">
+                                                    {room.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <button
+                                                    onClick={() => openEdit(room)}
+                                                    className="font-medium hover:underline text-foreground hover:text-primary transition-colors text-left"
+                                                >
+                                                    {room.name}
+                                                </button>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-sm text-muted-foreground">{room.location}</span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-sm">{room.department?.name || '---'}</span>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => openEdit(room)} className="cursor-pointer">
+                                                        <Pencil className="mr-2 h-4 w-4" /> Edit Details
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => openDelete(room)} className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Room
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
                 </div>
-            )}
+
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-2">
+                        <div className="text-sm text-muted-foreground whitespace-nowrap">
+                            Showing {Math.min(filteredRooms.length, startIndex + 1)} to {Math.min(startIndex + itemsPerPage, filteredRooms.length)} of {filteredRooms.length}
+                        </div>
+                        <Pagination className="w-auto flex-1 flex justify-end">
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        className={cn(
+                                            "cursor-pointer",
+                                            currentPage === 1 && "pointer-events-none opacity-50"
+                                        )}
+                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                    />
+                                </PaginationItem>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <PaginationItem key={page}>
+                                        <PaginationLink
+                                            className="cursor-pointer"
+                                            isActive={currentPage === page}
+                                            onClick={() => setCurrentPage(page)}
+                                        >
+                                            {page}
+                                        </PaginationLink>
+                                    </PaginationItem>
+                                ))}
+                                <PaginationItem>
+                                    <PaginationNext
+                                        className={cn(
+                                            "cursor-pointer",
+                                            currentPage === totalPages && "pointer-events-none opacity-50"
+                                        )}
+                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    </div>
+                )}
+            </div>
 
             <EditRoomSheet
                 room={selectedRoom}

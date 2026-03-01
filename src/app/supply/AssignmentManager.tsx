@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ClipboardList, UserPlus, Droplets, Check, X, Box, User, FlaskConical, MapPin } from 'lucide-react'
+import { ClipboardList, UserPlus, Droplets, Check, X, Box, User, FlaskConical, MapPin, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import {
     Sheet, SheetContent, SheetDescription, SheetHeader,
     SheetTitle, SheetFooter, SheetTrigger

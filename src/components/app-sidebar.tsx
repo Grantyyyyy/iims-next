@@ -18,6 +18,7 @@ import {
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   Sidebar,
   SidebarContent,
@@ -38,6 +39,11 @@ export interface NavItem {
   items?: {
     title: string
     url: string
+    icon?: LucideIcon
+    items?: {
+      title: string
+      url: string
+    }[]
   }[]
 }
 
@@ -72,11 +78,25 @@ const allNavItems: NavItem[] = [
     icon: BookOpen,
     permission: "manage:items",
     items: [
-      { title: "Inventory", url: "/secretary/items" },
-      { title: "Instances", url: "/secretary/instances" },
-      { title: "Categories", url: "/secretary/categories" },
-      { title: "Item Distribution", url: "/secretary/distribute" },
-      { title: "Records", url: "/secretary/records" },
+      {
+        title: "Inventory",
+        url: "/secretary/items",
+        icon: Package,
+        items: [
+          { title: "Items List", url: "/secretary/items" },
+          { title: "All Instances", url: "/secretary/instances" },
+          { title: "Categories", url: "/secretary/categories" },
+        ],
+      },
+      {
+        title: "Activity Logs",
+        url: "/secretary/distribute",
+        icon: ClipboardList,
+        items: [
+          { title: "Distribution", url: "/secretary/distribute" },
+          { title: "Inventory History", url: "/secretary/records" },
+        ],
+      },
     ],
   },
   {
@@ -85,16 +105,33 @@ const allNavItems: NavItem[] = [
     icon: Bot,
     permission: "manage:equipment",
     items: [
-      { title: "Equipment", url: "/labtech/equipment" },
-      { title: "Apparatus", url: "/labtech/apparatus" },
-      { title: "Chemicals", url: "/labtech/chemicals" },
-      { title: "Categories", url: "/labtech/categories" },
+      {
+        title: "Inventory",
+        url: "/labtech/equipment",
+        icon: Beaker,
+        items: [
+          { title: "Equipment", url: "/labtech/equipment" },
+          { title: "Apparatus", url: "/labtech/apparatus" },
+          { title: "Chemicals", url: "/labtech/chemicals" },
+          { title: "Usage Tracking", url: "/labtech/usage" },
+          { title: "Categories", url: "/labtech/categories" },
+        ],
+      },
+      {
+        title: "Activity Logs",
+        url: "/labtech/borrow",
+        icon: ClipboardList,
+        items: [
+          { title: "Borrow Items", url: "/labtech/borrow" },
+          { title: "Records", url: "/labtech/records" },
+        ],
+      },
     ],
   },
   {
     title: "Requests",
     url: "/staff",
-    icon: ClipboardList,
+    icon: ShoppingCart,
     permission: "approve:requests",
     items: [
       { title: "Transfer", url: "/staff" },
@@ -163,6 +200,7 @@ function hasPermissionClient(roles: string[], permission: Permission): boolean {
 }
 
 export function AppSidebar({ user, userRoles = [], ...props }: AppSidebarProps) {
+  const pathname = usePathname()
   const displayUser = user || {
     name: "User",
     email: "user@eims.local",
@@ -179,10 +217,29 @@ export function AppSidebar({ user, userRoles = [], ...props }: AppSidebarProps) 
     !hasPermissionClient(userRoles, "manage:equipment") &&
     !hasPermissionClient(userRoles, "approve:requests")
 
-  const filteredNavMain = allNavItems.filter((item) => {
-    if (!item.permission) return true
-    if (item.permission === "approve:requests") return isApprover
-    return hasPermissionClient(userRoles, item.permission)
+  const filteredNavMain = allNavItems.flatMap((item) => {
+    if (item.permission && !hasPermissionClient(userRoles, item.permission)) {
+      return []
+    }
+
+    if (item.permission === "approve:requests" && !isApprover) {
+      return []
+    }
+
+    // Flatten Secretary/Labtech items for specific roles (excluding Admin)
+    const shouldFlatten =
+      (primaryRole === "SECRETARY" && item.title === "Secretary") ||
+      (primaryRole === "LABTECH" && item.title === "Labtech")
+
+    if (shouldFlatten && item.items) {
+      return item.items.map(subItem => ({
+        ...subItem,
+        icon: subItem.icon || item.icon, // Fallback to parent icon if missing
+        isActive: subItem.url === pathname || subItem.items?.some(i => pathname.startsWith(i.url))
+      })) as NavItem[]
+    }
+
+    return [item]
   })
 
   const staffFiltered = staffNavItems.filter((item) => {

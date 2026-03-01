@@ -29,12 +29,12 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import { 
-    Search, 
-    FilterX, 
-    Copy, 
-    ExternalLink, 
-    ArrowRight, 
+import {
+    Search,
+    FilterX,
+    Copy,
+    ExternalLink,
+    ArrowRight,
     RotateCcw,
     AlertCircle,
     Package
@@ -101,8 +101,8 @@ export function InstanceTable({ initialData, categories, filters }: InstanceTabl
 
         setIsPending(true)
         const result = await returnItem(
-            selectedInstance.borrowRecords[0].id, 
-            returnDetails.conditionOnReturn, 
+            selectedInstance.borrowRecords[0].id,
+            returnDetails.conditionOnReturn,
             returnDetails.notes
         )
         setIsPending(false)
@@ -132,7 +132,7 @@ export function InstanceTable({ initialData, categories, filters }: InstanceTabl
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-4 bg-card p-4 rounded-xl border shadow-sm">
+            <div className="flex flex-col gap-6 bg-card p-6 rounded-xl border shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="relative flex-1 min-w-[300px] max-w-md">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -140,12 +140,17 @@ export function InstanceTable({ initialData, categories, filters }: InstanceTabl
                             placeholder="Search by item, S/N, or inventory no..."
                             value={localSearch}
                             onChange={(e) => setLocalSearch(e.target.value)}
-                            className="pl-10 h-10 rounded-lg"
+                            className="pl-10 h-10 rounded-lg bg-muted/30 focus-visible:ring-primary/20 transition-all border-muted-foreground/20"
                         />
                     </div>
                     <div className="flex items-center gap-2">
                         {hasAnyFilter && (
-                            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground hover:text-destructive">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={clearFilters}
+                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                            >
                                 <FilterX className="h-4 w-4 mr-2" />
                                 Clear Filters
                             </Button>
@@ -153,14 +158,14 @@ export function InstanceTable({ initialData, categories, filters }: InstanceTabl
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-6 border-t pt-4">
-                    <div className="flex flex-col gap-1.5">
-                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Condition</span>
+                <div className="flex flex-wrap items-center gap-8 border-t pt-6">
+                    <div className="flex flex-col gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Condition</span>
                         <div className="flex bg-muted p-1 rounded-lg">
                             {conditionOptions.map((opt) => (
                                 <Button
                                     key={opt}
-                                    variant={ (filters.condition === opt || (!filters.condition && opt === 'All')) ? 'default' : 'ghost' }
+                                    variant={(filters.condition === opt || (!filters.condition && opt === 'All')) ? 'default' : 'ghost'}
                                     size="sm"
                                     onClick={() => updateParams({ condition: opt, page: '1' })}
                                     className={cn(
@@ -180,7 +185,7 @@ export function InstanceTable({ initialData, categories, filters }: InstanceTabl
                             {statusOptions.map((opt) => (
                                 <Button
                                     key={opt}
-                                    variant={ (filters.status === opt || (!filters.status && opt === 'All')) ? 'default' : 'ghost' }
+                                    variant={(filters.status === opt || (!filters.status && opt === 'All')) ? 'default' : 'ghost'}
                                     size="sm"
                                     onClick={() => updateParams({ status: opt, page: '1' })}
                                     className={cn(
@@ -214,262 +219,264 @@ export function InstanceTable({ initialData, categories, filters }: InstanceTabl
                         </Select>
                     </div>
                 </div>
-            </div>
 
-            <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-                <Table>
-                    <TableHeader className="bg-muted/50">
-                        <TableRow>
-                            <TableHead className="font-semibold">Item Name</TableHead>
-                            <TableHead className="font-semibold">Category</TableHead>
-                            <TableHead className="font-semibold">Inventory No.</TableHead>
-                            <TableHead className="font-semibold">Serial No.</TableHead>
-                            <TableHead className="font-semibold">Condition</TableHead>
-                            <TableHead className="font-semibold">Status</TableHead>
-                            <TableHead className="font-semibold">Current Holder</TableHead>
-                            <TableHead className="font-semibold">Unit Cost</TableHead>
-                            <TableHead className="font-semibold">Purchase Date</TableHead>
-                            <TableHead className="font-semibold">Useful Life</TableHead>
-                            <TableHead className="text-right font-semibold">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {initialData.instances.map((inst: any) => {
-                            const pastLife = isPastUsefulLife(inst.purchaseDate, inst.usefulLife)
-                            const isBorrowed = inst.borrowRecords.length > 0
-                            const currentBorrow = isBorrowed ? inst.borrowRecords[0] : null
+                <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+                    <Table>
+                        <TableHeader className="bg-muted/50">
+                            <TableRow>
+                                {[
+                                    { label: 'Item & Category', className: 'font-semibold' },
+                                    { label: 'Identification', className: 'font-semibold' },
+                                    { label: 'Condition', className: 'font-semibold' },
+                                    { label: 'Status & Holder', className: 'font-semibold' },
+                                    { label: 'Acquisition', className: 'font-semibold text-center' },
+                                    { label: 'Actions', className: 'text-right font-semibold' },
+                                ].map((col) => (
+                                    <TableHead key={col.label} className={col.className}>
+                                        {col.label}
+                                    </TableHead>
+                                ))}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {initialData.instances.map((inst: any) => {
+                                const pastLife = isPastUsefulLife(inst.purchaseDate, inst.usefulLife)
+                                const isBorrowed = inst.borrowRecords.length > 0
+                                const currentBorrow = isBorrowed ? inst.borrowRecords[0] : null
 
-                            return (
-                                <TableRow 
-                                    key={inst.id}
-                                    className={cn(
-                                        "transition-colors group",
-                                        pastLife ? "bg-amber-50/50 hover:bg-amber-100/50 dark:bg-amber-950/20" : "hover:bg-muted/50"
-                                    )}
-                                >
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <Link 
-                                                href={`/secretary/items/${inst.itemId}`}
-                                                className="font-medium text-primary hover:underline flex items-center gap-1"
-                                            >
-                                                {inst.item.name}
-                                                <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            </Link>
-                                            <span className="text-xs text-muted-foreground">{inst.item.model || 'No model'}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className="font-normal border-primary/20 bg-primary/5 text-primary">
-                                            {inst.item.category?.name}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-1.5 font-mono text-xs">
-                                            {inst.inventoryNumber}
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                onClick={() => handleCopy(inst.inventoryNumber)}
-                                            >
-                                                <Copy className="h-3 w-3" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="font-mono text-xs text-muted-foreground">
-                                        {inst.serialNumber || '—'}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge 
-                                            className={cn(
-                                                "capitalize px-2 py-0.5 text-[10px] font-bold",
-                                                inst.currentCondition?.toUpperCase() === 'GOOD' && "bg-green-500 hover:bg-green-600",
-                                                inst.currentCondition?.toUpperCase() === 'FAIR' && "bg-yellow-500 hover:bg-yellow-600",
-                                                inst.currentCondition?.toUpperCase() === 'POOR' && "bg-orange-500 hover:bg-orange-600",
-                                                inst.currentCondition?.toUpperCase() === 'DAMAGED' && "bg-red-500 hover:bg-red-600"
-                                            )}
-                                        >
-                                            {inst.currentCondition?.toLowerCase() || 'good'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-1.5">
-                                            <div className={cn(
-                                                "h-2 w-2 rounded-full ring-2 ring-offset-1 ring-offset-background",
-                                                isBorrowed ? "bg-blue-500 ring-blue-500/20" : "bg-green-500 ring-green-500/20"
-                                            )} />
-                                            <span className="text-xs font-medium">
-                                                {isBorrowed ? 'Borrowed' : 'Available'}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        {isBorrowed ? (
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-medium">
-                                                    {currentBorrow.borrower 
-                                                        ? `${currentBorrow.borrower.firstName || ''} ${currentBorrow.borrower.lastName || ''}`.trim() || 'No User'
-                                                        : currentBorrow.customBorrower || 'Unknown'}
-                                                </span>
-                                                <span className="text-[10px] text-muted-foreground">Since {new Date(currentBorrow.borrowDate).toLocaleDateString()}</span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-xs text-muted-foreground italic">In Storage</span>
+                                return (
+                                    <TableRow
+                                        key={inst.id}
+                                        className={cn(
+                                            "transition-colors group",
+                                            pastLife ? "bg-amber-50/50 hover:bg-amber-100/50 dark:bg-amber-950/20" : "hover:bg-muted/50"
                                         )}
-                                    </TableCell>
-                                    <TableCell className="text-xs font-medium">
-                                        ₱{inst.unitCost.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                    </TableCell>
-                                    <TableCell className="text-xs text-muted-foreground">
-                                        {inst.purchaseDate ? new Date(inst.purchaseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className={cn(
-                                                "text-xs",
-                                                pastLife ? "text-orange-600 dark:text-orange-400 font-bold flex items-center gap-1" : "text-muted-foreground"
-                                            )}>
-                                                {inst.usefulLife ? `${inst.usefulLife} yr(s)` : '—'}
-                                                {pastLife && <AlertCircle className="h-3 w-3" />}
-                                            </span>
-                                            {pastLife && (
-                                                <Badge variant="outline" className="text-[8px] h-4 px-1 border-orange-200 text-orange-600 bg-orange-50">Expired</Badge>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                <Link href={`/secretary/items/${inst.itemId}`}>
-                                                    <ArrowRight className="h-4 w-4" />
+                                    >
+                                        <TableCell>
+                                            <div className="flex flex-col gap-0.5">
+                                                <Link
+                                                    href={`/secretary/items/${inst.itemId}`}
+                                                    className="font-medium text-primary hover:underline flex items-center gap-1 group/link"
+                                                >
+                                                    {inst.item.name}
+                                                    <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
                                                 </Link>
-                                            </Button>
-                                            {isBorrowed && (
-                                                <Dialog open={isReturnDialogOpen && selectedInstance?.id === inst.id} onOpenChange={(open) => {
-                                                    if (!open) setSelectedInstance(null)
-                                                    setIsReturnDialogOpen(open)
-                                                }}>
-                                                    <DialogTrigger asChild>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="h-8 text-[10px] font-bold uppercase transition-all hover:bg-primary hover:text-white"
-                                                            onClick={() => setSelectedInstance(inst)}
-                                                        >
-                                                            <RotateCcw className="h-3 w-3 mr-1" />
-                                                            Return
-                                                        </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent>
-                                                        <DialogHeader>
-                                                            <DialogTitle>Process Return</DialogTitle>
-                                                            <DialogDescription>
-                                                                Returning <strong>{inst.item.name}</strong> from <strong>{currentBorrow.borrower ? `${currentBorrow.borrower.firstName} ${currentBorrow.borrower.lastName}` : currentBorrow.customBorrower || 'Staff'}</strong>.
-                                                            </DialogDescription>
-                                                        </DialogHeader>
-                                                        <div className="space-y-4 py-4">
-                                                            <div className="space-y-2">
-                                                                <label className="text-sm font-medium">Condition on Return</label>
-                                                                <Select
-                                                                    value={returnDetails.conditionOnReturn}
-                                                                    onValueChange={(v) => setReturnDetails({ ...returnDetails, conditionOnReturn: v })}
-                                                                >
-                                                                    <SelectTrigger>
-                                                                        <SelectValue placeholder="Condition" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="Good">Good</SelectItem>
-                                                                        <SelectItem value="Fair">Fair</SelectItem>
-                                                                        <SelectItem value="Damaged">Damaged</SelectItem>
-                                                                        <SelectItem value="Lost">Lost</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <label className="text-sm font-medium">Notes / Remarks</label>
-                                                                <textarea
-                                                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                                    placeholder="Describe any issues or notes..."
-                                                                    rows={3}
-                                                                    value={returnDetails.notes}
-                                                                    onChange={(e) => setReturnDetails({ ...returnDetails, notes: e.target.value })}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <DialogFooter>
-                                                            <Button 
-                                                                variant="outline" 
-                                                                onClick={() => setIsReturnDialogOpen(false)}
-                                                                disabled={isPending}
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs text-muted-foreground">{inst.item.model || 'No model'}</span>
+                                                    <Badge variant="outline" className="h-4 px-1 text-[9px] font-normal border-primary/20 bg-primary/5 text-primary">
+                                                        {inst.item.category?.name}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-1.5 font-mono text-xs font-medium">
+                                                    {inst.inventoryNumber}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        onClick={() => handleCopy(inst.inventoryNumber)}
+                                                    >
+                                                        <Copy className="h-2.5 w-2.5" />
+                                                    </Button>
+                                                </div>
+                                                <span className="font-mono text-[10px] text-muted-foreground">
+                                                    S/N: {inst.serialNumber || '—'}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                className={cn(
+                                                    "capitalize px-2 py-0.5 text-[10px] font-bold",
+                                                    inst.currentCondition?.toUpperCase() === 'GOOD' && "bg-green-500 hover:bg-green-600",
+                                                    inst.currentCondition?.toUpperCase() === 'FAIR' && "bg-yellow-500 hover:bg-yellow-600",
+                                                    inst.currentCondition?.toUpperCase() === 'POOR' && "bg-orange-500 hover:bg-orange-600",
+                                                    inst.currentCondition?.toUpperCase() === 'DAMAGED' && "bg-red-500 hover:bg-red-600"
+                                                )}
+                                            >
+                                                {inst.currentCondition?.toLowerCase() || 'good'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col gap-1.5">
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className={cn(
+                                                        "h-2 w-2 rounded-full ring-2 ring-offset-1 ring-offset-background",
+                                                        isBorrowed ? "bg-blue-500 ring-blue-500/20" : "bg-green-500 ring-green-500/20"
+                                                    )} />
+                                                    <span className="text-xs font-medium">
+                                                        {isBorrowed ? 'Borrowed' : 'Available'}
+                                                    </span>
+                                                </div>
+                                                {isBorrowed ? (
+                                                    <div className="flex flex-col pl-3.5 border-l-2 border-muted">
+                                                        <span className="text-xs font-medium">
+                                                            {currentBorrow.borrower
+                                                                ? `${currentBorrow.borrower.firstName || ''} ${currentBorrow.borrower.lastName || ''}`.trim() || 'No User'
+                                                                : currentBorrow.customBorrower || 'Unknown'}
+                                                        </span>
+                                                        <span className="text-[10px] text-muted-foreground">Since {new Date(currentBorrow.borrowDate).toLocaleDateString()}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[10px] text-muted-foreground italic pl-3.5">In Storage</span>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col items-center text-center gap-1">
+                                                <span className="text-xs font-semibold text-primary">
+                                                    ₱{inst.unitCost.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                                </span>
+                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                                                    {inst.purchaseDate ? new Date(inst.purchaseDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'No Date'}
+                                                </span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className={cn(
+                                                        "text-[10px]",
+                                                        pastLife ? "text-orange-600 dark:text-orange-400 font-bold" : "text-muted-foreground"
+                                                    )}>
+                                                        {inst.usefulLife ? `${inst.usefulLife}y` : '—'}
+                                                    </span>
+                                                    {pastLife && <AlertCircle className="h-3 w-3 text-orange-500" />}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                    <Link href={`/secretary/items/${inst.itemId}`}>
+                                                        <ArrowRight className="h-4 w-4" />
+                                                    </Link>
+                                                </Button>
+                                                {isBorrowed && (
+                                                    <Dialog open={isReturnDialogOpen && selectedInstance?.id === inst.id} onOpenChange={(open) => {
+                                                        if (!open) setSelectedInstance(null)
+                                                        setIsReturnDialogOpen(open)
+                                                    }}>
+                                                        <DialogTrigger asChild>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="h-8 text-[10px] font-bold uppercase transition-all hover:bg-primary hover:text-white"
+                                                                onClick={() => setSelectedInstance(inst)}
                                                             >
-                                                                Cancel
+                                                                <RotateCcw className="h-3 w-3 mr-1" />
+                                                                Return
                                                             </Button>
-                                                            <Button onClick={handleReturn} disabled={isPending}>
-                                                                {isPending ? 'Processing...' : 'Complete Return'}
-                                                            </Button>
-                                                        </DialogFooter>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            )}
+                                                        </DialogTrigger>
+                                                        <DialogContent>
+                                                            <DialogHeader>
+                                                                <DialogTitle>Process Return</DialogTitle>
+                                                                <DialogDescription>
+                                                                    Returning <strong>{inst.item.name}</strong> from <strong>{currentBorrow.borrower ? `${currentBorrow.borrower.firstName} ${currentBorrow.borrower.lastName}` : currentBorrow.customBorrower || 'Staff'}</strong>.
+                                                                </DialogDescription>
+                                                            </DialogHeader>
+                                                            <div className="space-y-4 py-4">
+                                                                <div className="space-y-2">
+                                                                    <label className="text-sm font-medium">Condition on Return</label>
+                                                                    <Select
+                                                                        value={returnDetails.conditionOnReturn}
+                                                                        onValueChange={(v) => setReturnDetails({ ...returnDetails, conditionOnReturn: v })}
+                                                                    >
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Condition" />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Good">Good</SelectItem>
+                                                                            <SelectItem value="Fair">Fair</SelectItem>
+                                                                            <SelectItem value="Damaged">Damaged</SelectItem>
+                                                                            <SelectItem value="Lost">Lost</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <label className="text-sm font-medium">Notes / Remarks</label>
+                                                                    <textarea
+                                                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                                        placeholder="Describe any issues or notes..."
+                                                                        rows={3}
+                                                                        value={returnDetails.notes}
+                                                                        onChange={(e) => setReturnDetails({ ...returnDetails, notes: e.target.value })}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <DialogFooter>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    onClick={() => setIsReturnDialogOpen(false)}
+                                                                    disabled={isPending}
+                                                                >
+                                                                    Cancel
+                                                                </Button>
+                                                                <Button onClick={handleReturn} disabled={isPending}>
+                                                                    {isPending ? 'Processing...' : 'Complete Return'}
+                                                                </Button>
+                                                            </DialogFooter>
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })}
+                            {initialData.instances.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="h-64 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <Package className="h-10 w-10 text-muted-foreground opacity-20" />
+                                            <p className="text-muted-foreground">No instances found matching the filters.</p>
+                                            <Button variant="link" onClick={clearFilters}>Clear all filters</Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            )
-                        })}
-                        {initialData.instances.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={11} className="h-64 text-center">
-                                    <div className="flex flex-col items-center justify-center gap-2">
-                                        <Package className="h-10 w-10 text-muted-foreground opacity-20" />
-                                        <p className="text-muted-foreground">No instances found matching the filters.</p>
-                                        <Button variant="link" onClick={clearFilters}>Clear all filters</Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
 
-            <div className="flex items-center justify-between px-2">
-                <span className="text-sm text-muted-foreground">
-                    Showing {initialData.instances.length > 0 ? (filters.page - 1) * 20 + 1 : 0} to {Math.min(filters.page * 20, initialData.total)} of {initialData.total} instances
-                </span>
-                <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={filters.page <= 1}
-                        onClick={() => updateParams({ page: (filters.page - 1).toString() })}
-                    >
-                        Previous
-                    </Button>
-                    <div className="flex items-center gap-1.5 mx-2">
-                        {Array.from({ length: Math.min(initialData.pages, 5) }).map((_, i) => {
-                            const p = i + 1
-                            return (
-                                <Button
-                                    key={p}
-                                    variant={filters.page === p ? 'default' : 'outline'}
-                                    size="icon"
-                                    className="h-8 w-8 text-xs"
-                                    onClick={() => updateParams({ page: p.toString() })}
-                                >
-                                    {p}
-                                </Button>
-                            )
-                        })}
-                        {initialData.pages > 5 && <span className="text-muted-foreground mx-1">...</span>}
+                <div className="flex items-center justify-between px-2">
+                    <span className="text-sm text-muted-foreground">
+                        Showing {initialData.instances.length > 0 ? (filters.page - 1) * 20 + 1 : 0} to {Math.min(filters.page * 20, initialData.total)} of {initialData.total} instances
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={filters.page <= 1}
+                            onClick={() => updateParams({ page: (filters.page - 1).toString() })}
+                        >
+                            Previous
+                        </Button>
+                        <div className="flex items-center gap-1.5 mx-2">
+                            {Array.from({ length: Math.min(initialData.pages, 5) }).map((_, i) => {
+                                const p = i + 1
+                                return (
+                                    <Button
+                                        key={p}
+                                        variant={filters.page === p ? 'default' : 'outline'}
+                                        size="icon"
+                                        className="h-8 w-8 text-xs"
+                                        onClick={() => updateParams({ page: p.toString() })}
+                                    >
+                                        {p}
+                                    </Button>
+                                )
+                            })}
+                            {initialData.pages > 5 && <span className="text-muted-foreground mx-1">...</span>}
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={filters.page >= initialData.pages}
+                            onClick={() => updateParams({ page: (filters.page + 1).toString() })}
+                        >
+                            Next
+                        </Button>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={filters.page >= initialData.pages}
-                        onClick={() => updateParams({ page: (filters.page + 1).toString() })}
-                    >
-                        Next
-                    </Button>
                 </div>
             </div>
         </div>
