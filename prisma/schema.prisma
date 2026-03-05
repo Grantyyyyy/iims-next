@@ -43,8 +43,8 @@ model UserRole {
   id     Int  @id @default(autoincrement())
   userId Int
   roleId Int
-  role   Role @relation(fields: [roleId], references: [id])
   user   User @relation(fields: [userId], references: [id])
+  role   Role @relation(fields: [roleId], references: [id])
 
   @@unique([userId, roleId])
 }
@@ -67,29 +67,29 @@ model User {
   departmentId           Int?
   appBatchesAdded        ApparatusBatch[]            @relation("AppBatchAddedBy")
   apparatusBorrows       ApparatusBorrowRecord[]     @relation("AppBorrowBorrower")
-  previousBorrows        BorrowRecord[]              @relation("PreviousBorrower")
   currentlyBorrowedItems BorrowRecord[]              @relation("BorrowRecordBorrower")
-  processedChemicals     ChemicalAssignment[]        @relation("ChemAssignProcessed")
+  previousBorrows        BorrowRecord[]              @relation("PreviousBorrower")
   receivedChemicals      ChemicalAssignment[]        @relation("ChemAssignAssignee")
+  processedChemicals     ChemicalAssignment[]        @relation("ChemAssignProcessed")
   chemBatchesAdded       ChemicalBatch[]             @relation("ChemBatchAddedBy")
   chemicalUsages         ChemicalUsage[]             @relation("ChemUsageBorrower")
-  chemReceived           ChemicalUsageRecord[]       @relation("ChemReceived")
-  chemUsages             ChemicalUsageRecord[]       @relation("ChemUsedBy")
   chemRecorded           ChemicalUsageRecord[]       @relation("ChemRecordedBy")
+  chemUsages             ChemicalUsageRecord[]       @relation("ChemUsedBy")
+  chemReceived           ChemicalUsageRecord[]       @relation("ChemReceived")
   batchesAdded           ConsumableBatch[]           @relation("BatchAddedBy")
-  processedDisposals     DisposeRequest[]            @relation("DisposeProcessedBy")
   disposeRequests        DisposeRequest[]            @relation("DisposeRequestedBy")
-  distributedItems       DistributionRecord[]        @relation("DistributedItems")
+  processedDisposals     DisposeRequest[]            @relation("DisposeProcessedBy")
   receivedItems          DistributionRecord[]        @relation("ReceivedItems")
+  distributedItems       DistributionRecord[]        @relation("DistributedItems")
   equipmentAssignments   EquipmentAssignmentRecord[] @relation("EqAssignAssignee")
   equipmentBorrows       EquipmentBorrowRecord[]     @relation("EqBorrowBorrower")
-  labBorrowRecords       LabBorrowRecord[]           @relation("LabBorrowedBy")
   labPrevBorrows         LabBorrowRecord[]           @relation("LabPrevBorrower")
-  processedReplaces      ReplaceRequest[]            @relation("ReplaceProcessedBy")
+  labBorrowRecords       LabBorrowRecord[]           @relation("LabBorrowedBy")
   replaceRequests        ReplaceRequest[]            @relation("ReplaceRequestedBy")
-  processedTransfers     TransferRequest[]           @relation("TransferProcessedBy")
-  newTransferAssignments TransferRequest[]           @relation("TransferNewAssignee")
+  processedReplaces      ReplaceRequest[]            @relation("ReplaceProcessedBy")
   transferRequests       TransferRequest[]           @relation("TransferRequestedBy")
+  newTransferAssignments TransferRequest[]           @relation("TransferNewAssignee")
+  processedTransfers     TransferRequest[]           @relation("TransferProcessedBy")
   department             Department?                 @relation(fields: [departmentId], references: [id])
   roles                  UserRole[]
 }
@@ -133,8 +133,8 @@ model ItemInstance {
   disposeRequests     DisposeRequest[]
   distributionRecords DistributionRecord[]
   item                Item                 @relation(fields: [itemId], references: [id])
-  replaceForRequests  ReplaceRequest[]     @relation("ItemReplacementFor")
   replaceRequests     ReplaceRequest[]     @relation("ItemReplacementInstance")
+  replaceForRequests  ReplaceRequest[]     @relation("ItemReplacementFor")
   transferRequests    TransferRequest[]
 }
 
@@ -150,10 +150,10 @@ model BorrowRecord {
   borrowerId     Int?
   roomId         Int?
   previousUserId Int?
-  previousUser   User?         @relation("PreviousBorrower", fields: [previousUserId], references: [id])
-  room           Room?         @relation(fields: [roomId], references: [id])
-  borrower       User?         @relation("BorrowRecordBorrower", fields: [borrowerId], references: [id])
   itemInstance   ItemInstance  @relation(fields: [itemInstanceId], references: [id])
+  borrower       User?         @relation("BorrowRecordBorrower", fields: [borrowerId], references: [id])
+  room           Room?         @relation(fields: [roomId], references: [id])
+  previousUser   User?         @relation("PreviousBorrower", fields: [previousUserId], references: [id])
   returnRecord   ReturnRecord?
 }
 
@@ -177,11 +177,11 @@ model DistributionRecord {
   purpose         String?
   distributedAt   DateTime         @default(now())
   batchId         Int?
-  room            Room?            @relation(fields: [roomId], references: [id])
-  distributedBy   User             @relation("DistributedItems", fields: [distributedById], references: [id])
-  recipient       User             @relation("ReceivedItems", fields: [recipientId], references: [id])
-  itemInstance    ItemInstance     @relation(fields: [itemInstanceId], references: [id])
   batch           ConsumableBatch? @relation(fields: [batchId], references: [id])
+  itemInstance    ItemInstance     @relation(fields: [itemInstanceId], references: [id])
+  recipient       User             @relation("ReceivedItems", fields: [recipientId], references: [id])
+  distributedBy   User             @relation("DistributedItems", fields: [distributedById], references: [id])
+  room            Room?            @relation(fields: [roomId], references: [id])
 }
 
 model ConsumableBatch {
@@ -195,8 +195,8 @@ model ConsumableBatch {
   notes               String?
   addedById           Int
   addedAt             DateTime             @default(now())
-  itemInstance        ItemInstance         @relation(fields: [itemInstanceId], references: [id], onDelete: Cascade)
   addedBy             User                 @relation("BatchAddedBy", fields: [addedById], references: [id])
+  itemInstance        ItemInstance         @relation(fields: [itemInstanceId], references: [id], onDelete: Cascade)
   distributionRecords DistributionRecord[]
 }
 
@@ -268,9 +268,9 @@ model EquipmentAssignmentRecord {
   equipmentInstanceId Int
   assigneeId          Int?
   assignedLocationId  Int?
-  assignedLocation    Room?             @relation(fields: [assignedLocationId], references: [id])
-  assignee            User?             @relation("EqAssignAssignee", fields: [assigneeId], references: [id])
   equipmentInstance   EquipmentInstance @relation(fields: [equipmentInstanceId], references: [id])
+  assignee            User?             @relation("EqAssignAssignee", fields: [assigneeId], references: [id])
+  assignedLocation    Room?             @relation(fields: [assignedLocationId], references: [id])
 }
 
 model EquipmentBorrowRecord {
@@ -284,10 +284,10 @@ model EquipmentBorrowRecord {
   borrowerId          Int?
   subjectId           Int?
   roomId              Int?
-  room                Room?                   @relation(fields: [roomId], references: [id])
-  subject             Subject?                @relation(fields: [subjectId], references: [id])
-  borrower            User?                   @relation("EqBorrowBorrower", fields: [borrowerId], references: [id])
   equipmentInstance   EquipmentInstance       @relation(fields: [equipmentInstanceId], references: [id])
+  borrower            User?                   @relation("EqBorrowBorrower", fields: [borrowerId], references: [id])
+  subject             Subject?                @relation(fields: [subjectId], references: [id])
+  room                Room?                   @relation(fields: [roomId], references: [id])
   returnRecords       EquipmentReturnRecord[]
 }
 
@@ -297,8 +297,8 @@ model EquipmentReturnRecord {
   remarks             String?
   equipmentInstanceId Int
   borrowRecordId      Int
-  borrowRecord        EquipmentBorrowRecord @relation(fields: [borrowRecordId], references: [id])
   equipmentInstance   EquipmentInstance     @relation(fields: [equipmentInstanceId], references: [id])
+  borrowRecord        EquipmentBorrowRecord @relation(fields: [borrowRecordId], references: [id])
 }
 
 model Apparatus {
@@ -346,10 +346,10 @@ model ApparatusBorrowRecord {
   borrowerId          Int
   roomId              Int?
   subjectId           Int?
-  subject             Subject?                @relation(fields: [subjectId], references: [id])
-  room                Room?                   @relation(fields: [roomId], references: [id])
-  borrower            User                    @relation("AppBorrowBorrower", fields: [borrowerId], references: [id])
   apparatusInstance   ApparatusInstance       @relation(fields: [apparatusInstanceId], references: [id])
+  borrower            User                    @relation("AppBorrowBorrower", fields: [borrowerId], references: [id])
+  room                Room?                   @relation(fields: [roomId], references: [id])
+  subject             Subject?                @relation(fields: [subjectId], references: [id])
   returnRecords       ApparatusReturnRecord[]
 }
 
@@ -359,8 +359,8 @@ model ApparatusReturnRecord {
   remarks             String?
   apparatusInstanceId Int
   borrowRecordId      Int
-  borrowRecord        ApparatusBorrowRecord @relation(fields: [borrowRecordId], references: [id])
   apparatusInstance   ApparatusInstance     @relation(fields: [apparatusInstanceId], references: [id])
+  borrowRecord        ApparatusBorrowRecord @relation(fields: [borrowRecordId], references: [id])
 }
 
 model ChemicalStock {
@@ -398,10 +398,10 @@ model ChemicalUsage {
   borrowerId          Int
   subjectId           Int?
   roomId              Int?
-  room                Room?         @relation(fields: [roomId], references: [id])
-  subject             Subject?      @relation(fields: [subjectId], references: [id])
-  borrower            User          @relation("ChemUsageBorrower", fields: [borrowerId], references: [id])
   requestedChemical   ChemicalStock @relation(fields: [requestedChemicalId], references: [id])
+  borrower            User          @relation("ChemUsageBorrower", fields: [borrowerId], references: [id])
+  subject             Subject?      @relation(fields: [subjectId], references: [id])
+  room                Room?         @relation(fields: [roomId], references: [id])
 }
 
 model ChemicalAssignment {
@@ -413,10 +413,10 @@ model ChemicalAssignment {
   roomId          Int?
   chemicalStockId Int
   processedById   Int?
-  processedBy     User?         @relation("ChemAssignProcessed", fields: [processedById], references: [id])
-  chemicalStock   ChemicalStock @relation(fields: [chemicalStockId], references: [id])
-  room            Room?         @relation(fields: [roomId], references: [id])
   assignee        User          @relation("ChemAssignAssignee", fields: [assigneeId], references: [id])
+  room            Room?         @relation(fields: [roomId], references: [id])
+  chemicalStock   ChemicalStock @relation(fields: [chemicalStockId], references: [id])
+  processedBy     User?         @relation("ChemAssignProcessed", fields: [processedById], references: [id])
 }
 
 model TransferRequest {
@@ -430,11 +430,11 @@ model TransferRequest {
   newAssigneeId  Int
   newLocationId  Int
   processedById  Int?
-  processedBy    User?        @relation("TransferProcessedBy", fields: [processedById], references: [id])
-  newLocation    Room         @relation(fields: [newLocationId], references: [id])
-  newAssignee    User         @relation("TransferNewAssignee", fields: [newAssigneeId], references: [id])
-  requestedBy    User         @relation("TransferRequestedBy", fields: [requestedById], references: [id])
   itemInstance   ItemInstance @relation(fields: [itemInstanceId], references: [id])
+  requestedBy    User         @relation("TransferRequestedBy", fields: [requestedById], references: [id])
+  newAssignee    User         @relation("TransferNewAssignee", fields: [newAssigneeId], references: [id])
+  newLocation    Room         @relation(fields: [newLocationId], references: [id])
+  processedBy    User?        @relation("TransferProcessedBy", fields: [processedById], references: [id])
 }
 
 model ReplaceRequest {
@@ -447,10 +447,10 @@ model ReplaceRequest {
   requestedById     Int
   replacementItemId Int?
   processedById     Int?
-  processedBy       User?         @relation("ReplaceProcessedBy", fields: [processedById], references: [id])
-  replacementItem   ItemInstance? @relation("ItemReplacementFor", fields: [replacementItemId], references: [id])
-  requestedBy       User          @relation("ReplaceRequestedBy", fields: [requestedById], references: [id])
   itemInstance      ItemInstance  @relation("ItemReplacementInstance", fields: [itemInstanceId], references: [id])
+  requestedBy       User          @relation("ReplaceRequestedBy", fields: [requestedById], references: [id])
+  replacementItem   ItemInstance? @relation("ItemReplacementFor", fields: [replacementItemId], references: [id])
+  processedBy       User?         @relation("ReplaceProcessedBy", fields: [processedById], references: [id])
 }
 
 model DisposeRequest {
@@ -462,9 +462,9 @@ model DisposeRequest {
   itemInstanceId Int
   requestedById  Int
   processedById  Int?
-  processedBy    User?        @relation("DisposeProcessedBy", fields: [processedById], references: [id])
-  requestedBy    User         @relation("DisposeRequestedBy", fields: [requestedById], references: [id])
   itemInstance   ItemInstance @relation(fields: [itemInstanceId], references: [id])
+  requestedBy    User         @relation("DisposeRequestedBy", fields: [requestedById], references: [id])
+  processedBy    User?        @relation("DisposeProcessedBy", fields: [processedById], references: [id])
 }
 
 model ApparatusBatch {
@@ -478,8 +478,8 @@ model ApparatusBatch {
   notes        String?
   addedById    Int
   addedAt      DateTime  @default(now())
-  apparatus    Apparatus @relation(fields: [apparatusId], references: [id])
   addedBy      User      @relation("AppBatchAddedBy", fields: [addedById], references: [id])
+  apparatus    Apparatus @relation(fields: [apparatusId], references: [id])
 }
 
 model Chemical {
@@ -510,8 +510,8 @@ model ChemicalBatch {
   notes           String?
   addedById       Int
   addedAt         DateTime              @default(now())
-  chemical        Chemical              @relation(fields: [chemicalId], references: [id])
   addedBy         User                  @relation("ChemBatchAddedBy", fields: [addedById], references: [id])
+  chemical        Chemical              @relation(fields: [chemicalId], references: [id])
   usages          ChemicalUsageRecord[]
 
   @@index([chemicalId, expiryDate, remainingVolume])
@@ -534,12 +534,12 @@ model ChemicalUsageRecord {
   sessionId         String?
   dateUsed          DateTime      @default(now())
   recordedById      Int
-  chemicalBatch     ChemicalBatch @relation(fields: [chemicalBatchId], references: [id])
-  recipient         User?         @relation("ChemReceived", fields: [recipientId], references: [id])
-  usedBy            User?         @relation("ChemUsedBy", fields: [usedById], references: [id])
-  subject           Subject?      @relation(fields: [subjectId], references: [id])
-  room              Room?         @relation(fields: [roomId], references: [id])
   recordedBy        User          @relation("ChemRecordedBy", fields: [recordedById], references: [id])
+  room              Room?         @relation(fields: [roomId], references: [id])
+  subject           Subject?      @relation(fields: [subjectId], references: [id])
+  usedBy            User?         @relation("ChemUsedBy", fields: [usedById], references: [id])
+  recipient         User?         @relation("ChemReceived", fields: [recipientId], references: [id])
+  chemicalBatch     ChemicalBatch @relation(fields: [chemicalBatchId], references: [id])
 
   @@index([chemicalBatchId, recipientId, dateUsed])
   @@index([recipientId, isDistribution])
@@ -559,11 +559,11 @@ model LabBorrowRecord {
   dueDate             DateTime?
   returnDate          DateTime?
   previousBorrowerId  Int?
-  equipmentInstance   EquipmentInstance? @relation(fields: [equipmentInstanceId], references: [id])
-  apparatusInstance   ApparatusInstance? @relation(fields: [apparatusInstanceId], references: [id])
-  borrower            User?              @relation("LabBorrowedBy", fields: [borrowerId], references: [id])
-  room                Room?              @relation(fields: [roomId], references: [id])
   previousBorrower    User?              @relation("LabPrevBorrower", fields: [previousBorrowerId], references: [id])
+  room                Room?              @relation(fields: [roomId], references: [id])
+  borrower            User?              @relation("LabBorrowedBy", fields: [borrowerId], references: [id])
+  apparatusInstance   ApparatusInstance? @relation(fields: [apparatusInstanceId], references: [id])
+  equipmentInstance   EquipmentInstance? @relation(fields: [equipmentInstanceId], references: [id])
   returnRecord        LabReturnRecord?
 }
 

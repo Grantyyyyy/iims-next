@@ -50,14 +50,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import { Textarea } from '@/components/ui/textarea'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -347,200 +339,181 @@ export default function DistributeClient({ initialItems }: Props) {
     }, [cart.length])
 
     return (
-        <div className="w-full space-y-2 relative pb-20">
-            {/* Filters Row */}
-            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                {/* Search Bar */}
-                <div className="relative flex-1 max-w-md w-full">
-                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search by item name or ID..."
-                        className="pl-9 h-9 bg-background focus:ring-1"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+        <div className="w-full space-y-4 relative pb-24">
+            {/* Filter Tabs */}
+            <div className="w-full">
+                <ScrollArea className="w-full whitespace-nowrap rounded-md bg-background overflow-hidden pb-4">
+                    <div className="flex w-max space-x-2 px-1 py-2">
+                        {categories.map((cat) => (
+                            <Button
+                                key={cat.name}
+                                variant={categoryFilter === cat.name ? "default" : "ghost"}
+                                className="rounded-full h-8 px-4 text-sm"
+                                onClick={() => setCategoryFilter(cat.name)}
+                            >
+                                {cat.name}
+                                <span className="ml-2 text-xs opacity-70">({cat.count})</span>
+                                {cat.cartCount > 0 && (
+                                    <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center rounded-full bg-primary-foreground text-primary">
+                                        {cat.cartCount}
+                                    </Badge>
+                                )}
+                            </Button>
+                        ))}
+                    </div>
+                    <ScrollBar orientation="horizontal" />
+                </ScrollArea>
+            </div>
 
-                {/* Category Dropdown */}
-                <div className="w-full sm:w-[240px]">
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                        <SelectTrigger className="h-9 bg-background">
-                            <div className="flex items-center gap-2">
-                                <PackageIcon className="h-4 w-4 text-muted-foreground" />
-                                <SelectValue placeholder="All Categories" />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                            {categories.map((cat) => (
-                                <SelectItem key={cat.name} value={cat.name}>
-                                    <div className="flex items-center justify-between w-full min-w-[180px]">
-                                        <span>{cat.name}</span>
-                                        <Badge variant="secondary" className="ml-2 h-4 min-w-4 px-1 text-[10px] opacity-70">
-                                            {cat.count}
-                                        </Badge>
-                                    </div>
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+            {/* Search Bar */}
+            <div className="relative max-w-md">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Search by item name or ID..."
+                    className="pl-9 bg-background"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
 
             {/* Main Item Browser */}
-            <div ref={scrollRef} className="pt-2">
-                <Tabs defaultValue="non-consumable" className="w-full">
-                    <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-                        <TabsTrigger value="non-consumable" className="flex items-center gap-2">
-                            Non-Consumables
-                            <Badge variant="secondary" className="h-5 text-[10px]">
-                                {filteredAndGroupedItems.nonConsumableGroups.length}
-                            </Badge>
-                        </TabsTrigger>
-                        <TabsTrigger value="consumable" className="flex items-center gap-2">
-                            Consumables
-                            <Badge variant="secondary" className="h-5 text-[10px]">
-                                {filteredAndGroupedItems.consumables.length}
-                            </Badge>
-                        </TabsTrigger>
-                    </TabsList>
+            <div ref={scrollRef} className="space-y-6">
 
-                    <TabsContent value="non-consumable" className="space-y-4 outline-none">
-                        {filteredAndGroupedItems.nonConsumableGroups.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-4">
-                                {filteredAndGroupedItems.nonConsumableGroups.map(group => {
-                                    const availableCount = group.instances.length
-                                    const isExpanded = expandedGroups[group.item.id] || availableCount === 1
+                {filteredAndGroupedItems.nonConsumableGroups.length === 0 && filteredAndGroupedItems.consumables.length === 0 && (
+                    <div className="text-center py-20 text-muted-foreground border rounded-lg bg-background/50">
+                        <p>No items found in this category.</p>
+                    </div>
+                )}
 
-                                    return (
-                                        <Collapsible
-                                            key={group.item.id}
-                                            open={isExpanded}
-                                            onOpenChange={(open) => setExpandedGroups(p => ({ ...p, [group.item.id]: open }))}
-                                            className="border rounded-lg bg-card text-card-foreground shadow-sm overflow-hidden"
-                                        >
-                                            <div className="flex items-center justify-between py-2.5 px-4 bg-muted/30">
-                                                <div className="flex items-center gap-4">
-                                                    <CollapsibleTrigger asChild>
-                                                        <Button variant="ghost" size="sm" className="w-9 p-0" disabled={availableCount === 0}>
-                                                            {isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                                                        </Button>
-                                                    </CollapsibleTrigger>
-                                                    <div>
-                                                        <h4 className="font-semibold text-base">{group.item.name}</h4>
-                                                        <p className="text-sm text-muted-foreground">{group.item.category?.name} — {group.item.model || 'No Model'}</p>
-                                                    </div>
+                {/* Non-Consumable Groups */}
+                {filteredAndGroupedItems.nonConsumableGroups.length > 0 && (
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                            Non-Consumable Assets
+                            <Badge variant="outline">{filteredAndGroupedItems.nonConsumableGroups.length}</Badge>
+                        </h3>
+                        <div className="grid grid-cols-1 gap-4">
+                            {filteredAndGroupedItems.nonConsumableGroups.map(group => {
+                                const availableCount = group.instances.length
+                                const isExpanded = expandedGroups[group.item.id] || availableCount === 1
+
+                                return (
+                                    <Collapsible
+                                        key={group.item.id}
+                                        open={isExpanded}
+                                        onOpenChange={(open) => setExpandedGroups(p => ({ ...p, [group.item.id]: open }))}
+                                        className="border rounded-lg bg-card text-card-foreground shadow-sm overflow-hidden"
+                                    >
+                                        <div className="flex items-center justify-between p-4 bg-muted/30">
+                                            <div className="flex items-center gap-4">
+                                                <CollapsibleTrigger asChild>
+                                                    <Button variant="ghost" size="sm" className="w-9 p-0" disabled={availableCount === 0}>
+                                                        {isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                                                    </Button>
+                                                </CollapsibleTrigger>
+                                                <div>
+                                                    <h4 className="font-semibold text-base">{group.item.name}</h4>
+                                                    <p className="text-sm text-muted-foreground">{group.item.category?.name} — {group.item.model || 'No Model'}</p>
                                                 </div>
-                                                <Badge variant={availableCount > 0 ? "default" : "secondary"}>
-                                                    {availableCount} available
+                                            </div>
+                                            <Badge variant={availableCount > 0 ? "default" : "secondary"}>
+                                                {availableCount} available
+                                            </Badge>
+                                        </div>
+
+                                        <CollapsibleContent className="bg-background divide-y">
+                                            {group.instances.map(instance => {
+                                                const inCart = cart.some(c => c.itemInstanceId === instance.id)
+                                                // Assuming we only listed available ones based on getAvailableItems query
+
+                                                return (
+                                                    <div key={instance.id} className="flex items-center justify-between p-4 pl-14 hover:bg-muted/10 transition-colors">
+                                                        <div className="flex items-center gap-4 text-sm">
+                                                            <span className="font-medium w-32">{instance.inventoryNumber}</span>
+                                                            <span className="text-muted-foreground w-32">{instance.serialNumber || 'No SN'}</span>
+                                                            <Badge variant="outline">{instance.currentCondition}</Badge>
+                                                        </div>
+
+                                                        {inCart ? (
+                                                            <Button variant="secondary" disabled size="sm" className="w-32">
+                                                                <Check className="h-4 w-4 mr-2" /> In Cart
+                                                            </Button>
+                                                        ) : (
+                                                            <Button onClick={() => addToCart(instance, false)} size="sm" className="w-32">
+                                                                <ShoppingCart className="h-4 w-4 mr-2" /> Add
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
+                                        </CollapsibleContent>
+                                    </Collapsible>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Consumable Cards */}
+                {filteredAndGroupedItems.consumables.length > 0 && (
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-lg flex items-center gap-2 mt-8">
+                            Consumable Supplies
+                            <Badge variant="outline">{filteredAndGroupedItems.consumables.length}</Badge>
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {filteredAndGroupedItems.consumables.map(instance => {
+                                const qty = quantities[instance.id] || 1
+                                const inCart = cart.some(c => c.itemInstanceId === instance.id)
+                                const cartItem = cart.find(c => c.itemInstanceId === instance.id)
+
+                                return (
+                                    <Card key={instance.id} className="flex flex-col">
+                                        <CardHeader className="pb-2">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <CardTitle className="text-base">{instance.item.name}</CardTitle>
+                                                    <CardDescription>{instance.item.category?.name}</CardDescription>
+                                                </div>
+                                                <Badge variant="secondary" className="font-mono text-xs">
+                                                    {instance.quantity} avail
                                                 </Badge>
                                             </div>
-
-                                            <CollapsibleContent className="bg-background divide-y border-t">
-                                                {group.instances.map(instance => {
-                                                    const inCart = cart.some(c => c.itemInstanceId === instance.id)
-                                                    return (
-                                                        <div key={instance.id} className="flex items-center justify-between py-3 px-4 pl-14 hover:bg-muted/10 transition-colors">
-                                                            <div className="grid grid-cols-[1fr_1fr_auto] gap-4 items-center flex-1 max-w-2xl text-sm">
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Inventory #</span>
-                                                                    <span className="font-mono font-medium">{instance.inventoryNumber}</span>
-                                                                </div>
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Serial #</span>
-                                                                    <span className="text-muted-foreground truncate max-w-[120px]">{instance.serialNumber || 'No SN'}</span>
-                                                                </div>
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Condition</span>
-                                                                    <Badge variant="outline" className="w-fit text-[10px] h-5 py-0">
-                                                                        {instance.currentCondition}
-                                                                    </Badge>
-                                                                </div>
-                                                            </div>
-
-                                                            {inCart ? (
-                                                                <Button variant="secondary" disabled size="sm" className="w-32">
-                                                                    <Check className="h-4 w-4 mr-2" /> In Cart
-                                                                </Button>
-                                                            ) : (
-                                                                <Button onClick={() => addToCart(instance, false)} size="sm" className="w-32">
-                                                                    <ShoppingCart className="h-4 w-4 mr-2" /> Add
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    )
-                                                })}
-                                            </CollapsibleContent>
-                                        </Collapsible>
-                                    )
-                                })}
-                            </div>
-                        ) : (
-                            <div className="text-center py-20 text-muted-foreground border rounded-lg bg-background/50">
-                                <p>No non-consumable assets found in this category.</p>
-                            </div>
-                        )}
-                    </TabsContent>
-
-                    <TabsContent value="consumable" className="space-y-4 outline-none">
-                        {filteredAndGroupedItems.consumables.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                {filteredAndGroupedItems.consumables.map(instance => {
-                                    const qty = quantities[instance.id] || 1
-                                    const inCart = cart.some(c => c.itemInstanceId === instance.id)
-                                    const cartItem = cart.find(c => c.itemInstanceId === instance.id)
-
-                                    return (
-                                        <Card key={instance.id} className="flex flex-col">
-                                            <CardHeader className="pb-2">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <CardTitle className="text-base">{instance.item.name}</CardTitle>
-                                                        <CardDescription>{instance.item.category?.name}</CardDescription>
-                                                    </div>
-                                                    <Badge variant="secondary" className="font-mono text-xs">
-                                                        {instance.quantity} avail
-                                                    </Badge>
-                                                </div>
-                                            </CardHeader>
-                                            <CardFooter className="mt-auto pt-4 flex gap-2 justify-between">
-                                                <div className="flex items-center border rounded-md">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-9 w-9"
-                                                        onClick={() => updateQuantity(instance.id, instance.quantity, -1)}
-                                                    >
-                                                        <Minus className="h-3 w-3" />
-                                                    </Button>
-                                                    <span className="w-8 text-center text-sm font-medium">{qty}</span>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-9 w-9"
-                                                        onClick={() => updateQuantity(instance.id, instance.quantity, 1)}
-                                                    >
-                                                        <Plus className="h-3 w-3" />
-                                                    </Button>
-                                                </div>
-
+                                        </CardHeader>
+                                        <CardFooter className="mt-auto pt-4 flex gap-2 justify-between">
+                                            <div className="flex items-center border rounded-md">
                                                 <Button
-                                                    onClick={() => addToCart(instance, true)}
-                                                    variant={inCart && qty === cartItem?.quantity ? "secondary" : "default"}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-9 w-9"
+                                                    onClick={() => updateQuantity(instance.id, instance.quantity, -1)}
                                                 >
-                                                    {inCart ? (qty !== cartItem?.quantity ? 'Update Qty' : <><Check className="h-4 w-4 mr-2" /> In Cart</>) : <><ShoppingCart className="h-4 w-4 mr-2" /> Add</>}
+                                                    <Minus className="h-3 w-3" />
                                                 </Button>
-                                            </CardFooter>
-                                        </Card>
-                                    )
-                                })}
-                            </div>
-                        ) : (
-                            <div className="text-center py-20 text-muted-foreground border rounded-lg bg-background/50">
-                                <p>No consumable supplies found in this category.</p>
-                            </div>
-                        )}
-                    </TabsContent>
-                </Tabs>
+                                                <span className="w-8 text-center text-sm font-medium">{qty}</span>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-9 w-9"
+                                                    onClick={() => updateQuantity(instance.id, instance.quantity, 1)}
+                                                >
+                                                    <Plus className="h-3 w-3" />
+                                                </Button>
+                                            </div>
+
+                                            <Button
+                                                onClick={() => addToCart(instance, true)}
+                                                variant={inCart && qty === cartItem?.quantity ? "secondary" : "default"}
+                                            >
+                                                {inCart ? (qty !== cartItem?.quantity ? 'Update Qty' : <><Check className="h-4 w-4 mr-2" /> In Cart</>) : <><ShoppingCart className="h-4 w-4 mr-2" /> Add</>}
+                                            </Button>
+                                        </CardFooter>
+                                    </Card>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Floating Cart Button */}
@@ -955,10 +928,10 @@ export default function DistributeClient({ initialItems }: Props) {
 
                                     <div className="rounded-2xl border border-border/50 bg-muted/5 overflow-hidden">
                                         <Table>
-                                            <TableHeader className="bg-muted/5 border-b border-border/50">
-                                                <TableRow className="hover:bg-transparent border-none">
-                                                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest text-muted-foreground/70">Item/Asset</TableHead>
-                                                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest text-muted-foreground/70 text-right pr-6">Quantity</TableHead>
+                                            <TableHeader className="bg-muted/10">
+                                                <TableRow className="hover:bg-transparent border-border/50">
+                                                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-wider">Item/Asset</TableHead>
+                                                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-wider text-right pr-6">Quantity</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
