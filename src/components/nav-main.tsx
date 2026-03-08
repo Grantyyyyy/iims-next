@@ -21,31 +21,41 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
+export interface NavMainItem {
+  title: string
+  url: string
+  icon?: LucideIcon
+  isActive?: boolean
+  items?: NavMainSubItem[]
+}
+
+export interface NavMainSubItem {
+  title: string
+  url: string
+  icon?: LucideIcon
+  items?: NavMainSubSubItem[]
+}
+
+export interface NavMainSubSubItem {
+  title: string
+  url: string
+  icon?: LucideIcon
+}
+
 export function NavMain({
+  title,
   items,
 }: {
-  items: {
-    title: string
-    url: string
-    icon: LucideIcon
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-      items?: {
-        title: string
-        url: string
-      }[]
-    }[]
-  }[]
+  title?: string
+  items: NavMainItem[]
 }) {
   const pathname = usePathname()
 
-  const isItemActive = (item: any) => {
+  const isItemActive = (item: NavMainItem) => {
     if (item.isActive || item.url === pathname) return true
-    return item.items?.some((sub: any) =>
+    return item.items?.some((sub: NavMainSubItem) =>
       pathname.startsWith(sub.url) ||
-      sub.items?.some((subSub: any) => pathname.startsWith(subSub.url))
+      sub.items?.some((subSub: NavMainSubSubItem) => pathname.startsWith(subSub.url))
     )
   }
 
@@ -66,7 +76,7 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      {title && <SidebarGroupLabel>{title}</SidebarGroupLabel>}
       <SidebarMenu>
         {items.map((item) => {
           const hasSubItems = !!item.items?.length
@@ -99,9 +109,9 @@ export function NavMain({
                 {hasSubItems && (
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {item.items?.map((subItem: any) => {
+                      {item.items?.map((subItem: NavMainSubItem) => {
                         const hasSubSubItems = !!subItem.items?.length
-                        const isSubItemActive = pathname === subItem.url || subItem.items?.some((sub: any) => pathname.startsWith(sub.url))
+                        const isSubItemActive = pathname === subItem.url || subItem.items?.some((sub: NavMainSubSubItem) => pathname.startsWith(sub.url))
 
                         if (hasSubSubItems) {
                           return (
@@ -115,10 +125,11 @@ export function NavMain({
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
                                   <SidebarMenuSub>
-                                    {subItem.items.map((subSubItem: any) => (
+                                    {subItem.items?.map((subSubItem: NavMainSubSubItem) => (
                                       <SidebarMenuSubItem key={subSubItem.title}>
                                         <SidebarMenuSubButton asChild isActive={pathname === subSubItem.url}>
                                           <Link href={subSubItem.url}>
+                                            {subSubItem.icon && <subSubItem.icon className="h-4 w-4" />}
                                             <span>{subSubItem.title}</span>
                                           </Link>
                                         </SidebarMenuSubButton>
