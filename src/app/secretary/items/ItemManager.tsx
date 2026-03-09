@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { createItem, updateItem, deleteItem, restoreItem, permanentlyDeleteItem } from '@/actions/secretary'
 import { toast } from 'sonner'
-import { Plus, Search, Pencil, Trash2, Tag, Barcode, Layers, Box, Check, X, MoreHorizontal, Loader2, Trash, RotateCcw, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Tag, Barcode, Layers, Box, Check, X, MoreHorizontal, Loader2, Trash, RotateCcw, AlertTriangle, FileText } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import Link from 'next/link'
@@ -59,8 +59,7 @@ export function ItemManager({ items, categories, deletedItems = [] }: ItemManage
     const [deletingItem, setDeletingItem] = useState<any>(null)
 
     // Bin
-    const [isBinOpen, setIsBinOpen] = useState(false)
-    const [binAction, setBinAction] = useState<{ type: 'restore' | 'permanent', item: any } | null>(null)
+    // Removed internal bin state
 
     const filteredItems = useMemo(() => {
         if (!searchTerm) return items
@@ -134,30 +133,7 @@ export function ItemManager({ items, categories, deletedItems = [] }: ItemManage
         setIsPending(false)
     }
 
-    // Bin handlers
-    const handleRestore = async (item: any) => {
-        setIsPending(true)
-        const result = await restoreItem(item.id)
-        if (result.success) {
-            toast.success(`"${item.name}" restored`)
-        } else {
-            toast.error(result.error || 'Failed to restore')
-        }
-        setIsPending(false)
-        setBinAction(null)
-    }
-
-    const handlePermanentDelete = async (item: any) => {
-        setIsPending(true)
-        const result = await permanentlyDeleteItem(item.id)
-        if (result.success) {
-            toast.success(`"${item.name}" permanently deleted`)
-        } else {
-            toast.error(result.error || 'Failed to permanently delete')
-        }
-        setIsPending(false)
-        setBinAction(null)
-    }
+    // Removed handleRestore and handlePermanentDelete
 
     return (
         <div className="space-y-4">
@@ -177,16 +153,18 @@ export function ItemManager({ items, categories, deletedItems = [] }: ItemManage
                     {/* Bin Button */}
                     <Button
                         variant="outline"
-                        onClick={() => setIsBinOpen(true)}
+                        asChild
                         className="h-11 px-4 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all relative"
                     >
-                        <Trash className="h-4 w-4 mr-2" />
-                        Bin
-                        {deletedItems.length > 0 && (
-                            <Badge variant="destructive" className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]">
-                                {deletedItems.length}
-                            </Badge>
-                        )}
+                        <Link href="/secretary/bin">
+                            <Trash className="h-4 w-4 mr-2" />
+                            Bin
+                            {deletedItems.length > 0 && (
+                                <Badge variant="destructive" className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]">
+                                    {deletedItems.length}
+                                </Badge>
+                            )}
+                        </Link>
                     </Button>
 
                     {/* Create Sheet */}
@@ -313,6 +291,7 @@ export function ItemManager({ items, categories, deletedItems = [] }: ItemManage
                     <TableHeader className="bg-muted/50">
                         <TableRow className="hover:bg-transparent">
                             <TableHead className="font-semibold text-foreground/80">Item Name</TableHead>
+                            <TableHead className="font-semibold text-foreground/80 text-center w-24">Files</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Category</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Type</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Model</TableHead>
@@ -330,6 +309,14 @@ export function ItemManager({ items, categories, deletedItems = [] }: ItemManage
                                     >
                                         {item.name}
                                     </Link>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    {item.instances?.some((inst: any) => inst.barcodeUrl) && (
+                                        <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 gap-1.5 animate-in fade-in zoom-in duration-300">
+                                            <FileText className="h-3 w-3" />
+                                            <span className="text-[10px] font-bold">FILE</span>
+                                        </Badge>
+                                    )}
                                 </TableCell>
                                 <TableCell>{item.category?.name || 'N/A'}</TableCell>
                                 <TableCell><Badge variant="outline">{item.itemType}</Badge></TableCell>
@@ -493,103 +480,6 @@ export function ItemManager({ items, categories, deletedItems = [] }: ItemManage
                 </DialogContent>
             </Dialog>
 
-            {/* Bin Sheet */}
-            <Sheet open={isBinOpen} onOpenChange={setIsBinOpen}>
-                <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
-                    <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-destructive/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
-                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-destructive/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
-                        <div className="absolute -top-24 -left-24 w-48 h-48 bg-destructive/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
-                        <div className="relative z-10 text-left">
-                            <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-2">
-                                <Trash className="h-5 w-5 text-destructive" />
-                                Items Bin
-                            </SheetTitle>
-                            <SheetDescription className="text-sm font-medium mt-1">
-                                {deletedItems.length} deleted item{deletedItems.length !== 1 ? 's' : ''}. Restore or permanently remove.
-                            </SheetDescription>
-                        </div>
-                    </SheetHeader>
-
-                    <ScrollArea className="flex-1 px-6 py-6">
-                        {deletedItems.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-16 text-center">
-                                <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                                    <Trash className="h-7 w-7 text-muted-foreground" />
-                                </div>
-                                <p className="text-muted-foreground font-medium">Bin is empty</p>
-                                <p className="text-muted-foreground text-sm mt-1">Deleted items will appear here.</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {deletedItems.map((item) => (
-                                    <div key={item.id} className="p-4 rounded-xl border bg-card hover:bg-muted/20 transition-all group">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold text-foreground truncate">{item.name}</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    {item.category && (
-                                                        <Badge variant="outline" className="text-xs font-normal">{item.category.name}</Badge>
-                                                    )}
-                                                    {item.model && (
-                                                        <span className="text-xs text-muted-foreground font-mono">{item.model}</span>
-                                                    )}
-                                                    <Badge variant="outline" className="text-xs font-normal">{item.itemType}</Badge>
-                                                </div>
-                                                <p className="text-xs text-muted-foreground mt-1.5">
-                                                    Deleted {item.deletedAt ? new Date(item.deletedAt).toLocaleDateString() : 'N/A'}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 shrink-0">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleRestore(item)}
-                                                    disabled={isPending}
-                                                    className="h-8 px-3 rounded-lg text-xs hover:bg-primary/10 hover:text-primary hover:border-primary/30"
-                                                >
-                                                    <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                                                    Restore
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setBinAction({ type: 'permanent', item })}
-                                                    disabled={isPending}
-                                                    className="h-8 px-3 rounded-lg text-xs hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                                    Delete
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </ScrollArea>
-                </SheetContent>
-            </Sheet>
-
-            {/* Permanent Delete Confirmation */}
-            <Dialog open={!!binAction} onOpenChange={() => setBinAction(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-destructive" />
-                            Permanently Delete
-                        </DialogTitle>
-                        <DialogDescription>
-                            This will permanently delete <strong>{binAction?.item?.name}</strong> and all its instances. This action <strong>cannot be undone</strong>.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setBinAction(null)}>Cancel</Button>
-                        <Button variant="destructive" onClick={() => binAction && handlePermanentDelete(binAction.item)} disabled={isPending}>
-                            {isPending ? 'Deleting...' : 'Delete Permanently'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* Pagination */}
             {totalPages > 1 && (

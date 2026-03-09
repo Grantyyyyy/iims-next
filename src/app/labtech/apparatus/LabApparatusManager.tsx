@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { createApparatus, updateApparatus, deleteApparatus, restoreApparatus, permanentlyDeleteApparatus } from './actions'
 import { toast } from 'sonner'
-import { Plus, Search, Pencil, Trash2, Tag, Barcode, Layers, Check, X, MoreHorizontal, Beaker, Box, Loader2, Trash, RotateCcw, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Tag, Barcode, Layers, Check, X, MoreHorizontal, Beaker, Box, Loader2, Trash, RotateCcw, AlertTriangle, FileText, ArrowRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import Link from 'next/link'
@@ -64,8 +64,7 @@ export function LabApparatusManager({ apparatus, categories, deletedApparatus = 
     const [deletingApparatus, setDeletingApparatus] = useState<any>(null)
 
     // Bin
-    const [isBinOpen, setIsBinOpen] = useState(false)
-    const [binAction, setBinAction] = useState<{ type: 'restore' | 'permanent', item: any } | null>(null)
+    // Removed internal bin state
 
     const filteredApparatus = useMemo(() => {
         if (!searchTerm) return apparatus
@@ -155,30 +154,7 @@ export function LabApparatusManager({ apparatus, categories, deletedApparatus = 
         setIsPending(false)
     }
 
-    // Bin handlers
-    const handleRestore = async (app: any) => {
-        setIsPending(true)
-        const result = await restoreApparatus(app.id)
-        if (result.success) {
-            toast.success(`"${app.name}" restored`)
-        } else {
-            toast.error(result.error || 'Failed to restore')
-        }
-        setIsPending(false)
-        setBinAction(null)
-    }
-
-    const handlePermanentDelete = async (app: any) => {
-        setIsPending(true)
-        const result = await permanentlyDeleteApparatus(app.id)
-        if (result.success) {
-            toast.success(`"${app.name}" permanently deleted`)
-        } else {
-            toast.error(result.error || 'Failed to permanently delete')
-        }
-        setIsPending(false)
-        setBinAction(null)
-    }
+    // Removed handleRestore and handlePermanentDelete
 
     const getAvailableCount = (app: any) => {
         if (app.apparatusType === 'Consumables') {
@@ -205,16 +181,18 @@ export function LabApparatusManager({ apparatus, categories, deletedApparatus = 
                     {/* Bin Button */}
                     <Button
                         variant="outline"
-                        onClick={() => setIsBinOpen(true)}
+                        asChild
                         className="h-11 px-4 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all relative"
                     >
-                        <Trash className="h-4 w-4 mr-2" />
-                        Bin
-                        {deletedApparatus.length > 0 && (
-                            <Badge variant="destructive" className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]">
-                                {deletedApparatus.length}
-                            </Badge>
-                        )}
+                        <Link href="/labtech/bin">
+                            <Trash className="h-4 w-4 mr-2" />
+                            Bin
+                            {deletedApparatus.length > 0 && (
+                                <Badge variant="destructive" className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]">
+                                    {deletedApparatus.length}
+                                </Badge>
+                            )}
+                        </Link>
                     </Button>
 
                     {/* Create Sheet */}
@@ -339,6 +317,7 @@ export function LabApparatusManager({ apparatus, categories, deletedApparatus = 
                     <TableHeader className="bg-muted/50">
                         <TableRow className="hover:bg-transparent">
                             <TableHead className="font-semibold text-foreground/80">Apparatus Name</TableHead>
+                            <TableHead className="font-semibold text-foreground/80 text-center w-24">Files</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Category</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Type</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Instances/Batches</TableHead>
@@ -348,7 +327,7 @@ export function LabApparatusManager({ apparatus, categories, deletedApparatus = 
                     </TableHeader>
                     <TableBody>
                         {paginatedApparatus.map((app) => (
-                            <TableRow key={app.id}>
+                            <TableRow key={app.id} className="group">
                                 <TableCell className="font-medium">
                                     <Link
                                         href={`/labtech/apparatus/${app.id}`}
@@ -356,6 +335,14 @@ export function LabApparatusManager({ apparatus, categories, deletedApparatus = 
                                     >
                                         {app.name}
                                     </Link>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    {app.instances?.some((inst: any) => inst.barcodeUrl) && (
+                                        <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 gap-1.5 animate-in fade-in zoom-in duration-300">
+                                            <FileText className="h-3 w-3" />
+                                            <span className="text-[10px] font-bold">FILE</span>
+                                        </Badge>
+                                    )}
                                 </TableCell>
                                 <TableCell>
                                     {app.category ? (
@@ -378,22 +365,23 @@ export function LabApparatusManager({ apparatus, categories, deletedApparatus = 
                                 <TableCell className="text-right">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-muted/50 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <MoreHorizontal className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-xl border-muted/20">
+                                            <DropdownMenuLabel className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Options</DropdownMenuLabel>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem asChild className="cursor-pointer">
-                                                <Link href={`/labtech/apparatus/${app.id}`}>
+                                            <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-3 py-2 focus:bg-primary/10 group/item">
+                                                <Link href={`/labtech/apparatus/${app.id}`} className="flex items-center justify-between w-full">
                                                     View Details
+                                                    <ArrowRight className="h-4 w-4 opacity-0 group-hover/item:opacity-100 transition-opacity" />
                                                 </Link>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => openEdit(app)} className="cursor-pointer">
+                                            <DropdownMenuItem onClick={() => openEdit(app)} className="cursor-pointer rounded-lg px-3 py-2 focus:bg-primary/10">
                                                 <Pencil className="mr-2 h-4 w-4" /> Edit Details
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => openDelete(app)} className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground">
+                                            <DropdownMenuItem onClick={() => openDelete(app)} className="cursor-pointer rounded-lg px-3 py-2 text-destructive focus:bg-destructive/10 focus:text-destructive">
                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Apparatus
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -575,100 +563,6 @@ export function LabApparatusManager({ apparatus, categories, deletedApparatus = 
                 </DialogContent>
             </Dialog>
 
-            {/* Bin Sheet */}
-            <Sheet open={isBinOpen} onOpenChange={setIsBinOpen}>
-                <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
-                    <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-destructive/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
-                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-destructive/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
-                        <div className="absolute -top-24 -left-24 w-48 h-48 bg-destructive/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
-                        <div className="relative z-10 text-left">
-                            <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-2">
-                                <Trash className="h-5 w-5 text-destructive" />
-                                Apparatus Bin
-                            </SheetTitle>
-                            <SheetDescription className="text-sm font-medium mt-1">
-                                {deletedApparatus.length} deleted item{deletedApparatus.length !== 1 ? 's' : ''}. Restore or permanently remove.
-                            </SheetDescription>
-                        </div>
-                    </SheetHeader>
-
-                    <ScrollArea className="flex-1 px-6 py-6">
-                        {deletedApparatus.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-16 text-center">
-                                <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                                    <Trash className="h-7 w-7 text-muted-foreground" />
-                                </div>
-                                <p className="text-muted-foreground font-medium">Bin is empty</p>
-                                <p className="text-muted-foreground text-sm mt-1">Deleted apparatus will appear here.</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {deletedApparatus.map((app) => (
-                                    <div key={app.id} className="p-4 rounded-xl border bg-card hover:bg-muted/20 transition-all group">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold text-foreground truncate">{app.name}</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    {app.category && (
-                                                        <Badge variant="outline" className="text-xs font-normal">{app.category.name}</Badge>
-                                                    )}
-                                                    <Badge variant="outline" className="text-xs font-normal">{app.apparatusType}</Badge>
-                                                </div>
-                                                <p className="text-xs text-muted-foreground mt-1.5">
-                                                    Deleted {app.deletedAt ? new Date(app.deletedAt).toLocaleDateString() : 'N/A'}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 shrink-0">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleRestore(app)}
-                                                    disabled={isPending}
-                                                    className="h-8 px-3 rounded-lg text-xs hover:bg-primary/10 hover:text-primary hover:border-primary/30"
-                                                >
-                                                    <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                                                    Restore
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setBinAction({ type: 'permanent', item: app })}
-                                                    disabled={isPending}
-                                                    className="h-8 px-3 rounded-lg text-xs hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                                    Delete
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </ScrollArea>
-                </SheetContent>
-            </Sheet>
-
-            {/* Permanent Delete Confirmation */}
-            <Dialog open={!!binAction} onOpenChange={() => setBinAction(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-destructive" />
-                            Permanently Delete
-                        </DialogTitle>
-                        <DialogDescription>
-                            This will permanently delete <strong>{binAction?.item?.name}</strong> and all its instances/batches. This action <strong>cannot be undone</strong>.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setBinAction(null)}>Cancel</Button>
-                        <Button variant="destructive" onClick={() => binAction && handlePermanentDelete(binAction.item)} disabled={isPending}>
-                            {isPending ? 'Deleting...' : 'Delete Permanently'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     )
 }

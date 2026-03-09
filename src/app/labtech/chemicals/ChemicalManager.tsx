@@ -440,6 +440,7 @@ export function ChemicalManager({ chemicals }: ChemicalManagerProps) {
                     <TableHeader className="bg-muted/50">
                         <TableRow className="hover:bg-transparent">
                             <TableHead className="font-semibold text-foreground/80">Chemical Name</TableHead>
+                            <TableHead className="font-semibold text-foreground/80 text-center w-24">Files</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Unit</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Stock Status</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Status</TableHead>
@@ -456,6 +457,14 @@ export function ChemicalManager({ chemicals }: ChemicalManagerProps) {
                                     >
                                         {chem.name}
                                     </Link>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    {chem.batches?.some((batch: any) => batch.inventoryNumber) && (
+                                        <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 gap-1.5 animate-in fade-in zoom-in duration-300">
+                                            <FileText className="h-3 w-3" />
+                                            <span className="text-[10px] font-bold">FILE</span>
+                                        </Badge>
+                                    )}
                                 </TableCell>
                                 <TableCell>{chem.unit || 'N/A'}</TableCell>
                                 <TableCell>
