@@ -20,10 +20,11 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { MoreHorizontal, Edit, Power, PowerOff, Search } from 'lucide-react'
+import { MoreHorizontal, Edit, Power, PowerOff, Search, Info } from 'lucide-react'
 import { toggleUserStatus } from '@/app/actions/users'
 import { toast } from 'sonner'
 import { EditUserDialog } from './edit-user-dialog'
+import { AddUserDialog } from '@/components/users/add-user-dialog'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { useRouter } from 'next/navigation'
@@ -32,6 +33,7 @@ interface UserTableProps {
     users: any[]
     currentUserId: number
     departments: any[]
+    isReadOnly?: boolean
 }
 
 const roleColors: Record<string, string> = {
@@ -44,7 +46,7 @@ const roleColors: Record<string, string> = {
     SUPPLY: "bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-100",
 }
 
-export function UserTable({ users: initialUsers, currentUserId, departments }: UserTableProps) {
+export function UserTable({ users: initialUsers, currentUserId, departments, isReadOnly = false }: UserTableProps) {
     const router = useRouter()
     const [isPending, startTransition] = React.useTransition()
     const [users, setUsers] = React.useState(initialUsers)
@@ -132,7 +134,7 @@ export function UserTable({ users: initialUsers, currentUserId, departments }: U
                                 <TableHead>Department</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Joined Date</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                {!isReadOnly && <TableHead className="text-right">Actions</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -176,53 +178,55 @@ export function UserTable({ users: initialUsers, currentUserId, departments }: U
                                                 })}
                                             </span>
                                         </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                                        <span className="sr-only">Open menu</span>
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem
-                                                        onClick={() => {
-                                                            setEditingUser(user)
-                                                            setIsEditDialogOpen(true)
-                                                        }}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        Edit Details
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleToggleStatus(user.id, user.isActive)}
-                                                        className={cn("cursor-pointer", user.isActive ? "text-destructive" : "text-green-600")}
-                                                        disabled={user.id === currentUserId}
-                                                    >
-                                                        {user.isActive ? (
-                                                            <>
-                                                                <PowerOff className="mr-2 h-4 w-4" />
-                                                                Deactivate User
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Power className="mr-2 h-4 w-4" />
-                                                                Activate User
-                                                            </>
-                                                        )}
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
+                                        {!isReadOnly && (
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Open menu</span>
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuItem
+                                                            onClick={() => {
+                                                                setEditingUser(user)
+                                                                setIsEditDialogOpen(true)
+                                                            }}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            <Edit className="mr-2 h-4 w-4" />
+                                                            Edit Details
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            onClick={() => handleToggleStatus(user.id, user.isActive)}
+                                                            className={cn("cursor-pointer", user.isActive ? "text-destructive" : "text-green-600")}
+                                                            disabled={user.id === currentUserId}
+                                                        >
+                                                            {user.isActive ? (
+                                                                <>
+                                                                    <PowerOff className="mr-2 h-4 w-4" />
+                                                                    Deactivate User
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Power className="mr-2 h-4 w-4" />
+                                                                    Activate User
+                                                                </>
+                                                            )}
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        )}
                                     </TableRow>
                                 )
                             })}
                             {filteredUsers.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                                    <TableCell colSpan={isReadOnly ? 6 : 7} className="text-center py-6 text-muted-foreground">
                                         No users matching your search.
                                     </TableCell>
                                 </TableRow>

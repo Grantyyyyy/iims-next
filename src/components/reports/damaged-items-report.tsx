@@ -41,7 +41,7 @@ export function DamagedItemsReport({ data, categories, user, userRole, isDean }:
     const router = useRouter()
     const searchParams = useSearchParams()
     const [isPending, startTransition] = useTransition()
-    
+
     const [selectedIds, setSelectedIds] = useState<number[]>([])
     const [search, setSearch] = useState(searchParams.get('search') || '')
 
@@ -86,6 +86,15 @@ export function DamagedItemsReport({ data, categories, user, userRole, isDean }:
 
     const handlePrintSelected = () => {
         printSelectedDamagedItems(data.items, selectedIds, { user, userRole })
+    }
+
+    const handleDownloadSelected = () => {
+        const selectedItems = data.items.filter(i => selectedIds.includes(i.id))
+        downloadDamagedItemsPDF(selectedItems, { user, userRole })
+    }
+
+    const handleDownloadAll = () => {
+        downloadDamagedItemsPDF(data.items, { user, userRole })
     }
 
     return (
@@ -134,9 +143,9 @@ export function DamagedItemsReport({ data, categories, user, userRole, isDean }:
                     </Select>
 
                     {(search || searchParams.get('category') || searchParams.get('value')) && (
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
+                        <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => {
                                 setSearch('')
                                 router.push('?tab=damaged')
@@ -148,30 +157,49 @@ export function DamagedItemsReport({ data, categories, user, userRole, isDean }:
                     )}
                 </div>
 
-                {!isDean && (
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={selectedIds.length === 0}
-                            onClick={handlePrintSelected}
-                        >
-                            <Printer className="h-4 w-4 mr-2" /> Print Selected
-                        </Button>
-                        <Button
-                            size="sm"
-                            onClick={handlePrintAll}
-                            disabled={data.items.length === 0}
-                        >
-                            <Printer className="h-4 w-4 mr-2" /> Print All
-                        </Button>
-                    </div>
-                )}
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={selectedIds.length === 0}
+                        onClick={handleDownloadSelected}
+                    >
+                        <Download className="h-4 w-4 mr-2" /> Download Selected PDF
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadAll}
+                        disabled={data.items.length === 0}
+                    >
+                        <Download className="h-4 w-4 mr-2" /> Download All PDF
+                    </Button>
+
+                    {!isDean && (
+                        <>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={selectedIds.length === 0}
+                                onClick={handlePrintSelected}
+                            >
+                                <Printer className="h-4 w-4 mr-2" /> Print Selected
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={handlePrintAll}
+                                disabled={data.items.length === 0}
+                            >
+                                <Printer className="h-4 w-4 mr-2" /> Print All
+                            </Button>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Table */}
             <div className="rounded-md border bg-white relative">
-                 {isPending && (
+                {isPending && (
                     <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
@@ -180,8 +208,8 @@ export function DamagedItemsReport({ data, categories, user, userRole, isDean }:
                     <TableHeader>
                         <TableRow>
                             <TableHead className="w-10">
-                                <Checkbox 
-                                    checked={data.items.length > 0 && selectedIds.length === data.items.length} 
+                                <Checkbox
+                                    checked={data.items.length > 0 && selectedIds.length === data.items.length}
                                     onCheckedChange={toggleSelectAll}
                                 />
                             </TableHead>
@@ -196,13 +224,13 @@ export function DamagedItemsReport({ data, categories, user, userRole, isDean }:
                     <TableBody>
                         {data.items.length > 0 ? (
                             data.items.map((row) => (
-                                <TableRow 
-                                    key={row.id} 
+                                <TableRow
+                                    key={row.id}
                                     className="cursor-pointer"
                                     onClick={() => router.push(`/dashboard/items/${row.id}`)}
                                 >
                                     <TableCell onClick={(e) => e.stopPropagation()}>
-                                        <Checkbox 
+                                        <Checkbox
                                             checked={selectedIds.includes(row.id)}
                                             onCheckedChange={() => toggleSelectRow(row.id)}
                                         />

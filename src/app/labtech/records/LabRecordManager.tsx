@@ -29,9 +29,10 @@ import { User, BookOpen, MapPin } from 'lucide-react'
 interface LabRecordManagerProps {
     type: 'BORROW' | 'CHEMICAL' | 'DISTRIBUTION'
     records: any[]
+    isReadOnly?: boolean
 }
 
-export function LabRecordManager({ type, records }: LabRecordManagerProps) {
+export function LabRecordManager({ type, records, isReadOnly = false }: LabRecordManagerProps) {
     const [searchTerm, setSearchTerm] = useState('')
     const [isReturnOpen, setIsReturnOpen] = useState(false)
     const [returningRecord, setReturningRecord] = useState<any>(null)
@@ -96,6 +97,82 @@ export function LabRecordManager({ type, records }: LabRecordManagerProps) {
         })
     }, [records, searchTerm, type])
 
+    const handleExport = () => {
+        if (!records || records.length === 0) return
+
+        let csvContent = "data:text/csv;charset=utf-8,"
+        const filename = `lab_${type.toLowerCase()}_records_${format(new Date(), 'yyyy-MM-dd')}.csv`
+
+        if (type === 'BORROW') {
+            csvContent += "Item,Inventory No,Borrower,Type,Borrow Date,Due Date,Status\n"
+            records.forEach(r => {
+                const item = r.equipmentInstance?.equipment?.name || r.apparatusInstance?.apparatus?.name || 'N/A'
+                const inv = r.equipmentInstance?.inventoryNumber || r.apparatusInstance?.inventoryNumber || 'N/A'
+                const borrower = r.borrower?.username || r.studentName || 'N/A'
+                const bType = r.borrower ? 'Staff' : 'Student'
+                const status = getStatus(r)
+                const row = [
+                    `"${item}"`,
+                    `"${inv}"`,
+                    `"${borrower}"`,
+                    bType,
+                    format(new Date(r.borrowDate), 'yyyy-MM-dd'),
+                    r.dueDate ? format(new Date(r.dueDate), 'yyyy-MM-dd') : 'N/A',
+                    status
+                ].join(",")
+                csvContent += row + "\n"
+            })
+        } else if (type === 'CHEMICAL') {
+            csvContent += "Chemical,Batch,Amount,Room,Used By,Recorded By,Date\n"
+            records.forEach(r => {
+                const chem = r.chemicalBatch?.chemical?.name || 'N/A'
+                const batch = r.chemicalBatch?.batchNumber || 'N/A'
+                const amount = `${r.quantityUsed} ${r.unit}`
+                const room = r.room?.name || 'N/A'
+                const usedBy = r.usedBy?.username || 'Internal'
+                const recordedBy = r.recordedBy?.username || 'N/A'
+                const row = [
+                    `"${chem}"`,
+                    `"${batch}"`,
+                    `"${amount}"`,
+                    `"${room}"`,
+                    `"${usedBy}"`,
+                    `"${recordedBy}"`,
+                    format(new Date(r.dateUsed), 'yyyy-MM-dd')
+                ].join(",")
+                csvContent += row + "\n"
+            })
+        } else if (type === 'DISTRIBUTION') {
+            csvContent += "Chemical,Recipient,Amount,Subject,Room,Purpose,Date\n"
+            records.forEach(r => {
+                const chem = r.chemicalBatch?.chemical?.name || 'N/A'
+                const recipient = r.recipient ? `${r.recipient.firstName || ''} ${r.recipient.lastName || ''}`.trim() || r.recipient.username : 'N/A'
+                const amount = `${(r.distributedAmount || r.quantityUsed).toFixed(2)} ${r.distributedUnit || r.unit || 'ML'}`
+                const subject = r.subject?.code || 'N/A'
+                const room = r.room?.name || 'N/A'
+                const purpose = r.purpose || 'N/A'
+                const row = [
+                    `"${chem}"`,
+                    `"${recipient}"`,
+                    `"${amount}"`,
+                    `"${subject}"`,
+                    `"${room}"`,
+                    `"${purpose}"`,
+                    format(new Date(r.dateUsed), 'yyyy-MM-dd HH:mm')
+                ].join(",")
+                csvContent += row + "\n"
+            })
+        }
+
+        const encodedUri = encodeURI(csvContent)
+        const link = document.createElement("a")
+        link.setAttribute("href", encodedUri)
+        link.setAttribute("download", filename)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
+
     const groupedDistributions = React.useMemo(() => {
         if (type !== 'DISTRIBUTION') return { groups: [], ungrouped: [] }
 
@@ -159,7 +236,7 @@ export function LabRecordManager({ type, records }: LabRecordManagerProps) {
                             className="pl-10 h-11 rounded-xl bg-muted/30 focus-visible:ring-primary/20 transition-all border-muted-foreground/20"
                         />
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleExport} disabled={records.length === 0}>
                         <Download className="mr-2 h-4 w-4" />
                         Export CSV
                     </Button>
@@ -219,7 +296,7 @@ export function LabRecordManager({ type, records }: LabRecordManagerProps) {
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                     <DropdownMenuSeparator />
-                                                    {status !== 'RETURNED' && (
+                                                    {!isReadOnly && status !== 'RETURNED' && (
                                                         <DropdownMenuItem onClick={() => openReturn(record)} className="cursor-pointer">
                                                             <RotateCcw className="mr-2 h-4 w-4" /> Process Return
                                                         </DropdownMenuItem>
@@ -367,7 +444,7 @@ export function LabRecordManager({ type, records }: LabRecordManagerProps) {
                             className="pl-9"
                         />
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleExport} disabled={records.length === 0}>
                         <Download className="mr-2 h-4 w-4" />
                         Export CSV
                     </Button>
@@ -430,7 +507,7 @@ export function LabRecordManager({ type, records }: LabRecordManagerProps) {
                         className="pl-9"
                     />
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={records.length === 0}>
                     <Download className="mr-2 h-4 w-4" />
                     Export CSV
                 </Button>

@@ -7,7 +7,7 @@ export default async function UsageListPage() {
   const auth = await requireAuth()
 
   // Check if user has permission to manage chemicals
-  const hasManagePermission = hasPermission(auth.roles, "manage:chemicals")
+  const hasManagePermission = hasPermission(auth.roles, "manage:chemicals") && !auth.roles.includes('DEAN')
 
   // Fetch initial data
   const [usageData, subjects, rooms] = await Promise.all([

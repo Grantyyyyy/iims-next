@@ -1,8 +1,11 @@
 import { getLabCategories } from "./actions"
 import { LabCategoryManager } from "./LabCategoryManager"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { requirePermission } from "@/lib/permissions"
 
 export default async function LabtechCategoriesPage() {
+    const { roles } = await requirePermission('view:equipment')
+    const isDean = roles.includes('DEAN')
     const categories = await getLabCategories()
 
     return (
@@ -15,7 +18,7 @@ export default async function LabtechCategoriesPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <LabCategoryManager categories={categories} />
+                    <LabCategoryManager categories={categories} isReadOnly={isDean} />
                 </CardContent>
             </Card>
         </div>

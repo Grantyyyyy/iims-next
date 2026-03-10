@@ -56,7 +56,9 @@ export interface BatchDeduction {
   batchNumber: string
   currentRemaining: number
   toDeduct: number
-  afterDeduction: number
+  remainingAfter: number
+  expiryDate: Date | null
+  willBeExhausted: boolean
   purchaseDate: Date | null
 }
 
@@ -99,8 +101,8 @@ export async function getUsageRecords(filters?: {
   totalCount: number
   totalPages: number
 }> {
-  await requirePermission('manage:chemicals')
-  
+  await requirePermission('view:chemicals')
+
   // Validate date range: max 1 year (365 days)
   if (filters?.dateFrom && filters?.dateTo) {
     const daysDiff = Math.floor((filters.dateTo.getTime() - filters.dateFrom.getTime()) / (1000 * 60 * 60 * 24))
@@ -108,10 +110,10 @@ export async function getUsageRecords(filters?: {
       throw new Error('Date range cannot exceed 1 year')
     }
   }
-  
+
   const page = filters?.page || 1
   const pageSize = filters?.pageSize || 15
-  
+
   const where = {
     ...(filters?.search && {
       chemicalBatch: {
@@ -129,7 +131,7 @@ export async function getUsageRecords(filters?: {
       }
     })
   }
-  
+
   const [records, totalCount] = await Promise.all([
     prisma.chemicalUsageRecord.findMany({
       where,
@@ -150,9 +152,9 @@ export async function getUsageRecords(filters?: {
     }),
     prisma.chemicalUsageRecord.count({ where })
   ])
-  
+
   const totalPages = Math.ceil(totalCount / pageSize)
-  
+
   return {
     records: records as UsageRecordWithRelations[],
     totalCount,
@@ -168,17 +170,17 @@ export async function getAvailableStock(chemicalId: number): Promise<{
   availableStock: number
   unit: string | null
 }> {
-  await requirePermission('manage:chemicals')
-  
+  await requirePermission('view:chemicals')
+
   const chemical = await prisma.chemical.findUnique({
     where: { id: chemicalId },
     select: { unit: true }
   })
-  
+
   if (!chemical) {
     return { availableStock: 0, unit: null }
   }
-  
+
   const batches = await prisma.chemicalBatch.findMany({
     where: {
       chemicalId,
@@ -190,9 +192,9 @@ export async function getAvailableStock(chemicalId: number): Promise<{
     },
     select: { remainingVolume: true }
   })
-  
+
   const availableStock = batches.reduce((sum, b) => sum + b.remainingVolume, 0)
-  
+
   return { availableStock, unit: chemical.unit }
 }
 
@@ -216,17 +218,17 @@ export async function getStockDetails(chemicalId: number): Promise<{
     message: string
   }>
 }> {
-  await requirePermission('manage:chemicals')
-  
+  await requirePermission('view:chemicals')
+
   const chemical = await prisma.chemical.findUnique({
     where: { id: chemicalId },
-    select: { 
+    select: {
       unit: true,
       reorderLevel: true,
       volume: true
     }
   })
-  
+
   if (!chemical) {
     return {
       availableStock: 0,
@@ -237,11 +239,11 @@ export async function getStockDetails(chemicalId: number): Promise<{
       warnings: [{ type: 'no_stock', message: 'Chemical not found' }]
     }
   }
-  
+
   const now = new Date()
   const thirtyDaysFromNow = new Date()
   thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-  
+
   // Get all active batches (non-expired with remaining volume)
   const batches = await prisma.chemicalBatch.findMany({
     where: {
@@ -260,22 +262,22 @@ export async function getStockDetails(chemicalId: number): Promise<{
     },
     orderBy: { purchaseDate: 'asc' }
   })
-  
+
   const availableStock = batches.reduce((sum, b) => sum + b.remainingVolume, 0)
   const activeBatchCount = batches.length
-  
+
   // Check for batches expiring soon
   const batchesWithWarnings = batches.map(batch => ({
     ...batch,
     isExpiringSoon: batch.expiryDate !== null && batch.expiryDate <= thirtyDaysFromNow
   }))
-  
+
   // Generate warnings
   const warnings: Array<{
     type: 'no_stock' | 'low_stock' | 'expiring_soon'
     message: string
   }> = []
-  
+
   if (availableStock === 0) {
     warnings.push({
       type: 'no_stock',
@@ -287,7 +289,7 @@ export async function getStockDetails(chemicalId: number): Promise<{
       message: `Low stock — only ${availableStock} ${chemical.unit || 'units'} remaining`
     })
   }
-  
+
   const expiringSoonBatches = batchesWithWarnings.filter(b => b.isExpiringSoon)
   if (expiringSoonBatches.length > 0) {
     warnings.push({
@@ -295,7 +297,7 @@ export async function getStockDetails(chemicalId: number): Promise<{
       message: 'Batch expiring soon — will be used first in FIFO order'
     })
   }
-  
+
   return {
     availableStock,
     unit: chemical.unit,
@@ -307,20 +309,27 @@ export async function getStockDetails(chemicalId: number): Promise<{
 }
 
 /**
- * Generate a preview of how FIFO deduction will be applied across batches
- * Does not modify the database
+ * FRESH FIFO Preview Logic (Read-only)
+ * Fetch non-expired batches (purchaseDate ASC)
+ * Calculate deduction breakdown
  */
-export async function generateBatchPreview(
+export async function previewFIFODeduction(
   chemicalId: number,
   quantityRequested: number
 ): Promise<{
+  sufficient: boolean
+  available: number
+  requested: number
+  reorderLevel: number
   batches: BatchDeduction[]
-  totalDeducted: number
-  isValid: boolean
-  error?: string
 }> {
-  await requirePermission('manage:chemicals')
-  
+  await requirePermission('view:chemicals')
+
+  const chemical = await prisma.chemical.findUnique({
+    where: { id: chemicalId },
+    select: { reorderLevel: true }
+  })
+
   const batches = await prisma.chemicalBatch.findMany({
     where: {
       chemicalId,
@@ -332,41 +341,62 @@ export async function generateBatchPreview(
     },
     orderBy: { purchaseDate: 'asc' }
   })
-  
+
   const totalAvailable = batches.reduce((sum, b) => sum + b.remainingVolume, 0)
-  
-  if (totalAvailable < quantityRequested) {
-    return {
-      batches: [],
-      totalDeducted: 0,
-      isValid: false,
-      error: `Insufficient stock. Available: ${totalAvailable}, Requested: ${quantityRequested}`
-    }
-  }
-  
+  const isSufficient = totalAvailable >= quantityRequested
+
   const preview: BatchDeduction[] = []
-  let remaining = quantityRequested
-  
+  let remainingToDeduct = quantityRequested
+
   for (const batch of batches) {
-    if (remaining <= 0) break
-    
-    const deduction = Math.min(batch.remainingVolume, remaining)
+    if (remainingToDeduct <= 0) break
+
+    const deduction = Math.min(batch.remainingVolume, remainingToDeduct)
+    const remainingAfter = batch.remainingVolume - deduction
+
     preview.push({
       batchId: batch.id,
       batchNumber: batch.batchNumber,
       currentRemaining: batch.remainingVolume,
       toDeduct: deduction,
-      afterDeduction: batch.remainingVolume - deduction,
+      remainingAfter: remainingAfter,
+      expiryDate: batch.expiryDate,
+      willBeExhausted: remainingAfter === 0,
       purchaseDate: batch.purchaseDate
     })
-    
-    remaining -= deduction
+
+    remainingToDeduct -= deduction
   }
-  
+
   return {
-    batches: preview,
-    totalDeducted: quantityRequested,
-    isValid: true
+    sufficient: isSufficient,
+    available: totalAvailable,
+    requested: quantityRequested,
+    reorderLevel: chemical?.reorderLevel || 0,
+    batches: preview
+  }
+}
+
+/**
+ * Generate a preview of how FIFO deduction will be applied across batches
+ * Does not modify the database
+ * @deprecated Use previewFIFODeduction instead
+ */
+export async function generateBatchPreview(
+  chemicalId: number,
+  quantityRequested: number
+): Promise<{
+  batches: any[]
+  totalDeducted: number
+  isValid: boolean
+  error?: string
+}> {
+  const result = await previewFIFODeduction(chemicalId, quantityRequested)
+  return {
+    batches: result.batches,
+    totalDeducted: result.requested,
+    isValid: result.sufficient,
+    error: result.sufficient ? undefined : `Insufficient stock. Available: ${result.available}, Requested: ${result.requested}`
   }
 }
 
@@ -390,9 +420,14 @@ export async function recordChemicalUsage(data: {
   remaining?: number
   unit?: string | null
 }> {
-  const auth = await requirePermission('manage:chemicals')
-  const recordedById = auth.user.id
-  
+  const { roles, user } = await requirePermission('manage:chemicals')
+
+  if (roles.includes('DEAN')) {
+    return { success: false, error: 'Dean role does not have permission to perform this action.' }
+  }
+
+  const recordedById = user.id
+
   try {
     let warningInfo: {
       warning?: 'out_of_stock' | 'low_stock'
@@ -400,7 +435,7 @@ export async function recordChemicalUsage(data: {
       remaining?: number
       unit?: string | null
     } = {}
-    
+
     await prisma.$transaction(async (tx) => {
       // Step 1: Fetch eligible batches (FIFO order)
       const batches = await tx.chemicalBatch.findMany({
@@ -417,20 +452,20 @@ export async function recordChemicalUsage(data: {
         },
         orderBy: { purchaseDate: 'asc' }
       })
-      
+
       // Step 2: Validate availability
       const totalAvailable = batches.reduce((sum, b) => sum + b.remainingVolume, 0)
       if (totalAvailable < data.quantityUsed) {
         throw new Error(`Insufficient stock. Available: ${totalAvailable}, Requested: ${data.quantityUsed}`)
       }
-      
+
       // Step 3: Deduct from batches
       let remaining = data.quantityUsed
       for (const batch of batches) {
         if (remaining <= 0) break
-        
+
         const deduction = Math.min(batch.remainingVolume, remaining)
-        
+
         // Create usage record
         await tx.chemicalUsageRecord.create({
           data: {
@@ -445,16 +480,16 @@ export async function recordChemicalUsage(data: {
             recordedById: recordedById
           }
         })
-        
+
         // Update batch
         await tx.chemicalBatch.update({
           where: { id: batch.id },
           data: { remainingVolume: batch.remainingVolume - deduction }
         })
-        
+
         remaining -= deduction
       }
-      
+
       // Step 4: Recalculate chemical volume
       const updatedBatches = await tx.chemicalBatch.findMany({
         where: {
@@ -465,9 +500,9 @@ export async function recordChemicalUsage(data: {
           ]
         }
       })
-      
+
       const newVolume = updatedBatches.reduce((sum, b) => sum + b.remainingVolume, 0)
-      
+
       const chemical = await tx.chemical.update({
         where: { id: data.chemicalId },
         data: { volume: newVolume },
@@ -478,7 +513,7 @@ export async function recordChemicalUsage(data: {
           volume: true
         }
       })
-      
+
       // Step 5: Check post-usage warnings
       if (newVolume === 0) {
         warningInfo = {
@@ -494,12 +529,12 @@ export async function recordChemicalUsage(data: {
         }
       }
     })
-    
+
     revalidatePath('/labtech/usage')
     revalidatePath('/labtech/chemicals')
     revalidatePath('/labtech/chemicals/[id]')
     revalidatePath('/labtech/records')
-    
+
     return { success: true, ...warningInfo }
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to record usage' }
@@ -520,8 +555,8 @@ export async function getUsageSummaryStats(filters?: {
   totalVolumeToday: number
   mostUsedChemical: string | null
 }> {
-  await requirePermission('manage:chemicals')
-  
+  await requirePermission('view:chemicals')
+
   // Validate date range: max 1 year (365 days)
   if (filters?.dateFrom && filters?.dateTo) {
     const daysDiff = Math.floor((filters.dateTo.getTime() - filters.dateFrom.getTime()) / (1000 * 60 * 60 * 24))
@@ -529,7 +564,7 @@ export async function getUsageSummaryStats(filters?: {
       throw new Error('Date range cannot exceed 1 year')
     }
   }
-  
+
   const where = {
     ...(filters?.search && {
       chemicalBatch: {
@@ -547,16 +582,16 @@ export async function getUsageSummaryStats(filters?: {
       }
     })
   }
-  
+
   // Total usage count
   const totalUsageCount = await prisma.chemicalUsageRecord.count({ where })
-  
+
   // Total volume used today
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
-  
+
   const todayRecords = await prisma.chemicalUsageRecord.findMany({
     where: {
       dateUsed: {
@@ -566,9 +601,9 @@ export async function getUsageSummaryStats(filters?: {
     },
     select: { quantityUsed: true }
   })
-  
+
   const totalVolumeToday = todayRecords.reduce((sum, r) => sum + r.quantityUsed, 0)
-  
+
   // Most used chemical
   const chemicalUsage = await prisma.chemicalUsageRecord.groupBy({
     by: ['chemicalBatchId'],
@@ -582,7 +617,7 @@ export async function getUsageSummaryStats(filters?: {
     },
     take: 1
   })
-  
+
   let mostUsedChemical: string | null = null
   if (chemicalUsage.length > 0) {
     const batch = await prisma.chemicalBatch.findUnique({
@@ -591,7 +626,7 @@ export async function getUsageSummaryStats(filters?: {
     })
     mostUsedChemical = batch?.chemical.name || null
   }
-  
+
   return {
     totalUsageCount,
     totalVolumeToday,
@@ -614,8 +649,8 @@ export async function exportUsageToCSV(filters?: {
   filename?: string
   error?: string
 }> {
-  await requirePermission('manage:chemicals')
-  
+  await requirePermission('export:data')
+
   try {
     // Validate date range: max 1 year (365 days)
     if (filters?.dateFrom && filters?.dateTo) {
@@ -624,7 +659,7 @@ export async function exportUsageToCSV(filters?: {
         throw new Error('Date range cannot exceed 1 year')
       }
     }
-    
+
     const where = {
       ...(filters?.search && {
         chemicalBatch: {
@@ -642,7 +677,7 @@ export async function exportUsageToCSV(filters?: {
         }
       })
     }
-    
+
     const records = await prisma.chemicalUsageRecord.findMany({
       where,
       include: {
@@ -657,7 +692,7 @@ export async function exportUsageToCSV(filters?: {
       },
       orderBy: { dateUsed: 'desc' }
     })
-    
+
     // CSV header
     const headers = [
       'Date Used',
@@ -670,7 +705,7 @@ export async function exportUsageToCSV(filters?: {
       'Room Name',
       'Purpose'
     ]
-    
+
     // CSV rows
     const rows = records.map(record => {
       const dateUsed = record.dateUsed.toISOString().replace('T', ' ').substring(0, 19)
@@ -678,13 +713,13 @@ export async function exportUsageToCSV(filters?: {
       const batchNumber = record.chemicalBatch.batchNumber
       const quantityUsed = record.quantityUsed.toString()
       const unit = record.unit || ''
-      const usedBy = record.usedBy 
+      const usedBy = record.usedBy
         ? `${record.usedBy.firstName || ''} ${record.usedBy.lastName || ''}`.trim()
         : 'Internal'
       const subjectCode = record.subject?.code || ''
       const roomName = record.room?.name || ''
       const purpose = record.purpose || ''
-      
+
       // Escape CSV special characters
       const escapeCSV = (value: string) => {
         if (value.includes(',') || value.includes('"') || value.includes('\n')) {
@@ -692,7 +727,7 @@ export async function exportUsageToCSV(filters?: {
         }
         return value
       }
-      
+
       return [
         dateUsed,
         escapeCSV(chemicalName),
@@ -705,10 +740,10 @@ export async function exportUsageToCSV(filters?: {
         escapeCSV(purpose)
       ].join(',')
     })
-    
+
     const csvData = [headers.join(','), ...rows].join('\n')
     const filename = `chemical-usage-${new Date().toISOString().split('T')[0]}.csv`
-    
+
     return {
       success: true,
       csvData,
@@ -730,8 +765,8 @@ export async function getChemicalUsageHistory(
   chemicalId: number,
   limit: number = 10
 ): Promise<UsageRecordWithRelations[]> {
-  await requirePermission('manage:chemicals')
-  
+  await requirePermission('view:chemicals')
+
   const records = await prisma.chemicalUsageRecord.findMany({
     where: {
       chemicalBatch: {
@@ -752,7 +787,7 @@ export async function getChemicalUsageHistory(
     orderBy: { dateUsed: 'desc' },
     take: limit
   })
-  
+
   return records as UsageRecordWithRelations[]
 }
 
@@ -760,12 +795,12 @@ export async function getChemicalUsageHistory(
  * Fetch all subjects for dropdown selection
  */
 export async function getSubjects() {
-  await requirePermission('manage:chemicals')
-  
+  await requirePermission('view:chemicals')
+
   const subjects = await prisma.subject.findMany({
     orderBy: { code: 'asc' }
   })
-  
+
   return subjects
 }
 
@@ -774,11 +809,11 @@ export async function getSubjects() {
  */
 export async function getRooms() {
   await requirePermission('manage:chemicals')
-  
+
   const rooms = await prisma.room.findMany({
     orderBy: { name: 'asc' }
   })
-  
+
   return rooms
 }
 
@@ -787,7 +822,7 @@ export async function getRooms() {
  */
 export async function getUsers() {
   await requirePermission('manage:chemicals')
-  
+
   const users = await prisma.user.findMany({
     where: {
       isActive: true
@@ -801,7 +836,7 @@ export async function getUsers() {
     },
     orderBy: { username: 'asc' }
   })
-  
+
   return users
 }
 
@@ -817,11 +852,11 @@ export async function searchChemicals(query: string): Promise<{
   reorderLevel: number
 }[]> {
   await requirePermission('manage:chemicals')
-  
+
   if (!query || query.length < 2) {
     return []
   }
-  
+
   const chemicals = await prisma.chemical.findMany({
     where: {
       deletedAt: null,
@@ -837,7 +872,7 @@ export async function searchChemicals(query: string): Promise<{
     orderBy: { name: 'asc' },
     take: 10  // Limit results for performance
   })
-  
+
   return chemicals
 }
 
@@ -851,11 +886,11 @@ export async function searchSubjects(query: string): Promise<{
   name: string
 }[]> {
   await requirePermission('manage:chemicals')
-  
+
   if (!query || query.length < 2) {
     return []
   }
-  
+
   const subjects = await prisma.subject.findMany({
     where: {
       OR: [
@@ -871,7 +906,7 @@ export async function searchSubjects(query: string): Promise<{
     orderBy: { code: 'asc' },
     take: 10  // Limit results for performance
   })
-  
+
   return subjects
 }
 
@@ -885,11 +920,11 @@ export async function searchRooms(query: string): Promise<{
   location: string
 }[]> {
   await requirePermission('manage:chemicals')
-  
+
   if (!query || query.length < 2) {
     return []
   }
-  
+
   const rooms = await prisma.room.findMany({
     where: {
       OR: [
@@ -905,7 +940,7 @@ export async function searchRooms(query: string): Promise<{
     orderBy: { name: 'asc' },
     take: 10  // Limit results for performance
   })
-  
+
   return rooms
 }
 
@@ -920,11 +955,11 @@ export async function searchUsers(query: string): Promise<{
   username: string
 }[]> {
   await requirePermission('manage:chemicals')
-  
+
   if (!query || query.length < 2) {
     return []
   }
-  
+
   const users = await prisma.user.findMany({
     where: {
       isActive: true,
@@ -950,6 +985,6 @@ export async function searchUsers(query: string): Promise<{
     orderBy: { firstName: 'asc' },
     take: 10  // Limit results for performance
   })
-  
+
   return users
 }

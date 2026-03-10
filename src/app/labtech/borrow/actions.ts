@@ -4,8 +4,8 @@ import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/permissions'
 
 export async function searchStaffUsers(query: string) {
-    await requirePermission('manage:equipment')
-    
+    await requirePermission('view:equipment')
+
     return await prisma.user.findMany({
         where: {
             isActive: true,
@@ -30,8 +30,8 @@ export async function searchStaffUsers(query: string) {
 }
 
 export async function searchRooms(query: string, departmentId?: number) {
-    await requirePermission('manage:equipment')
-    
+    await requirePermission('view:equipment')
+
     return await prisma.room.findMany({
         where: {
             ...(departmentId && { departmentId }),
@@ -48,8 +48,8 @@ export async function searchRooms(query: string, departmentId?: number) {
 }
 
 export async function getStaffActiveLabBorrows(userId: number) {
-    await requirePermission('manage:equipment')
-    
+    await requirePermission('view:equipment')
+
     const borrows = await prisma.labBorrowRecord.findMany({
         where: {
             borrowerId: userId,
@@ -68,6 +68,6 @@ export async function getStaffActiveLabBorrows(userId: number) {
             }
         }
     })
-    
+
     return { borrows }
 }

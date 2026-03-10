@@ -2,12 +2,15 @@ import { getLabBorrowRecords, getChemicalUsageRecords, getDistributionRecords } 
 import { LabRecordManager } from "./LabRecordManager"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { requirePermission } from "@/lib/permissions"
 
 export default async function LabtechRecordsPage({
     searchParams
 }: {
     searchParams: { [key: string]: string | undefined }
 }) {
+    const { roles } = await requirePermission('view:equipment')
+    const isDean = roles.includes('DEAN')
     const tab = searchParams.tab || 'borrows'
 
     // Borrow Filters
@@ -65,15 +68,15 @@ export default async function LabtechRecordsPage({
                         </TabsList>
 
                         <TabsContent value="borrows">
-                            <LabRecordManager type="BORROW" records={borrowRecords} />
+                            <LabRecordManager type="BORROW" records={borrowRecords} isReadOnly={isDean} />
                         </TabsContent>
 
                         <TabsContent value="chemicals">
-                            <LabRecordManager type="CHEMICAL" records={chemicalUsageRecords} />
+                            <LabRecordManager type="CHEMICAL" records={chemicalUsageRecords} isReadOnly={isDean} />
                         </TabsContent>
 
                         <TabsContent value="distributions">
-                            <LabRecordManager type="DISTRIBUTION" records={distributionRecords} />
+                            <LabRecordManager type="DISTRIBUTION" records={distributionRecords} isReadOnly={isDean} />
                         </TabsContent>
                     </Tabs>
                 </CardContent>

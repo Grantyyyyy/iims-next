@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AddRoomDialog } from '@/components/rooms/add-room-dialog'
 
 export default async function RoomsPage() {
-    await requirePermission('manage:rooms')
+    await requirePermission('view:rooms')
     const rooms = await getRooms()
     const departments = await getDepartments()
 

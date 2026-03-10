@@ -8,7 +8,7 @@ export async function getEquipment(filters?: {
     search?: string
     categoryId?: number
 }) {
-    await requirePermission('manage:equipment')
+    await requirePermission('view:equipment')
 
     return await prisma.equipment.findMany({
         where: {
@@ -33,7 +33,7 @@ export async function getEquipment(filters?: {
 
 export async function getEquipmentWithInstances(id: number) {
     if (!id || isNaN(id)) return null
-    await requirePermission('manage:equipment')
+    await requirePermission('view:equipment')
 
     return await prisma.equipment.findUnique({
         where: { id },
@@ -62,7 +62,11 @@ export async function createEquipment(data: {
     description?: string
     categoryId?: number
 }) {
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.equipment.create({
@@ -87,7 +91,11 @@ export async function updateEquipment(id: number, data: {
     categoryId?: number
 }) {
     if (!id || isNaN(id)) return { success: false, error: 'Invalid ID' }
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.equipment.update({
@@ -103,7 +111,11 @@ export async function updateEquipment(id: number, data: {
 
 export async function deleteEquipment(id: number) {
     if (!id || isNaN(id)) return { success: false, error: 'Invalid ID' }
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.equipment.update({
@@ -125,7 +137,11 @@ export async function addEquipmentInstance(data: {
     purchaseDate?: Date
     usefulLife?: number
 }) {
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.$transaction(async (tx) => {
@@ -155,7 +171,7 @@ export async function addEquipmentInstance(data: {
 }
 
 export async function getDeletedEquipment() {
-    await requirePermission('manage:equipment')
+    await requirePermission('view:equipment')
 
     return await prisma.equipment.findMany({
         where: {
@@ -171,7 +187,11 @@ export async function getDeletedEquipment() {
 
 export async function restoreEquipment(id: number) {
     if (!id || isNaN(id)) return { success: false, error: 'Invalid ID' }
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.equipment.update({
@@ -187,7 +207,11 @@ export async function restoreEquipment(id: number) {
 
 export async function permanentlyDeleteEquipment(id: number) {
     if (!id || isNaN(id)) return { success: false, error: 'Invalid ID' }
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.$transaction(async (tx) => {

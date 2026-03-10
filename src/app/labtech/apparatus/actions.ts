@@ -9,7 +9,7 @@ export async function getApparatus(filters?: {
     categoryId?: number
     type?: string
 }) {
-    await requirePermission('manage:equipment')
+    await requirePermission('view:equipment')
 
     return await prisma.apparatus.findMany({
         where: {
@@ -34,7 +34,7 @@ export async function getApparatus(filters?: {
 }
 
 export async function getApparatusWithDetails(id: number) {
-    await requirePermission('manage:equipment')
+    await requirePermission('view:equipment')
 
     return await prisma.apparatus.findUnique({
         where: { id },
@@ -69,7 +69,11 @@ export async function createApparatus(data: {
     description?: string
     categoryId?: number
 }) {
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.apparatus.create({
@@ -93,7 +97,11 @@ export async function updateApparatus(id: number, data: {
     description?: string
     categoryId?: number
 }) {
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.apparatus.update({
@@ -108,7 +116,11 @@ export async function updateApparatus(id: number, data: {
 }
 
 export async function deleteApparatus(id: number) {
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.apparatus.update({
@@ -130,7 +142,11 @@ export async function addApparatusInstance(data: {
     purchaseDate?: Date
     usefulLife?: number
 }) {
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.$transaction(async (tx) => {
@@ -167,7 +183,11 @@ export async function addApparatusBatch(data: {
     notes?: string
     userId: number
 }) {
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.$transaction(async (tx) => {
@@ -204,7 +224,7 @@ export async function addApparatusBatch(data: {
 }
 
 export async function getDeletedApparatus() {
-    await requirePermission('manage:equipment')
+    await requirePermission('view:equipment')
 
     return await prisma.apparatus.findMany({
         where: {
@@ -221,7 +241,11 @@ export async function getDeletedApparatus() {
 
 export async function restoreApparatus(id: number) {
     if (!id || isNaN(id)) return { success: false, error: 'Invalid ID' }
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.apparatus.update({
@@ -237,7 +261,11 @@ export async function restoreApparatus(id: number) {
 
 export async function permanentlyDeleteApparatus(id: number) {
     if (!id || isNaN(id)) return { success: false, error: 'Invalid ID' }
-    await requirePermission('manage:equipment')
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.$transaction(async (tx) => {

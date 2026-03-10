@@ -5,16 +5,20 @@ import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/permissions'
 
 export async function getLabCategories() {
-    await requirePermission('manage:equipment')
-    
+    await requirePermission('view:equipment')
+
     return await prisma.labCategory.findMany({
         orderBy: { name: 'asc' }
     })
 }
 
 export async function createLabCategory(name: string) {
-    await requirePermission('manage:equipment')
-    
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
+
     try {
         await prisma.labCategory.create({
             data: { name }
@@ -27,8 +31,12 @@ export async function createLabCategory(name: string) {
 }
 
 export async function updateLabCategory(id: number, name: string) {
-    await requirePermission('manage:equipment')
-    
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
+
     try {
         await prisma.labCategory.update({
             where: { id },
@@ -42,8 +50,12 @@ export async function updateLabCategory(id: number, name: string) {
 }
 
 export async function deleteLabCategory(id: number) {
-    await requirePermission('manage:equipment')
-    
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
+
     try {
         await prisma.labCategory.delete({
             where: { id }

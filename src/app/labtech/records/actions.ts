@@ -11,10 +11,10 @@ export async function getLabBorrowRecords(filters?: {
     dateFrom?: Date
     dateTo?: Date
 }) {
-    await requirePermission('manage:equipment')
-    
+    await requirePermission('view:equipment')
+
     const now = new Date()
-    
+
     return await prisma.labBorrowRecord.findMany({
         where: {
             ...(filters?.search && {
@@ -66,8 +66,12 @@ export async function createLabBorrowRecord(data: {
     purpose?: string
     dueDate?: Date
 }) {
-    await requirePermission('manage:equipment')
-    
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
+
     try {
         await prisma.$transaction(async (tx) => {
             // Check instance availability
@@ -82,7 +86,7 @@ export async function createLabBorrowRecord(data: {
                     throw new Error('Equipment instance is already borrowed')
                 }
             }
-            
+
             if (data.apparatusInstanceId) {
                 const existing = await tx.labBorrowRecord.findFirst({
                     where: {
@@ -94,7 +98,7 @@ export async function createLabBorrowRecord(data: {
                     throw new Error('Apparatus instance is already borrowed')
                 }
             }
-            
+
             // Get previous borrower
             let previousBorrowerId = null
             if (data.equipmentInstanceId) {
@@ -116,7 +120,7 @@ export async function createLabBorrowRecord(data: {
                 })
                 previousBorrowerId = lastBorrow?.borrowerId || null
             }
-            
+
             await tx.labBorrowRecord.create({
                 data: {
                     equipmentInstanceId: data.equipmentInstanceId,
@@ -132,7 +136,7 @@ export async function createLabBorrowRecord(data: {
                 }
             })
         })
-        
+
         revalidatePath('/labtech/borrow')
         revalidatePath('/labtech/records')
         return { success: true }
@@ -145,8 +149,12 @@ export async function processLabReturn(borrowRecordId: number, data: {
     conditionOnReturn: string
     notes?: string
 }) {
-    await requirePermission('manage:equipment')
-    
+    const { roles } = await requirePermission('manage:equipment')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
+
     try {
         await prisma.$transaction(async (tx) => {
             const borrowRecord = await tx.labBorrowRecord.findUnique({
@@ -156,15 +164,15 @@ export async function processLabReturn(borrowRecordId: number, data: {
                     apparatusInstance: true
                 }
             })
-            
+
             if (!borrowRecord) {
                 throw new Error('Borrow record not found')
             }
-            
+
             if (borrowRecord.returnDate) {
                 throw new Error('Item already returned')
             }
-            
+
             // Create return record
             await tx.labReturnRecord.create({
                 data: {
@@ -173,13 +181,13 @@ export async function processLabReturn(borrowRecordId: number, data: {
                     notes: data.notes
                 }
             })
-            
+
             // Update borrow record
             await tx.labBorrowRecord.update({
                 where: { id: borrowRecordId },
                 data: { returnDate: new Date() }
             })
-            
+
             // Update instance condition
             if (borrowRecord.equipmentInstanceId) {
                 await tx.equipmentInstance.update({
@@ -193,7 +201,7 @@ export async function processLabReturn(borrowRecordId: number, data: {
                 })
             }
         })
-        
+
         revalidatePath('/labtech/records')
         revalidatePath('/labtech/equipment')
         revalidatePath('/labtech/apparatus')
@@ -208,8 +216,8 @@ export async function getChemicalUsageRecords(filters?: {
     dateFrom?: Date
     dateTo?: Date
 }) {
-    await requirePermission('manage:chemicals')
-    
+    await requirePermission('view:chemicals')
+
     return await prisma.chemicalUsageRecord.findMany({
         where: {
             ...(filters?.search && {
@@ -241,21 +249,23 @@ export async function getDistributionRecords(filters?: {
     dateFrom?: Date
     dateTo?: Date
 }) {
-    await requirePermission('manage:chemicals')
-    
+    await requirePermission('view:chemicals')
+
     return await (prisma.chemicalUsageRecord as any).findMany({
         where: {
             isDistribution: true,
             ...(filters?.search && {
                 OR: [
                     { chemicalBatch: { chemical: { name: { contains: filters.search } } } },
-                    { recipient: { 
-                        OR: [
-                            { username: { contains: filters.search } },
-                            { firstName: { contains: filters.search } },
-                            { lastName: { contains: filters.search } }
-                        ]
-                    }}
+                    {
+                        recipient: {
+                            OR: [
+                                { username: { contains: filters.search } },
+                                { firstName: { contains: filters.search } },
+                                { lastName: { contains: filters.search } }
+                            ]
+                        }
+                    }
                 ]
             }),
             ...(filters?.dateFrom && { dateUsed: { gte: filters.dateFrom } }),

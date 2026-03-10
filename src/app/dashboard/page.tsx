@@ -57,7 +57,14 @@ export default async function DashboardPage() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                  <BreadcrumbPage className="flex items-center gap-2">
+                    Dashboard
+                    {roles.includes('DEAN') && (
+                      <Badge variant="outline" className="bg-yellow-100 text-yellow-700 border-yellow-200 ml-2 font-bold uppercase tracking-wider text-[10px]">
+                        Monitoring View
+                      </Badge>
+                    )}
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>

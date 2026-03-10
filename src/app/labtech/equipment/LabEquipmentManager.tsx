@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { createEquipment, updateEquipment, deleteEquipment, restoreEquipment, permanentlyDeleteEquipment } from './actions'
 import { toast } from 'sonner'
-import { Plus, Search, Pencil, Trash2, Tag, Barcode, Layers, Check, X, MoreHorizontal, Microscope, Loader2, Trash, RotateCcw, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Tag, Barcode, Layers, Check, X, MoreHorizontal, Microscope, Loader2, ArrowRight, Trash, RotateCcw, AlertTriangle, FileText } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import Link from 'next/link'
@@ -36,11 +36,12 @@ interface LabEquipmentManagerProps {
     equipment: any[]
     categories: any[]
     deletedEquipment?: any[]
+    isReadOnly?: boolean
 }
 
 const ITEMS_PER_PAGE = 10
 
-export function LabEquipmentManager({ equipment, categories, deletedEquipment = [] }: LabEquipmentManagerProps) {
+export function LabEquipmentManager({ equipment, categories, deletedEquipment = [], isReadOnly = false }: LabEquipmentManagerProps) {
     const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [isPending, setIsPending] = useState(false)
@@ -196,130 +197,134 @@ export function LabEquipmentManager({ equipment, categories, deletedEquipment = 
 
                 <div className="flex items-center gap-2">
                     {/* Bin Button */}
-                    <Button
-                        variant="outline"
-                        onClick={() => setIsBinOpen(true)}
-                        className="h-11 px-4 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all relative"
-                    >
-                        <Trash className="h-4 w-4 mr-2" />
-                        Bin
-                        {deletedEquipment.length > 0 && (
-                            <Badge variant="destructive" className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]">
-                                {deletedEquipment.length}
-                            </Badge>
-                        )}
-                    </Button>
+                    {!isReadOnly && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsBinOpen(true)}
+                            className="h-11 px-4 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all relative"
+                        >
+                            <Trash className="h-4 w-4 mr-2" />
+                            Bin
+                            {deletedEquipment.length > 0 && (
+                                <Badge variant="destructive" className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]">
+                                    {deletedEquipment.length}
+                                </Badge>
+                            )}
+                        </Button>
+                    )}
 
                     {/* Create Sheet */}
-                    <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                        <SheetTrigger asChild>
-                            <Button className="h-11 px-6 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Equipment
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
-                            <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
-                                <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
-                                <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
-                                <div className="relative z-10 text-left">
-                                    <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                        Add New Equipment
-                                    </SheetTitle>
-                                    <SheetDescription className="text-sm font-medium mt-1">
-                                        Register high-value laboratory equipment for tracking.
-                                    </SheetDescription>
-                                </div>
-                            </SheetHeader>
-
-                            <ScrollArea className="flex-1 px-6 py-8">
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <Tag className="h-3 w-3 text-primary/70" />
-                                            Equipment Name
-                                        </label>
-                                        <Input
-                                            placeholder="e.g. Compound Microscope"
-                                            value={newEquipment.name}
-                                            onChange={(e) => setNewEquipment({ ...newEquipment, name: e.target.value })}
-                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <Barcode className="h-3 w-3 text-primary/70" />
-                                            Model <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
-                                        </label>
-                                        <Input
-                                            placeholder="e.g. CM-400"
-                                            value={newEquipment.model}
-                                            onChange={(e) => setNewEquipment({ ...newEquipment, model: e.target.value })}
-                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <Layers className="h-3 w-3 text-primary/70" />
-                                            Category <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
-                                        </label>
-                                        <Select value={newEquipment.categoryId} onValueChange={(v) => setNewEquipment({ ...newEquipment, categoryId: v })}>
-                                            <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-border/50">
-                                                <SelectValue placeholder="Select Category" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {categories.map(cat => (
-                                                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                                                        {cat.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <Microscope className="h-3 w-3 text-primary/70" />
-                                            Description <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
-                                        </label>
-                                        <Input
-                                            placeholder="Brief description"
-                                            value={newEquipment.description}
-                                            onChange={(e) => setNewEquipment({ ...newEquipment, description: e.target.value })}
-                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                        />
-                                    </div>
-                                </div>
-                            </ScrollArea>
-
-                            <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setIsCreateOpen(false)}
-                                    className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
-                                >
-                                    <X className="h-4 w-4" />
-                                    Cancel
+                    {!isReadOnly && (
+                        <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                            <SheetTrigger asChild>
+                                <Button className="h-11 px-6 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Equipment
                                 </Button>
-                                <Button
-                                    onClick={handleCreate}
-                                    disabled={isPending || !newEquipment.name}
-                                    className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
-                                >
-                                    {isPending ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Registering...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Check className="h-4 w-4" />
-                                            Register Equipment
-                                        </>
-                                    )}
-                                </Button>
-                            </SheetFooter>
-                        </SheetContent>
-                    </Sheet>
+                            </SheetTrigger>
+                            <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
+                                <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
+                                    <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                                    <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
+                                    <div className="relative z-10 text-left">
+                                        <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                            Add New Equipment
+                                        </SheetTitle>
+                                        <SheetDescription className="text-sm font-medium mt-1">
+                                            Register high-value laboratory equipment for tracking.
+                                        </SheetDescription>
+                                    </div>
+                                </SheetHeader>
+
+                                <ScrollArea className="flex-1 px-6 py-8">
+                                    <div className="space-y-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Tag className="h-3 w-3 text-primary/70" />
+                                                Equipment Name
+                                            </label>
+                                            <Input
+                                                placeholder="e.g. Compound Microscope"
+                                                value={newEquipment.name}
+                                                onChange={(e) => setNewEquipment({ ...newEquipment, name: e.target.value })}
+                                                className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Barcode className="h-3 w-3 text-primary/70" />
+                                                Model <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
+                                            </label>
+                                            <Input
+                                                placeholder="e.g. CM-400"
+                                                value={newEquipment.model}
+                                                onChange={(e) => setNewEquipment({ ...newEquipment, model: e.target.value })}
+                                                className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Layers className="h-3 w-3 text-primary/70" />
+                                                Category <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
+                                            </label>
+                                            <Select value={newEquipment.categoryId} onValueChange={(v) => setNewEquipment({ ...newEquipment, categoryId: v })}>
+                                                <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-border/50">
+                                                    <SelectValue placeholder="Select Category" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {categories.map(cat => (
+                                                        <SelectItem key={cat.id} value={cat.id.toString()}>
+                                                            {cat.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Microscope className="h-3 w-3 text-primary/70" />
+                                                Description <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
+                                            </label>
+                                            <Input
+                                                placeholder="Brief description"
+                                                value={newEquipment.description}
+                                                onChange={(e) => setNewEquipment({ ...newEquipment, description: e.target.value })}
+                                                className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                            />
+                                        </div>
+                                    </div>
+                                </ScrollArea>
+
+                                <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setIsCreateOpen(false)}
+                                        className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
+                                    >
+                                        <X className="h-4 w-4" />
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleCreate}
+                                        disabled={isPending || !newEquipment.name}
+                                        className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
+                                    >
+                                        {isPending ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Registering...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Check className="h-4 w-4" />
+                                                Register Equipment
+                                            </>
+                                        )}
+                                    </Button>
+                                </SheetFooter>
+                            </SheetContent>
+                        </Sheet>
+                    )}
                 </div>
             </div>
 
@@ -329,16 +334,17 @@ export function LabEquipmentManager({ equipment, categories, deletedEquipment = 
                     <TableHeader className="bg-muted/50">
                         <TableRow className="hover:bg-transparent">
                             <TableHead className="font-semibold text-foreground/80">Equipment Name</TableHead>
+                            <TableHead className="font-semibold text-foreground/80 text-center w-24">Files</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Category</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Model</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Instances</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Available</TableHead>
-                            <TableHead className="text-right font-semibold text-foreground/80">Actions</TableHead>
+                            {!isReadOnly && <TableHead className="text-right font-semibold text-foreground/80">Actions</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {paginatedEquipment.map((eq) => (
-                            <TableRow key={eq.id}>
+                            <TableRow key={eq.id} className="group">
                                 <TableCell className="font-medium">
                                     <Link
                                         href={`/labtech/equipment/${eq.id}`}
@@ -346,6 +352,14 @@ export function LabEquipmentManager({ equipment, categories, deletedEquipment = 
                                     >
                                         {eq.name}
                                     </Link>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    {eq.instances?.some((inst: any) => inst.barcodeUrl) && (
+                                        <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 gap-1.5 animate-in fade-in zoom-in duration-300">
+                                            <FileText className="h-3 w-3" />
+                                            <span className="text-[10px] font-bold">FILE</span>
+                                        </Badge>
+                                    )}
                                 </TableCell>
                                 <TableCell>
                                     {eq.category ? (
@@ -363,35 +377,38 @@ export function LabEquipmentManager({ equipment, categories, deletedEquipment = 
                                         {getAvailableCount(eq)}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem asChild className="cursor-pointer">
-                                                <Link href={`/labtech/equipment/${eq.id}`}>
-                                                    View Details
-                                                </Link>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => openEdit(eq)} className="cursor-pointer">
-                                                <Pencil className="mr-2 h-4 w-4" /> Edit Details
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => openDelete(eq)} className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete Equipment
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
+                                {!isReadOnly && (
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-muted/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-xl border-muted/20">
+                                                <DropdownMenuLabel className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Options</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-3 py-2 focus:bg-primary/10 group/item">
+                                                    <Link href={`/labtech/equipment/${eq.id}`} className="flex items-center justify-between w-full">
+                                                        View Details
+                                                        <ArrowRight className="h-4 w-4 opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => openEdit(eq)} className="cursor-pointer rounded-lg px-3 py-2 focus:bg-primary/10">
+                                                    <Pencil className="mr-2 h-4 w-4" /> Edit Details
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => openDelete(eq)} className="cursor-pointer rounded-lg px-3 py-2 text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Equipment
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                )}
                             </TableRow>
                         ))}
                         {paginatedEquipment.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">No equipment found.</TableCell>
+                                <TableCell colSpan={isReadOnly ? 6 : 7} className="text-center py-6 text-muted-foreground">No equipment found.</TableCell>
                             </TableRow>
                         )}
                     </TableBody>

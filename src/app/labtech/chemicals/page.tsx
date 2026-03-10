@@ -1,8 +1,11 @@
 import { getChemicals } from "./actions"
 import { ChemicalManager } from "./ChemicalManager"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { requirePermission } from "@/lib/permissions"
 
 export default async function LabtechChemicalsPage() {
+    const { roles } = await requirePermission('view:equipment')
+    const isDean = roles.includes('DEAN')
     const chemicals = await getChemicals()
 
     return (
@@ -15,7 +18,7 @@ export default async function LabtechChemicalsPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ChemicalManager chemicals={chemicals} />
+                    <ChemicalManager chemicals={chemicals} isReadOnly={isDean} />
                 </CardContent>
             </Card>
         </div>

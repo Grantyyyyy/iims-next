@@ -21,7 +21,7 @@ export default async function LabtechLayout({
 }: {
     children: React.ReactNode
 }) {
-    const { user, roles } = await requirePermission('manage:equipment')
+    const { user, roles } = await requirePermission('view:equipment')
     const sidebarUser = {
         name: user.username,
         email: user.email,

@@ -8,7 +8,7 @@ import { convertToBaseUnit, determineBaseUnit } from '@/lib/unit-conversion'
 export async function getChemicals(filters?: {
     search?: string
 }) {
-    await requirePermission('manage:chemicals')
+    await requirePermission('view:chemicals')
 
     const chemicals = await prisma.chemical.findMany({
         where: {
@@ -43,7 +43,7 @@ export async function getChemicals(filters?: {
 }
 
 export async function getChemicalWithBatches(id: number) {
-    await requirePermission('manage:chemicals')
+    await requirePermission('view:chemicals')
 
     const chemical = await prisma.chemical.findUnique({
         where: { id },
@@ -83,7 +83,11 @@ export async function createChemical(data: {
     description?: string
     reorderLevel: number
 }) {
-    await requirePermission('manage:chemicals')
+    const { roles } = await requirePermission('manage:chemicals')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.chemical.create({
@@ -107,7 +111,11 @@ export async function updateChemical(id: number, data: {
     description?: string
     reorderLevel?: number
 }) {
-    await requirePermission('manage:chemicals')
+    const { roles } = await requirePermission('manage:chemicals')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.chemical.update({
@@ -122,7 +130,11 @@ export async function updateChemical(id: number, data: {
 }
 
 export async function deleteChemical(id: number) {
-    await requirePermission('manage:chemicals')
+    const { roles } = await requirePermission('manage:chemicals')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.chemical.update({
@@ -130,9 +142,72 @@ export async function deleteChemical(id: number) {
             data: { deletedAt: new Date() }
         })
         revalidatePath('/labtech/chemicals')
+        revalidatePath('/labtech/bin')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to delete chemical' }
+    }
+}
+
+export async function restoreChemical(id: number) {
+    const { roles } = await requirePermission('manage:chemicals')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
+
+    try {
+        await prisma.chemical.update({
+            where: { id },
+            data: { deletedAt: null }
+        })
+        revalidatePath('/labtech/chemicals')
+        revalidatePath('/labtech/bin')
+        return { success: true }
+    } catch (error) {
+        return { success: false, error: 'Failed to restore chemical' }
+    }
+}
+
+export async function permanentlyDeleteChemical(id: number) {
+    const { roles } = await requirePermission('manage:chemicals')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
+
+    try {
+        // First delete all related batches and usage records if necessary, 
+        // but Prisma schema might handle cascade if defined.
+        // Looking at schema, ChemicalBatch relates to Chemical.
+        // UsageRecord relates to ChemicalBatch.
+
+        await prisma.chemical.delete({
+            where: { id }
+        })
+
+        revalidatePath('/labtech/chemicals')
+        revalidatePath('/labtech/bin')
+        return { success: true }
+    } catch (error) {
+        console.error('Permanent delete error:', error)
+        return { success: false, error: 'Failed to permanently delete chemical. It may have active records.' }
+    }
+}
+
+export async function getDeletedChemicals() {
+    await requirePermission('view:chemicals')
+
+    try {
+        return await prisma.chemical.findMany({
+            where: {
+                deletedAt: { not: null }
+            },
+            orderBy: { deletedAt: 'desc' }
+        })
+    } catch (error) {
+        console.error('Error fetching deleted chemicals:', error)
+        return []
     }
 }
 
@@ -147,7 +222,11 @@ export async function addChemicalBatch(data: {
     notes?: string
     userId: number
 }) {
-    await requirePermission('manage:chemicals')
+    const { roles } = await requirePermission('manage:chemicals')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.$transaction(async (tx) => {
@@ -224,7 +303,11 @@ export async function recordChemicalUsage(data: {
     usedById?: number
     recordedById: number
 }) {
-    await requirePermission('manage:chemicals')
+    const { roles } = await requirePermission('manage:chemicals')
+
+    if (roles.includes('DEAN')) {
+        return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         await prisma.$transaction(async (tx) => {
@@ -306,7 +389,7 @@ export async function recordChemicalUsage(data: {
 }
 
 export async function getChemicalAlerts() {
-    await requirePermission('manage:chemicals')
+    await requirePermission('view:chemicals')
 
     const now = new Date()
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)

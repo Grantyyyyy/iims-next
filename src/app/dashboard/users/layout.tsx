@@ -21,7 +21,7 @@ export default async function UsersDashboardLayout({
 }: {
     children: React.ReactNode
 }) {
-    const { user, roles } = await requirePermission('manage:users')
+    const { user, roles } = await requirePermission('view:users')
     const sidebarUser = {
         name: user.username,
         email: user.email,

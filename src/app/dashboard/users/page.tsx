@@ -1,4 +1,4 @@
-import { Plus, Users, UserCheck, UserMinus } from 'lucide-react'
+import { Plus, Users, UserCheck, UserMinus, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserTable } from '@/components/users/user-table'
 import { getUsers, getDepartments } from '@/app/actions/users'
@@ -6,10 +6,16 @@ import { requirePermission } from '@/lib/permissions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AddUserDialog } from '@/components/users/add-user-dialog'
 
+export const useRole = () => {
+    // Since next-auth is not used, and we don't have a provider, 
+    // we return null. UI components should get roles via props.
+    return null
+}
 export default async function UsersPage() {
-    const { user: currentUser } = await requirePermission('manage:users')
+    const { user: currentUser, roles } = await requirePermission('view:users')
     const users = await getUsers()
     const departments = await getDepartments()
+    const isDean = roles.includes('DEAN')
 
     const stats = {
         total: users.length,
@@ -26,8 +32,23 @@ export default async function UsersPage() {
                         Manage user accounts, roles, and system access.
                     </p>
                 </div>
-                <AddUserDialog departments={departments} currentUserId={(currentUser as any).id} />
+                {!isDean && <AddUserDialog departments={departments} currentUserId={(currentUser as any).id} />}
             </div>
+
+            {isDean && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <Info className="h-5 w-5 text-yellow-400" />
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm text-yellow-700">
+                                You are in Monitoring View (Dean). You have read-only access to all records.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="grid gap-4 md:grid-cols-3">
                 <Card>
@@ -62,7 +83,7 @@ export default async function UsersPage() {
                 </Card>
             </div>
 
-            <UserTable users={users} currentUserId={currentUser.id} departments={departments} />
+            <UserTable users={users} currentUserId={currentUser.id} departments={departments} isReadOnly={isDean} />
         </div>
     )
 }

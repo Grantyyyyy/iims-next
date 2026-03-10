@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/permissions'
 
 export async function getUsers() {
-    await requirePermission('manage:users')
+    await requirePermission('view:users')
     try {
         return await prisma.user.findMany({
             include: {
@@ -60,7 +60,7 @@ export async function updateUserRoles(userId: number, roleNames: string[]) {
 }
 
 export async function getDepartments() {
-    await requirePermission('manage:users')
+    await requirePermission('view:departments')
     try {
         return await prisma.department.findMany({
             include: {

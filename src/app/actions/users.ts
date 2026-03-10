@@ -41,7 +41,7 @@ const updateUserSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export async function getUsers() {
-    await requirePermission('manage:users')
+    await requirePermission('view:users')
 
     return await prisma.user.findMany({
         include: {
@@ -59,7 +59,7 @@ export async function getUsers() {
 }
 
 export async function getUserById(id: number) {
-    await requirePermission('manage:users')
+    await requirePermission('view:users')
 
     return await (prisma.user as any).findUnique({
         where: { id },
@@ -75,7 +75,11 @@ export async function getUserById(id: number) {
 }
 
 export async function createUser(formData: FormData) {
-    await requirePermission('manage:users')
+    const { roles } = await requirePermission('manage:users')
+
+    if (roles.includes('DEAN')) {
+        return { error: { root: ['Dean role does not have permission to perform this action.'] } }
+    }
 
     const rawData = Object.fromEntries(formData.entries())
     const validated = createUserSchema.safeParse(rawData)
@@ -147,7 +151,11 @@ export async function createUser(formData: FormData) {
 }
 
 export async function updateUser(id: number, formData: FormData) {
-    const { user: currentUser } = await requirePermission('manage:users')
+    const { user: currentUser, roles } = await requirePermission('manage:users')
+
+    if (roles.includes('DEAN')) {
+        return { error: { root: ['Dean role does not have permission to perform this action.'] } }
+    }
 
     const rawData = Object.fromEntries(formData.entries())
     const validated = updateUserSchema.safeParse(rawData)
@@ -235,7 +243,11 @@ export async function updateUser(id: number, formData: FormData) {
 }
 
 export async function toggleUserStatus(id: number) {
-    const { user: currentUser } = await requirePermission('manage:users')
+    const { user: currentUser, roles } = await requirePermission('manage:users')
+
+    if (roles.includes('DEAN')) {
+        return { error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         if (id === currentUser.id) {

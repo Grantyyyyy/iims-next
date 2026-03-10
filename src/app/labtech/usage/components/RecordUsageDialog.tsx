@@ -28,7 +28,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { ArrowLeft, ArrowRight, Check, Search, Loader2, AlertCircle, AlertTriangle, Clock, X, Droplet, BookOpen, MapPin, ClipboardList, User } from "lucide-react"
-import { searchChemicals, getStockDetails, searchSubjects, searchRooms, searchUsers, recordChemicalUsage, generateBatchPreview } from "../actions"
+import { searchChemicals, getStockDetails, searchSubjects, searchRooms, searchUsers, recordChemicalUsage, previewFIFODeduction, type BatchDeduction } from "../actions"
 import { cn } from "@/lib/utils"
 import { BatchPreview } from "./BatchPreview"
 import { toast } from "sonner"
@@ -40,18 +40,56 @@ interface RecordUsageDialogProps {
   onSuccess: () => void
 }
 
-interface FormState {
-  chemicalId: number | null
-  chemicalName: string
+type UsageFormState = {
+  // Step 1 fields
+  chemical: {
+    id: number
+    name: string
+    unit: string | null
+    availableVolume: number
+    reorderLevel: number
+  } | null
   quantity: string
-  subjectId: number | null
-  subjectName: string
-  roomId: number | null
-  roomName: string
+  subject: {
+    id: number
+    name: string
+    code?: string
+  } | null
+  room: {
+    id: number
+    name: string
+  } | null
   purpose: string
-  usedById: number | null
-  usedByName: string
-  isInternal: boolean
+  usedByType: 'registered' | 'internal'
+  usedBy: {
+    id: number
+    firstName: string | null
+    lastName: string | null
+  } | null
+
+  // Step 2 state
+  batchPreview: {
+    sufficient: boolean
+    available: number
+    requested: number
+    reorderLevel: number
+    batches: BatchDeduction[]
+  } | null
+  batchPreviewLoading: boolean
+  batchPreviewError: string | null
+}
+
+const initialState: UsageFormState = {
+  chemical: null,
+  quantity: "",
+  subject: null,
+  room: null,
+  purpose: "",
+  usedByType: 'registered',
+  usedBy: null,
+  batchPreview: null,
+  batchPreviewLoading: false,
+  batchPreviewError: null,
 }
 
 export function RecordUsageDialog({
@@ -62,20 +100,11 @@ export function RecordUsageDialog({
   // Current step (1 or 2)
   const [currentStep, setCurrentStep] = React.useState<1 | 2>(1)
 
-  // Single form state object at dialog root level (shared between steps)
-  const [formState, setFormState] = React.useState<FormState>({
-    chemicalId: null,
-    chemicalName: "",
-    quantity: "",
-    subjectId: null,
-    subjectName: "",
-    roomId: null,
-    roomName: "",
-    purpose: "",
-    usedById: null,
-    usedByName: "",
-    isInternal: false,
-  })
+  // Single state object at dialog root level
+  const [formState, setFormState] = React.useState<UsageFormState>(initialState)
+
+  // Validation state for highlighting
+  const [quantityError, setQuantityError] = React.useState(false)
 
   // Chemical search state
   const [chemicalSearchQuery, setChemicalSearchQuery] = React.useState("")
@@ -109,7 +138,7 @@ export function RecordUsageDialog({
   const [isUserSearching, setIsUserSearching] = React.useState(false)
   const [userPopoverOpen, setUserPopoverOpen] = React.useState(false)
 
-  // Stock details state
+  // Stock details state (for Step 1 dynamic display)
   const [stockDetails, setStockDetails] = React.useState<{
     availableStock: number
     unit: string | null
@@ -129,9 +158,6 @@ export function RecordUsageDialog({
   } | null>(null)
   const [isLoadingStock, setIsLoadingStock] = React.useState(false)
 
-  // Step 2 state
-  const [isLoadingPreview, setIsLoadingPreview] = React.useState(false)
-  const [previewError, setPreviewError] = React.useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   // Debounced chemical search
@@ -225,10 +251,10 @@ export function RecordUsageDialog({
   // Load stock details when chemical is selected
   React.useEffect(() => {
     const loadStockDetails = async () => {
-      if (formState.chemicalId) {
+      if (formState.chemical?.id) {
         setIsLoadingStock(true)
         try {
-          const details = await getStockDetails(formState.chemicalId)
+          const details = await getStockDetails(formState.chemical.id)
           setStockDetails(details)
         } catch (error) {
           console.error("Error loading stock details:", error)
@@ -242,25 +268,14 @@ export function RecordUsageDialog({
     }
 
     loadStockDetails()
-  }, [formState.chemicalId])
+  }, [formState.chemical?.id])
 
   // Reset form when dialog closes
   React.useEffect(() => {
     if (!isOpen) {
       setCurrentStep(1)
-      setFormState({
-        chemicalId: null,
-        chemicalName: "",
-        quantity: "",
-        subjectId: null,
-        subjectName: "",
-        roomId: null,
-        roomName: "",
-        purpose: "",
-        usedById: null,
-        usedByName: "",
-        isInternal: false,
-      })
+      setFormState(initialState)
+      setQuantityError(false)
       setChemicalSearchQuery("")
       setChemicalSearchResults([])
       setChemicalPopoverOpen(false)
@@ -274,69 +289,59 @@ export function RecordUsageDialog({
       setUserSearchResults([])
       setUserPopoverOpen(false)
       setStockDetails(null)
-      setIsLoadingPreview(false)
-      setPreviewError(null)
       setIsSubmitting(false)
     }
   }, [isOpen])
 
   // Handle step navigation
   const handleNext = async () => {
-    // Validate required fields and stock availability
-    if (!formState.chemicalId || !formState.quantity || !formState.subjectId || !formState.roomId || !formState.purpose) {
-      return // Prevent navigation if required fields are missing
+    // Validate required fields
+    if (!formState.chemical?.id || !formState.quantity || !formState.subject?.id || !formState.room?.id || !formState.purpose) {
+      toast.error("Please fill in all required fields")
+      return
     }
 
-    const quantity = parseFloat(formState.quantity)
-
-    // Check if quantity is valid
-    if (isNaN(quantity) || quantity <= 0) {
-      return // Prevent navigation if quantity is invalid
+    const qty = parseFloat(formState.quantity)
+    if (isNaN(qty) || qty <= 0) {
+      toast.error("Please enter a valid quantity")
+      return
     }
 
-    // Check if no stock available
-    if (stockDetails && stockDetails.availableStock === 0) {
-      return // Prevent navigation if no stock
-    }
-
-    // Check if quantity exceeds available stock
-    if (stockDetails && quantity > stockDetails.availableStock) {
-      return // Prevent navigation if quantity exceeds stock
-    }
-
-    // Show loading state and fetch fresh batch preview
-    setIsLoadingPreview(true)
-    setPreviewError(null)
+    // Entering Step 2 - Fetch fresh batch preview
+    setCurrentStep(2)
+    setFormState(prev => ({ ...prev, batchPreviewLoading: true, batchPreviewError: null }))
+    setQuantityError(false)
 
     try {
-      // Fetch fresh batch preview to check if stock changed
-      const preview = await generateBatchPreview(formState.chemicalId, quantity)
+      const preview = await previewFIFODeduction(formState.chemical.id, qty)
 
-      if (!preview.isValid) {
-        // Stock changed since Step 1 - show error
-        setPreviewError(preview.error || "Insufficient stock available")
-        setIsLoadingPreview(false)
-        return // Don't navigate to Step 2
-      }
+      setFormState(prev => ({
+        ...prev,
+        batchPreview: preview,
+        batchPreviewLoading: false,
+        batchPreviewError: preview.sufficient ? null : `Stock changed since you started. Available: ${preview.available}, Requested: ${preview.requested}`
+      }))
 
-      // Stock is sufficient - navigate to Step 2
-      setCurrentStep(2)
     } catch (error) {
       console.error("Error fetching batch preview:", error)
-      setPreviewError("Failed to load batch preview")
-    } finally {
-      setIsLoadingPreview(false)
+      setFormState(prev => ({
+        ...prev,
+        batchPreviewLoading: false,
+        batchPreviewError: "Failed to load fresh batch preview"
+      }))
     }
   }
 
   const handleBack = () => {
     // Back button preserves ALL form state (never resets)
     setCurrentStep(1)
-    setPreviewError(null)
+    if (formState.batchPreviewError) {
+      setQuantityError(true)
+    }
   }
 
   const handleConfirm = async () => {
-    if (!formState.chemicalId || !formState.quantity || !formState.subjectId || !formState.roomId || !formState.purpose) {
+    if (!formState.chemical?.id || !formState.quantity || !formState.subject?.id || !formState.room?.id || !formState.purpose) {
       toast.error("Missing required information")
       return
     }
@@ -345,26 +350,23 @@ export function RecordUsageDialog({
 
     try {
       const result = await recordChemicalUsage({
-        chemicalId: formState.chemicalId,
+        chemicalId: formState.chemical.id,
         quantityUsed: parseFloat(formState.quantity),
-        subjectId: formState.subjectId,
-        roomId: formState.roomId,
+        subjectId: formState.subject.id,
+        roomId: formState.room.id,
         purpose: formState.purpose,
-        usedById: formState.isInternal ? null : formState.usedById,
+        usedById: formState.usedByType === 'registered' ? formState.usedBy?.id || null : null,
       })
 
       if (result.success) {
-        // Success toast
-        toast.success(`Usage recorded. ${formState.quantity} ${stockDetails?.unit || "units"} of ${formState.chemicalName} deducted.`)
+        toast.success(`Usage recorded successfully.`)
 
-        // Post-usage warnings
         if (result.warning === 'out_of_stock') {
           toast.error(`🔴 ${result.chemicalName} is now out of stock`)
         } else if (result.warning === 'low_stock') {
-          toast.warning(`⚠ ${result.chemicalName} is now below reorder level (${result.remaining} ${result.unit || "units"} remaining)`)
+          toast.warning(`⚠ ${result.chemicalName} is now below reorder level`)
         }
 
-        // Close dialog and trigger refresh
         onOpenChange(false)
         onSuccess()
       } else {
@@ -419,7 +421,7 @@ export function RecordUsageDialog({
                       aria-expanded={chemicalPopoverOpen}
                       className="w-full justify-between h-11 rounded-xl bg-muted/20 border-border/50 hover:bg-muted/30 transition-all px-4"
                     >
-                      {formState.chemicalName || "Search for a chemical..."}
+                      {formState.chemical?.name || "Search for a chemical..."}
                       <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -451,8 +453,13 @@ export function RecordUsageDialog({
                                 onSelect={() => {
                                   setFormState((prev) => ({
                                     ...prev,
-                                    chemicalId: chemical.id,
-                                    chemicalName: chemical.name,
+                                    chemical: {
+                                      id: chemical.id,
+                                      name: chemical.name,
+                                      unit: chemical.unit,
+                                      availableVolume: chemical.volume,
+                                      reorderLevel: chemical.reorderLevel
+                                    },
                                   }))
                                   setChemicalPopoverOpen(false)
                                   setChemicalSearchQuery("")
@@ -461,7 +468,7 @@ export function RecordUsageDialog({
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    formState.chemicalId === chemical.id ? "opacity-100" : "opacity-0"
+                                    formState.chemical?.id === chemical.id ? "opacity-100" : "opacity-0"
                                   )}
                                 />
                                 <div className="flex flex-col">
@@ -480,14 +487,14 @@ export function RecordUsageDialog({
                 </Popover>
 
                 {/* Stock Availability Display */}
-                {isLoadingStock && formState.chemicalId && (
+                {isLoadingStock && formState.chemical?.id && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span>Loading stock information...</span>
                   </div>
                 )}
 
-                {!isLoadingStock && stockDetails && formState.chemicalId && (
+                {!isLoadingStock && stockDetails && formState.chemical?.id && (
                   <div className="space-y-2">
                     {/* Available Stock Summary */}
                     <div className="text-sm text-muted-foreground">
@@ -561,10 +568,13 @@ export function RecordUsageDialog({
                     onChange={(e) =>
                       setFormState((prev) => ({ ...prev, quantity: e.target.value }))
                     }
-                    disabled={!formState.chemicalId}
-                    className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                    disabled={!formState.chemical?.id}
+                    className={cn(
+                      "h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300",
+                      quantityError && "border-destructive/50 ring-destructive/20 ring-4 focus:ring-destructive/30"
+                    )}
                   />
-                  {formState.chemicalId && stockDetails && (
+                  {formState.chemical?.id && stockDetails && (
                     <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                       {stockDetails.unit || "units"}
                     </span>
@@ -595,7 +605,7 @@ export function RecordUsageDialog({
                       aria-expanded={subjectPopoverOpen}
                       className="w-full justify-between h-11 rounded-xl bg-muted/20 border-border/50 hover:bg-muted/30 transition-all px-4"
                     >
-                      {formState.subjectName || "Search for a subject..."}
+                      {formState.subject?.name ? `${formState.subject.code} - ${formState.subject.name}` : "Search for a subject..."}
                       <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -627,8 +637,11 @@ export function RecordUsageDialog({
                                 onSelect={() => {
                                   setFormState((prev) => ({
                                     ...prev,
-                                    subjectId: subject.id,
-                                    subjectName: `${subject.code} - ${subject.name}`,
+                                    subject: {
+                                      id: subject.id,
+                                      name: subject.name,
+                                      code: subject.code,
+                                    },
                                   }))
                                   setSubjectPopoverOpen(false)
                                   setSubjectSearchQuery("")
@@ -637,7 +650,7 @@ export function RecordUsageDialog({
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    formState.subjectId === subject.id ? "opacity-100" : "opacity-0"
+                                    formState.subject?.id === subject.id ? "opacity-100" : "opacity-0"
                                   )}
                                 />
                                 <div className="flex flex-col">
@@ -667,7 +680,7 @@ export function RecordUsageDialog({
                       aria-expanded={roomPopoverOpen}
                       className="w-full justify-between h-11 rounded-xl bg-muted/20 border-border/50 hover:bg-muted/30 transition-all px-4"
                     >
-                      {formState.roomName || "Search for a room..."}
+                      {formState.room?.name || "Search for a room..."}
                       <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -699,8 +712,10 @@ export function RecordUsageDialog({
                                 onSelect={() => {
                                   setFormState((prev) => ({
                                     ...prev,
-                                    roomId: room.id,
-                                    roomName: room.name,
+                                    room: {
+                                      id: room.id,
+                                      name: room.name,
+                                    },
                                   }))
                                   setRoomPopoverOpen(false)
                                   setRoomSearchQuery("")
@@ -709,7 +724,7 @@ export function RecordUsageDialog({
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    formState.roomId === room.id ? "opacity-100" : "opacity-0"
+                                    formState.room?.id === room.id ? "opacity-100" : "opacity-0"
                                   )}
                                 />
                                 <div className="flex flex-col">
@@ -748,23 +763,13 @@ export function RecordUsageDialog({
 
                 {/* Toggle between Registered User and Internal Use */}
                 <Tabs
-                  value={formState.isInternal ? "internal" : "registered"}
+                  value={formState.usedByType}
                   onValueChange={(value) => {
-                    if (value === "internal") {
-                      setFormState((prev) => ({
-                        ...prev,
-                        usedById: null,
-                        usedByName: "",
-                        isInternal: true,
-                      }))
-                      setUserSearchQuery("")
-                      setUserSearchResults([])
-                    } else {
-                      setFormState((prev) => ({
-                        ...prev,
-                        isInternal: false,
-                      }))
-                    }
+                    setFormState((prev) => ({
+                      ...prev,
+                      usedByType: value as 'registered' | 'internal',
+                      usedBy: value === 'internal' ? null : prev.usedBy
+                    }))
                   }}
                 >
                   <TabsList className="grid w-full grid-cols-2 p-1 bg-muted/30 rounded-xl h-12">
@@ -774,7 +779,7 @@ export function RecordUsageDialog({
                 </Tabs>
 
                 {/* User Search Input (only shown when Registered User is selected) */}
-                {!formState.isInternal && (
+                {formState.usedByType === 'registered' && (
                   <Popover open={userPopoverOpen} onOpenChange={setUserPopoverOpen}>
                     <PopoverTrigger asChild>
                       <Button
@@ -783,7 +788,7 @@ export function RecordUsageDialog({
                         aria-expanded={userPopoverOpen}
                         className="w-full justify-between h-11 rounded-xl bg-muted/20 border-border/50 hover:bg-muted/30 transition-all px-4"
                       >
-                        {formState.usedByName || "Search for a user..."}
+                        {formState.usedBy?.firstName ? `${formState.usedBy.firstName} ${formState.usedBy.lastName}` : "Search for a user..."}
                         <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -817,8 +822,11 @@ export function RecordUsageDialog({
                                     onSelect={() => {
                                       setFormState((prev) => ({
                                         ...prev,
-                                        usedById: user.id,
-                                        usedByName: displayName,
+                                        usedBy: {
+                                          id: user.id,
+                                          firstName: user.firstName,
+                                          lastName: user.lastName,
+                                        },
                                       }))
                                       setUserPopoverOpen(false)
                                       setUserSearchQuery("")
@@ -827,7 +835,7 @@ export function RecordUsageDialog({
                                     <Check
                                       className={cn(
                                         "mr-2 h-4 w-4",
-                                        formState.usedById === user.id ? "opacity-100" : "opacity-0"
+                                        formState.usedBy?.id === user.id ? "opacity-100" : "opacity-0"
                                       )}
                                     />
                                     <div className="flex flex-col">
@@ -854,15 +862,25 @@ export function RecordUsageDialog({
           {currentStep === 2 && (
             <div className="space-y-4 py-4">
               {/* Loading State */}
-              {isLoadingPreview && (
-                <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Loading batch preview...</span>
+              {formState.batchPreviewLoading && (
+                <div className="space-y-4 py-8">
+                  <div className="rounded-lg border p-4 space-y-3 animate-pulse">
+                    <div className="h-4 w-1/4 bg-muted rounded"></div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="h-8 bg-muted rounded col-span-1"></div>
+                      <div className="h-8 bg-muted rounded col-span-1"></div>
+                      <div className="h-8 bg-muted rounded col-span-2"></div>
+                    </div>
+                  </div>
+                  <div className="space-y-3 animate-pulse">
+                    <div className="h-4 w-1/3 bg-muted rounded"></div>
+                    <div className="h-20 bg-muted rounded"></div>
+                  </div>
                 </div>
               )}
 
               {/* Error State - Stock Changed */}
-              {previewError && (
+              {formState.batchPreviewError && (
                 <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
@@ -871,7 +889,7 @@ export function RecordUsageDialog({
                         Stock Changed
                       </h3>
                       <p className="text-sm text-destructive">
-                        {previewError}
+                        {formState.batchPreviewError}
                       </p>
                       <p className="text-sm text-destructive mt-2">
                         Please go back and adjust the quantity.
@@ -882,28 +900,28 @@ export function RecordUsageDialog({
               )}
 
               {/* Review Details and Batch Preview */}
-              {!isLoadingPreview && !previewError && (
+              {!formState.batchPreviewLoading && !formState.batchPreviewError && (
                 <>
                   <div className="rounded-lg border p-4 space-y-3">
                     <h3 className="font-semibold text-sm">Usage Details</h3>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
                         <span className="text-muted-foreground">Chemical:</span>
-                        <p className="font-medium">{formState.chemicalName || "N/A"}</p>
+                        <p className="font-medium">{formState.chemical?.name || "N/A"}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Quantity:</span>
                         <p className="font-medium">
-                          {formState.quantity || "N/A"} {stockDetails?.unit || "units"}
+                          {formState.quantity || "N/A"} {formState.chemical?.unit || "units"}
                         </p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Subject:</span>
-                        <p className="font-medium">{formState.subjectName || "N/A"}</p>
+                        <p className="font-medium">{formState.subject?.name || "N/A"}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Room:</span>
-                        <p className="font-medium">{formState.roomName || "N/A"}</p>
+                        <p className="font-medium">{formState.room?.name || "N/A"}</p>
                       </div>
                       <div className="col-span-2">
                         <span className="text-muted-foreground">Purpose:</span>
@@ -912,20 +930,21 @@ export function RecordUsageDialog({
                       <div>
                         <span className="text-muted-foreground">Used By:</span>
                         <p className="font-medium">
-                          {formState.isInternal ? "Internal" : formState.usedByName || "N/A"}
+                          {formState.usedByType === 'internal' ? "Internal" : `${formState.usedBy?.firstName} ${formState.usedBy?.lastName}` || "N/A"}
                         </p>
                       </div>
                     </div>
                   </div>
 
                   {/* BatchPreview Component */}
-                  {formState.chemicalId && formState.quantity && stockDetails && (
+                  {formState.chemical?.id && formState.quantity && formState.batchPreview && (
                     <BatchPreview
-                      chemicalId={formState.chemicalId}
+                      chemicalId={formState.chemical.id}
                       quantityRequested={parseFloat(formState.quantity)}
-                      unit={stockDetails.unit}
-                      reorderLevel={stockDetails.reorderLevel}
-                      currentVolume={stockDetails.availableStock}
+                      unit={formState.chemical.unit}
+                      reorderLevel={formState.batchPreview.reorderLevel}
+                      currentVolume={formState.batchPreview.available}
+                      batches={formState.batchPreview.batches}
                     />
                   )}
                 </>
@@ -948,10 +967,10 @@ export function RecordUsageDialog({
               </Button>
               <Button
                 onClick={handleNext}
-                disabled={!formState.chemicalId || !formState.quantity || !formState.subjectId || !formState.roomId || !formState.purpose || isLoadingPreview}
+                disabled={!formState.chemical?.id || !formState.quantity || !formState.subject?.id || !formState.room?.id || !formState.purpose || formState.batchPreviewLoading}
                 className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[120px]"
               >
-                {isLoadingPreview ? (
+                {formState.batchPreviewLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
@@ -974,7 +993,7 @@ export function RecordUsageDialog({
               </Button>
               <Button
                 onClick={handleConfirm}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !!formState.batchPreviewError || !formState.batchPreview || !formState.batchPreview.sufficient}
                 className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-green-600 to-green-500 border-none group min-w-[170px]"
               >
                 {isSubmitting ? (

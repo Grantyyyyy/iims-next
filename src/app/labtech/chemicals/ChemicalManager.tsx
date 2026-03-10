@@ -79,11 +79,12 @@ const StockProgressBar = ({ volume, reorderLevel, unit }: StockProgressBarProps)
 
 interface ChemicalManagerProps {
     chemicals: any[]
+    isReadOnly?: boolean
 }
 
 const ITEMS_PER_PAGE = 10
 
-export function ChemicalManager({ chemicals }: ChemicalManagerProps) {
+export function ChemicalManager({ chemicals, isReadOnly = false }: ChemicalManagerProps) {
     const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [isSheetOpen, setIsSheetOpen] = useState(false)
@@ -286,24 +287,27 @@ export function ChemicalManager({ chemicals }: ChemicalManagerProps) {
                         />
                     </div>
 
-                    <div className="h-8 w-[2px] bg-primary/10" />
-
-                    <div className="flex items-center space-x-3">
-                        <Switch
-                            id="distribution-mode"
-                            checked={isDistributionMode}
-                            onCheckedChange={setIsDistributionMode}
-                            className="data-[state=checked]:bg-primary"
-                        />
-                        <UiLabel htmlFor="distribution-mode" className="font-bold text-sm cursor-pointer select-none flex items-center gap-2">
-                            <Droplet className={cn("h-4 w-4", isDistributionMode ? "text-primary" : "text-muted-foreground")} />
-                            Start Distribution
-                        </UiLabel>
-                    </div>
+                    {!isReadOnly && (
+                        <>
+                            <div className="h-8 w-[2px] bg-primary/10" />
+                            <div className="flex items-center space-x-3">
+                                <Switch
+                                    id="distribution-mode"
+                                    checked={isDistributionMode}
+                                    onCheckedChange={setIsDistributionMode}
+                                    className="data-[state=checked]:bg-primary"
+                                />
+                                <UiLabel htmlFor="distribution-mode" className="font-bold text-sm cursor-pointer select-none flex items-center gap-2">
+                                    <Droplet className={cn("h-4 w-4", isDistributionMode ? "text-primary" : "text-muted-foreground")} />
+                                    Start Distribution
+                                </UiLabel>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {cart.length > 0 && (
+                    {!isReadOnly && cart.length > 0 && (
                         <Button
                             variant="outline"
                             className="h-11 px-5 rounded-xl font-bold border-2 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary transition-all relative group shadow-sm active:scale-95"
@@ -317,120 +321,122 @@ export function ChemicalManager({ chemicals }: ChemicalManagerProps) {
                         </Button>
                     )}
 
-                    <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                        <SheetTrigger asChild>
-                            <Button className="h-11 px-6 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Chemical
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
-                            <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
-                                {/* Subtle Glow Effect */}
-                                <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
-                                <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
-
-                                <div className="relative z-10 text-left">
-                                    <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                        Create New Chemical
-                                    </SheetTitle>
-                                    <SheetDescription className="text-sm font-medium mt-1">
-                                        Register a new chemical for laboratory use.
-                                    </SheetDescription>
-                                </div>
-                            </SheetHeader>
-
-                            <ScrollArea className="flex-1 px-6 py-8">
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <Tag className="h-3 w-3 text-primary/70" />
-                                            Chemical Name
-                                        </label>
-                                        <Input
-                                            placeholder="e.g. Hydrochloric Acid"
-                                            value={newChem.name}
-                                            onChange={(e) => setNewChem({ ...newChem, name: e.target.value })}
-                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <Ruler className="h-3 w-3 text-primary/70" />
-                                            Unit of Measurement
-                                        </label>
-                                        <Select
-                                            value={newChem.unit}
-                                            onValueChange={(value) => setNewChem({ ...newChem, unit: value })}
-                                        >
-                                            <SelectTrigger className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300">
-                                                <SelectValue placeholder="e.g. L, ML, G, KG" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="ML">ML</SelectItem>
-                                                <SelectItem value="L">L</SelectItem>
-                                                <SelectItem value="GAL">GAL</SelectItem>
-                                                <SelectItem value="KG">KG</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <AlertCircle className="h-3 w-3 text-primary/70" />
-                                            Reorder Level
-                                        </label>
-                                        <Input
-                                            type="number"
-                                            placeholder="e.g. 10.00"
-                                            value={newChem.reorderLevel}
-                                            onChange={(e) => setNewChem({ ...newChem, reorderLevel: e.target.value })}
-                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <FileText className="h-3 w-3 text-primary/70" />
-                                            Description <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
-                                        </label>
-                                        <Input
-                                            placeholder="Brief description..."
-                                            value={newChem.description}
-                                            onChange={(e) => setNewChem({ ...newChem, description: e.target.value })}
-                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                        />
-                                    </div>
-                                </div>
-                            </ScrollArea>
-
-                            <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setIsSheetOpen(false)}
-                                    className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
-                                >
-                                    <X className="h-4 w-4" />
-                                    Cancel
+                    {!isReadOnly && (
+                        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                            <SheetTrigger asChild>
+                                <Button className="h-11 px-6 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Chemical
                                 </Button>
-                                <Button
-                                    onClick={handleCreate}
-                                    disabled={isPending || !newChem.name || !newChem.reorderLevel}
-                                    className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
-                                >
-                                    {isPending ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Creating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Check className="h-4 w-4" />
-                                            Create Chemical
-                                        </>
-                                    )}
-                                </Button>
-                            </SheetFooter>
-                        </SheetContent>
-                    </Sheet>
+                            </SheetTrigger>
+                            <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
+                                <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
+                                    {/* Subtle Glow Effect */}
+                                    <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                                    <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
+
+                                    <div className="relative z-10 text-left">
+                                        <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                            Create New Chemical
+                                        </SheetTitle>
+                                        <SheetDescription className="text-sm font-medium mt-1">
+                                            Register a new chemical for laboratory use.
+                                        </SheetDescription>
+                                    </div>
+                                </SheetHeader>
+
+                                <ScrollArea className="flex-1 px-6 py-8">
+                                    <div className="space-y-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Tag className="h-3 w-3 text-primary/70" />
+                                                Chemical Name
+                                            </label>
+                                            <Input
+                                                placeholder="e.g. Hydrochloric Acid"
+                                                value={newChem.name}
+                                                onChange={(e) => setNewChem({ ...newChem, name: e.target.value })}
+                                                className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Ruler className="h-3 w-3 text-primary/70" />
+                                                Unit of Measurement
+                                            </label>
+                                            <Select
+                                                value={newChem.unit}
+                                                onValueChange={(value) => setNewChem({ ...newChem, unit: value })}
+                                            >
+                                                <SelectTrigger className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300">
+                                                    <SelectValue placeholder="e.g. L, ML, G, KG" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="ML">ML</SelectItem>
+                                                    <SelectItem value="L">L</SelectItem>
+                                                    <SelectItem value="GAL">GAL</SelectItem>
+                                                    <SelectItem value="KG">KG</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px) font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <AlertCircle className="h-3 w-3 text-primary/70" />
+                                                Reorder Level
+                                            </label>
+                                            <Input
+                                                type="number"
+                                                placeholder="e.g. 10.00"
+                                                value={newChem.reorderLevel}
+                                                onChange={(e) => setNewChem({ ...newChem, reorderLevel: e.target.value })}
+                                                className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <FileText className="h-3 w-3 text-primary/70" />
+                                                Description <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
+                                            </label>
+                                            <Input
+                                                placeholder="Brief description..."
+                                                value={newChem.description}
+                                                onChange={(e) => setNewChem({ ...newChem, description: e.target.value })}
+                                                className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                            />
+                                        </div>
+                                    </div>
+                                </ScrollArea>
+
+                                <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setIsSheetOpen(false)}
+                                        className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
+                                    >
+                                        <X className="h-4 w-4" />
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleCreate}
+                                        disabled={isPending || !newChem.name || !newChem.reorderLevel}
+                                        className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
+                                    >
+                                        {isPending ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Creating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Check className="h-4 w-4" />
+                                                Create Chemical
+                                            </>
+                                        )}
+                                    </Button>
+                                </SheetFooter>
+                            </SheetContent>
+                        </Sheet>
+                    )}
                 </div>
             </div>
 
