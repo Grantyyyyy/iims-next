@@ -58,7 +58,7 @@ const distributeMultipleChemicalsSchema = z.object({
  * @returns Array of STAFF users with department information
  */
 export async function searchStaffUsers(query: string) {
-  await requirePermission('manage:chemicals')
+  await requirePermission('view:chemicals')
 
   if (!query || query.length < 2) {
     return []
@@ -106,7 +106,7 @@ export async function searchStaffUsers(query: string) {
  * @returns Array of rooms with department information
  */
 export async function searchRooms(query: string, departmentId?: number | null) {
-  await requirePermission('manage:chemicals')
+  await requirePermission('view:chemicals')
 
   if (!query || query.length < 2) {
     return []
@@ -162,7 +162,11 @@ export async function distributeChemical(data: {
 }) {
   try {
     // Validate user has 'manage:chemicals' permission
-    const { user: currentUser } = await requirePermission('manage:chemicals')
+    const { roles, user: currentUser } = await requirePermission('manage:chemicals')
+
+    if (roles.includes('DEAN')) {
+      return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     // Validate input data
     const validated = distributeChemicalSchema.safeParse(data)
@@ -355,7 +359,11 @@ export async function distributeMultipleChemicals(data: {
 }) {
   try {
     // Validate permission
-    const { user: currentUser } = await requirePermission('manage:chemicals')
+    const { roles, user: currentUser } = await requirePermission('manage:chemicals')
+
+    if (roles.includes('DEAN')) {
+      return { success: false, error: 'Dean role does not have permission to perform this action.' }
+    }
 
     // Validate input data
     const validated = distributeMultipleChemicalsSchema.safeParse(data)
@@ -687,7 +695,7 @@ export async function getRecentDistribution(data: {
  * @returns Array of distribution records with recipient, amount, date, and metadata
  */
 export async function getChemicalDistributionHistory(chemicalId: number, limit: number = 10) {
-  await requirePermission('manage:chemicals')
+  await requirePermission('view:chemicals')
 
   try {
     const distributions = await (prisma.chemicalUsageRecord as any).findMany({
@@ -751,7 +759,7 @@ export async function getChemicalDistributionHistory(chemicalId: number, limit: 
  * @returns Array of subjects with id, code, and name
  */
 export async function searchSubjects(query: string) {
-  await requirePermission('manage:chemicals')
+  await requirePermission('view:chemicals')
 
   if (!query || query.length < 2) {
     return []

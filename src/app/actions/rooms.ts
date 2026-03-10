@@ -20,7 +20,7 @@ const roomSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export async function getRooms() {
-    await requirePermission('manage:rooms')
+    await requirePermission('view:rooms')
 
     return await prisma.room.findMany({
         include: {
@@ -33,7 +33,11 @@ export async function getRooms() {
 }
 
 export async function createRoom(formData: FormData) {
-    await requirePermission('manage:rooms')
+    const { roles } = await requirePermission('manage:rooms')
+
+    if (roles.includes('DEAN')) {
+        return { error: { root: ['Dean role does not have permission to perform this action.'] } }
+    }
 
     const rawData = Object.fromEntries(formData.entries())
     const validated = roomSchema.safeParse(rawData)
@@ -56,7 +60,11 @@ export async function createRoom(formData: FormData) {
 }
 
 export async function updateRoom(id: number, formData: FormData) {
-    await requirePermission('manage:rooms')
+    const { roles } = await requirePermission('manage:rooms')
+
+    if (roles.includes('DEAN')) {
+        return { error: { root: ['Dean role does not have permission to perform this action.'] } }
+    }
 
     const rawData = Object.fromEntries(formData.entries())
     const validated = roomSchema.safeParse(rawData)
@@ -80,7 +88,11 @@ export async function updateRoom(id: number, formData: FormData) {
 }
 
 export async function deleteRoom(id: number) {
-    await requirePermission('manage:rooms')
+    const { roles } = await requirePermission('manage:rooms')
+
+    if (roles.includes('DEAN')) {
+        return { error: 'Dean role does not have permission to perform this action.' }
+    }
 
     try {
         // Check if room has any dependencies (as defined in schema)

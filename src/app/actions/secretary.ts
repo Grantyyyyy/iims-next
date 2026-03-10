@@ -43,7 +43,7 @@ const addConsumableStockSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export async function getUsers() {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
     return await prisma.user.findMany({
         orderBy: { firstName: 'asc' },
         where: { isActive: true },
@@ -52,7 +52,7 @@ export async function getUsers() {
 }
 
 export async function getRooms() {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
     return await prisma.room.findMany({
         orderBy: { name: 'asc' },
         include: { department: true }
@@ -60,7 +60,7 @@ export async function getRooms() {
 }
 
 export async function getAvailableItems() {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
 
     // We only fetch ItemInstances that have available quantity (for Consumables)
     // or are non-consumable and not currently borrowed.
@@ -93,7 +93,7 @@ export async function getAvailableItems() {
 }
 
 export async function getItemDetails(itemId: number) {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
     try {
         return await prisma.item.findUnique({
             where: { id: itemId },
@@ -134,7 +134,7 @@ export async function getItemDetails(itemId: number) {
 }
 
 export async function searchStaffUsers(query: string) {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
     if (!query || query.length < 2) return []
 
     try {
@@ -157,7 +157,7 @@ export async function searchStaffUsers(query: string) {
 }
 
 export async function searchRooms(query: string, departmentId: number) {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
     if (!query || query.length < 2) return []
 
     try {
@@ -179,7 +179,7 @@ export async function searchRooms(query: string, departmentId: number) {
 }
 
 export async function getRecipientActiveItems(userId: number) {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
 
     try {
         const activeBorrows = await prisma.borrowRecord.findMany({
@@ -224,7 +224,11 @@ export async function distributeItems(data: {
     purpose: string
     dueDate?: string | null
 }) {
-    const { user } = await requirePermission('manage:items')
+    const { roles, user } = await requirePermission('manage:items')
+
+    if (roles.includes('DEAN')) {
+        return { error: 'Dean role does not have permission to perform this action.' }
+    }
 
     const validated = distributeItemsSchema.safeParse(data)
     if (!validated.success) {
@@ -381,7 +385,11 @@ export async function distributeItems(data: {
 }
 
 export async function addConsumableStock(data: z.infer<typeof addConsumableStockSchema>) {
-    const { user } = await requirePermission('manage:items')
+    const { roles, user } = await requirePermission('manage:items')
+
+    if (roles.includes('DEAN')) {
+        return { error: 'Dean role does not have permission to perform this action.' }
+    }
 
     const validated = addConsumableStockSchema.safeParse(data)
     if (!validated.success) {
