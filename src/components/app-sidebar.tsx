@@ -11,7 +11,6 @@ import {
   Beaker,
   type LucideIcon,
 } from "lucide-react"
-
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import Link from "next/link"
@@ -36,10 +35,12 @@ export interface NavItem {
     title: string
     url: string
     icon?: LucideIcon
+    permission?: Permission
     items?: {
       title: string
       url: string
       icon?: LucideIcon
+      permission?: Permission
     }[]
   }[]
 }
@@ -67,7 +68,7 @@ const navGroups: NavGroup[] = [
         title: "Administration",
         url: "/dashboard/users",
         icon: Users,
-        permission: "manage:users",
+        permission: "view:users",
         items: [
           {
             title: "Users",
@@ -80,7 +81,7 @@ const navGroups: NavGroup[] = [
           {
             title: "Rooms",
             url: "/dashboard/rooms",
-            permission: "manage:rooms",
+            permission: "view:rooms",
             items: [
               { title: "Management", url: "/dashboard/rooms" },
             ],
@@ -108,7 +109,7 @@ const navGroups: NavGroup[] = [
   },
   {
     title: "Secretary",
-    permission: "manage:items",
+    permission: "view:items",
     items: [
       {
         title: "Inventory",
@@ -125,22 +126,23 @@ const navGroups: NavGroup[] = [
         url: "/secretary/distribute",
         icon: ClipboardList,
         items: [
-          { title: "Distribute", url: "/secretary/distribute" },
+          { title: "Distribute", url: "/secretary/distribute", permission: "manage:items" },
           { title: "Records", url: "/secretary/records" },
-          { title: "Bin", url: "/secretary/bin" },
+          { title: "Bin", url: "/secretary/bin", permission: "manage:items" },
         ],
       },
     ],
   },
   {
     title: "Lab Technician",
-    permission: "manage:equipment",
+    permission: "view:equipment",
     items: [
       {
         title: "Inventory",
         url: "/labtech/equipment",
         icon: Beaker,
         items: [
+          { title: "All Instances", url: "/labtech/instances" },
           { title: "Equipment", url: "/labtech/equipment" },
           { title: "Apparatus", url: "/labtech/apparatus" },
           { title: "Chemicals", url: "/labtech/chemicals" },
@@ -153,9 +155,9 @@ const navGroups: NavGroup[] = [
         icon: ClipboardList,
         items: [
           { title: "Usage Tracking", url: "/labtech/usage" },
-          { title: "Borrow Items", url: "/labtech/borrow" },
+          { title: "Borrow Items", url: "/labtech/borrow", permission: "manage:equipment" },
           { title: "Records", url: "/labtech/records" },
-          { title: "Bin", url: "/labtech/bin" },
+          { title: "Bin", url: "/labtech/bin", permission: "manage:equipment" },
         ],
       },
     ],
@@ -164,24 +166,24 @@ const navGroups: NavGroup[] = [
 
 const staffNavItems: NavItem[] = [
   {
-    title: "My Activity",
-    url: "/staff/borrows",
+    title: "My Items",
+    url: "/dashboard/staff",
     icon: Package,
     items: [
       {
-        title: "Borrows",
-        url: "/staff/borrows",
+        title: "My Borrows",
+        url: "/dashboard/staff/borrows",
         permission: "view:own-borrows",
       },
       {
-        title: "Chemicals",
-        url: "/staff/chemicals",
-        permission: "view:own-chemicals",
+        title: "My Lab Borrows",
+        url: "/dashboard/staff/lab-borrows",
+        permission: "view:own-borrows",
       },
       {
-        title: "Requests",
-        url: "/staff/requests",
-        permission: "submit:requests",
+        title: "My Chemicals",
+        url: "/dashboard/staff/chemicals",
+        permission: "view:own-chemicals",
       },
     ],
   },
@@ -199,15 +201,30 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 function hasPermissionClient(roles: string[], permission: Permission): boolean {
   const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     ADMIN: [
-      "manage:users", "manage:departments", "manage:items", "manage:equipment",
-      "manage:chemicals", "borrow:items", "borrow:equipment", "use:chemicals",
-      "approve:requests", "submit:requests", "view:reports", "view:own-borrows",
-      "view:own-chemicals", "manage:rooms",
+      'manage:users', 'manage:departments', 'manage:items', 'manage:equipment',
+      'manage:chemicals', 'borrow:items', 'borrow:equipment', 'use:chemicals',
+      'approve:requests', 'submit:requests', 'view:reports', 'view:own-borrows',
+      'view:own-chemicals', 'manage:rooms', 'view:users', 'view:items',
+      'view:equipment', 'view:chemicals', 'view:records', 'export:data',
+      'print:reports', 'view:rooms', 'view:departments',
     ],
-    SECRETARY: ["manage:items", "borrow:items", "view:reports"],
-    LABTECH: ["manage:equipment", "manage:chemicals", "borrow:equipment", "use:chemicals", "view:reports"],
-    DEAN: ["view:reports"],
-    STAFF: ["submit:requests", "view:own-borrows", "view:own-chemicals"],
+    SECRETARY: [
+      'manage:items', 'borrow:items', 'view:reports', 'view:items',
+      'view:records', 'export:data', 'print:reports',
+    ],
+    LABTECH: [
+      'manage:equipment', 'manage:chemicals', 'borrow:equipment',
+      'use:chemicals', 'view:reports', 'view:equipment', 'view:chemicals',
+      'view:records', 'export:data',
+    ],
+    DEAN: [
+      'view:reports', 'view:users', 'view:items', 'view:equipment',
+      'view:chemicals', 'view:records', 'export:data', 'view:rooms',
+      'view:departments',
+    ],
+    STAFF: [
+      'submit:requests', 'view:own-borrows', 'view:own-chemicals',
+    ],
     ICTC: [],
     SUPPLY: [],
   }
@@ -249,6 +266,16 @@ export function AppSidebar({ user, userRoles = [], ...props }: AppSidebarProps) 
       if (item.permission === "approve:requests" && !isApprover) {
         return null
       }
+
+      // Also filter nested sub-items by their individual permissions
+      if (item.items) {
+        const filteredSubItems = item.items.filter((sub) => {
+          if (!sub.permission) return true
+          return hasPermissionClient(userRoles, sub.permission)
+        })
+        return { ...item, items: filteredSubItems }
+      }
+
       return item
     }).filter(Boolean) as NavItem[]
 
@@ -302,7 +329,11 @@ export function AppSidebar({ user, userRoles = [], ...props }: AppSidebarProps) 
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={displayUser} role={primaryRole} />
+        <NavUser
+          user={displayUser}
+          role={primaryRole}
+          profileUrl={primaryRole === "STAFF" ? "/dashboard/staff/profile" : "/dashboard/profile"}
+        />
       </SidebarFooter>
     </Sidebar>
   )

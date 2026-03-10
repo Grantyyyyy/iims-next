@@ -34,6 +34,7 @@ import { logoutAction } from "@/actions/auth"
 export function NavUser({
   user,
   role,
+  profileUrl,
 }: {
   user: {
     name: string
@@ -41,6 +42,7 @@ export function NavUser({
     avatar: string
   }
   role?: string
+  profileUrl?: string
 }) {
   const { isMobile } = useSidebar()
 
@@ -105,10 +107,12 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
+              <Link href={profileUrl || "#"}>
+                <DropdownMenuItem className="cursor-pointer">
+                  <BadgeCheck />
+                  Account
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuItem>
                 <Bell />
                 Notifications

@@ -33,6 +33,15 @@ export type Permission =
     | 'view:own-borrows'
     | 'view:own-chemicals'
     | 'manage:rooms'
+    | 'view:users'
+    | 'view:items'
+    | 'view:equipment'
+    | 'view:chemicals'
+    | 'view:records'
+    | 'view:rooms'
+    | 'view:departments'
+    | 'export:data'
+    | 'print:reports'
 
 // ---------------------------------------------------------------------------
 // Role → Permissions Map
@@ -53,11 +62,24 @@ const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
         'view:own-borrows',
         'view:own-chemicals',
         'manage:rooms',
+        'view:users',
+        'view:items',
+        'view:equipment',
+        'view:chemicals',
+        'view:records',
+        'export:data',
+        'print:reports',
+        'view:rooms',
+        'view:departments',
     ],
     SECRETARY: [
         'manage:items',
         'borrow:items',
         'view:reports',
+        'view:items',
+        'view:records',
+        'export:data',
+        'print:reports',
     ],
     LABTECH: [
         'manage:equipment',
@@ -65,9 +87,21 @@ const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
         'borrow:equipment',
         'use:chemicals',
         'view:reports',
+        'view:equipment',
+        'view:chemicals',
+        'view:records',
+        'export:data',
     ],
     DEAN: [
         'view:reports',
+        'view:users',
+        'view:items',
+        'view:equipment',
+        'view:chemicals',
+        'view:records',
+        'export:data',
+        'view:rooms',
+        'view:departments',
     ],
     STAFF: [
         'submit:requests',
