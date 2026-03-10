@@ -22,9 +22,10 @@ export default async function InstancesPage({
 }: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-    await requirePermission('manage:items')
+    const { roles } = await requirePermission('view:items')
+    const isDean = roles.includes('DEAN')
     const resolvedParams = await searchParams
-    
+
     const filters = {
         search: resolvedParams.search as string,
         condition: resolvedParams.condition as 'GOOD' | 'FAIR' | 'POOR' | 'DAMAGED',
@@ -63,7 +64,7 @@ export default async function InstancesPage({
                         </BreadcrumbItem>
                     </BreadcrumbList>
                 </Breadcrumb>
-                
+
                 <div className="flex items-center justify-between mt-2">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">All Instances</h1>
@@ -124,10 +125,11 @@ export default async function InstancesPage({
             </div>
 
             <Suspense fallback={<div>Loading instances...</div>}>
-                <InstanceTable 
-                    initialData={data} 
-                    categories={categories} 
+                <InstanceTable
+                    initialData={data}
+                    categories={categories}
                     filters={filters}
+                    isReadOnly={isDean}
                 />
             </Suspense>
         </div>

@@ -16,12 +16,13 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface AddInventoryButtonProps {
     itemId: number
-    instanceId: number   // first instance id (consumables always have 1 master instance)
+    instanceId: number
     itemType: string     // 'Consumables' | 'Non-Consumables'
     itemName: string
+    isReadOnly?: boolean
 }
 
-export function AddInventoryButton({ itemId, instanceId, itemType, itemName }: AddInventoryButtonProps) {
+export function AddInventoryButton({ itemId, instanceId, itemType, itemName, isReadOnly = false }: AddInventoryButtonProps) {
     const router = useRouter()
     const isConsumable = itemType === 'Consumables'
     const [open, setOpen] = useState(false)
@@ -91,14 +92,16 @@ export function AddInventoryButton({ itemId, instanceId, itemType, itemName }: A
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-                <Button className="h-10 px-5 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
-                    {isConsumable
-                        ? <><Package className="mr-2 h-4 w-4" />Add Stock</>
-                        : <><ListPlus className="mr-2 h-4 w-4" />Add Instance</>
-                    }
-                </Button>
-            </SheetTrigger>
+            {!isReadOnly && (
+                <SheetTrigger asChild>
+                    <Button className="h-10 px-5 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
+                        {isConsumable
+                            ? <><Package className="mr-2 h-4 w-4" />Add Stock</>
+                            : <><ListPlus className="mr-2 h-4 w-4" />Add Instance</>
+                        }
+                    </Button>
+                </SheetTrigger>
+            )}
             <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
                 <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
                     {/* Subtle Glow Effect */}

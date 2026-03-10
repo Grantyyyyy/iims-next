@@ -61,9 +61,10 @@ interface InstanceTableProps {
     initialData: any
     categories: any[]
     filters: any
+    isReadOnly?: boolean
 }
 
-export function InstanceTable({ initialData, categories, filters }: InstanceTableProps) {
+export function InstanceTable({ initialData, categories, filters, isReadOnly = false }: InstanceTableProps) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -364,7 +365,7 @@ export function InstanceTable({ initialData, categories, filters }: InstanceTabl
                                                         <ArrowRight className="h-4 w-4" />
                                                     </Link>
                                                 </Button>
-                                                {isBorrowed && (
+                                                {!isReadOnly && isBorrowed && (
                                                     <Sheet open={isReturnDialogOpen && selectedInstance?.id === inst.id} onOpenChange={(open) => {
                                                         if (!open) setSelectedInstance(null)
                                                         setIsReturnDialogOpen(open)

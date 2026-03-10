@@ -1,8 +1,10 @@
 import { getDeletedItems } from "@/actions/secretary"
 import SecretaryBinManager from "./SecretaryBinManager"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { requirePermission } from "@/lib/permissions"
 
 export default async function SecretaryBinPage() {
+    await requirePermission('manage:items')
     const deletedItems = await getDeletedItems()
 
     return (

@@ -36,11 +36,12 @@ interface ItemManagerProps {
     items: any[]
     categories: any[]
     deletedItems?: any[]
+    isReadOnly?: boolean
 }
 
 const ITEMS_PER_PAGE = 15
 
-export function ItemManager({ items, categories, deletedItems = [] }: ItemManagerProps) {
+export function ItemManager({ items, categories, deletedItems = [], isReadOnly = false }: ItemManagerProps) {
     const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [isPending, setIsPending] = useState(false)
@@ -151,137 +152,141 @@ export function ItemManager({ items, categories, deletedItems = [] }: ItemManage
 
                 <div className="flex items-center gap-2">
                     {/* Bin Button */}
-                    <Button
-                        variant="outline"
-                        asChild
-                        className="h-11 px-4 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all relative"
-                    >
-                        <Link href="/secretary/bin">
-                            <Trash className="h-4 w-4 mr-2" />
-                            Bin
-                            {deletedItems.length > 0 && (
-                                <Badge variant="destructive" className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]">
-                                    {deletedItems.length}
-                                </Badge>
-                            )}
-                        </Link>
-                    </Button>
+                    {!isReadOnly && (
+                        <Button
+                            variant="outline"
+                            asChild
+                            className="h-11 px-4 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all relative"
+                        >
+                            <Link href="/secretary/bin">
+                                <Trash className="h-4 w-4 mr-2" />
+                                Bin
+                                {deletedItems.length > 0 && (
+                                    <Badge variant="destructive" className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]">
+                                        {deletedItems.length}
+                                    </Badge>
+                                )}
+                            </Link>
+                        </Button>
+                    )}
 
                     {/* Create Sheet */}
-                    <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                        <SheetTrigger asChild>
-                            <Button variant="default" className="shadow-sm h-11 px-6 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add New Item
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
-                            <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
-                                {/* Subtle Glow Effect */}
-                                <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
-                                <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
-
-                                <div className="relative z-10 text-left">
-                                    <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                        Create New Item
-                                    </SheetTitle>
-                                    <SheetDescription className="text-sm font-medium mt-1">
-                                        Register a new item in the secretary inventory.
-                                    </SheetDescription>
-                                </div>
-                            </SheetHeader>
-
-                            <ScrollArea className="flex-1 px-6 py-8">
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <Tag className="h-3 w-3 text-primary/70" />
-                                            Item Name
-                                        </label>
-                                        <Input
-                                            placeholder="e.g. Whiteboard Markers"
-                                            value={newItem.name}
-                                            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <Barcode className="h-3 w-3 text-primary/70" />
-                                            Model <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
-                                        </label>
-                                        <Input
-                                            placeholder="e.g. WBM-SET"
-                                            value={newItem.model}
-                                            onChange={(e) => setNewItem({ ...newItem, model: e.target.value })}
-                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <Layers className="h-3 w-3 text-primary/70" />
-                                            Category
-                                        </label>
-                                        <Select value={newItem.categoryId} onValueChange={(v) => setNewItem({ ...newItem, categoryId: v })}>
-                                            <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-border/50">
-                                                <SelectValue placeholder="Select Category" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {categories.map(cat => (
-                                                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                                                        {cat.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                            <Box className="h-3 w-3 text-primary/70" />
-                                            Item Type
-                                        </label>
-                                        <Select value={newItem.itemType} onValueChange={(v) => setNewItem({ ...newItem, itemType: v })}>
-                                            <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-border/50">
-                                                <SelectValue placeholder="Select Type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Non-Consumables">Non-Consumables</SelectItem>
-                                                <SelectItem value="Consumables">Consumables</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </ScrollArea>
-
-                            <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setIsCreateOpen(false)}
-                                    className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
-                                >
-                                    <X className="h-4 w-4" />
-                                    Cancel
+                    {!isReadOnly && (
+                        <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                            <SheetTrigger asChild>
+                                <Button variant="default" className="shadow-sm h-11 px-6 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add New Item
                                 </Button>
-                                <Button
-                                    onClick={handleCreate}
-                                    disabled={isPending || !newItem.name || !newItem.categoryId}
-                                    className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
-                                >
-                                    {isPending ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Creating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Check className="h-4 w-4" />
-                                            Create Item
-                                        </>
-                                    )}
-                                </Button>
-                            </SheetFooter>
-                        </SheetContent>
-                    </Sheet>
+                            </SheetTrigger>
+                            <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
+                                <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
+                                    {/* Subtle Glow Effect */}
+                                    <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                                    <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
+
+                                    <div className="relative z-10 text-left">
+                                        <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                            Create New Item
+                                        </SheetTitle>
+                                        <SheetDescription className="text-sm font-medium mt-1">
+                                            Register a new item in the secretary inventory.
+                                        </SheetDescription>
+                                    </div>
+                                </SheetHeader>
+
+                                <ScrollArea className="flex-1 px-6 py-8">
+                                    <div className="space-y-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Tag className="h-3 w-3 text-primary/70" />
+                                                Item Name
+                                            </label>
+                                            <Input
+                                                placeholder="e.g. Whiteboard Markers"
+                                                value={newItem.name}
+                                                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                                                className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Barcode className="h-3 w-3 text-primary/70" />
+                                                Model <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
+                                            </label>
+                                            <Input
+                                                placeholder="e.g. WBM-SET"
+                                                value={newItem.model}
+                                                onChange={(e) => setNewItem({ ...newItem, model: e.target.value })}
+                                                className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Layers className="h-3 w-3 text-primary/70" />
+                                                Category
+                                            </label>
+                                            <Select value={newItem.categoryId} onValueChange={(v) => setNewItem({ ...newItem, categoryId: v })}>
+                                                <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-border/50">
+                                                    <SelectValue placeholder="Select Category" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {categories.map(cat => (
+                                                        <SelectItem key={cat.id} value={cat.id.toString()}>
+                                                            {cat.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                                <Box className="h-3 w-3 text-primary/70" />
+                                                Item Type
+                                            </label>
+                                            <Select value={newItem.itemType} onValueChange={(v) => setNewItem({ ...newItem, itemType: v })}>
+                                                <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-border/50">
+                                                    <SelectValue placeholder="Select Type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Non-Consumables">Non-Consumables</SelectItem>
+                                                    <SelectItem value="Consumables">Consumables</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </ScrollArea>
+
+                                <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setIsCreateOpen(false)}
+                                        className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
+                                    >
+                                        <X className="h-4 w-4" />
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleCreate}
+                                        disabled={isPending || !newItem.name || !newItem.categoryId}
+                                        className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
+                                    >
+                                        {isPending ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Creating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Check className="h-4 w-4" />
+                                                Create Item
+                                            </>
+                                        )}
+                                    </Button>
+                                </SheetFooter>
+                            </SheetContent>
+                        </Sheet>
+                    )}
                 </div>
             </div>
 
@@ -296,7 +301,7 @@ export function ItemManager({ items, categories, deletedItems = [] }: ItemManage
                             <TableHead className="font-semibold text-foreground/80">Type</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Model</TableHead>
                             <TableHead className="font-semibold text-foreground/80">Total Qty</TableHead>
-                            <TableHead className="text-right font-semibold text-foreground/80">Actions</TableHead>
+                            {!isReadOnly && <TableHead className="text-right font-semibold text-foreground/80">Actions</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -322,30 +327,32 @@ export function ItemManager({ items, categories, deletedItems = [] }: ItemManage
                                 <TableCell><Badge variant="outline">{item.itemType}</Badge></TableCell>
                                 <TableCell>{item.model || 'N/A'}</TableCell>
                                 <TableCell>{item.quantity}</TableCell>
-                                <TableCell className="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={() => openEdit(item)} className="cursor-pointer">
-                                                <Pencil className="mr-2 h-4 w-4" /> Edit Details
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => openDelete(item)} className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete Item
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
+                                {!isReadOnly && (
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => openEdit(item)} className="cursor-pointer">
+                                                    <Pencil className="mr-2 h-4 w-4" /> Edit Details
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => openDelete(item)} className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Item
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                )}
                             </TableRow>
                         ))}
                         {paginatedItems.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">No items found.</TableCell>
+                                <TableCell colSpan={isReadOnly ? 6 : 7} className="text-center py-6 text-muted-foreground">No items found.</TableCell>
                             </TableRow>
                         )}
                     </TableBody>

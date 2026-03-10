@@ -15,7 +15,7 @@ export type InstanceFilter = {
 }
 
 export async function getAllInstances(filters: InstanceFilter) {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
 
     const {
         search,
@@ -150,7 +150,7 @@ export async function getAllInstances(filters: InstanceFilter) {
 }
 
 export async function getInstancesCSV(filters: Omit<InstanceFilter, 'page' | 'pageSize'>) {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
 
     const {
         search,

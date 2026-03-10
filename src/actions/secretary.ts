@@ -133,7 +133,7 @@ export async function deleteItem(id: number) {
 }
 
 export async function getDeletedItems() {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
     try {
         return await prisma.item.findMany({
             where: {
@@ -226,7 +226,7 @@ export async function getBorrowRecords(filters?: {
     dateTo?: Date
     status?: string // 'Active' | 'Returned' | 'All'
 }) {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
     try {
         const whereClause: any = {}
 
@@ -328,7 +328,7 @@ export async function getDistributionRecords(filters?: {
     dateFrom?: Date
     dateTo?: Date
 }) {
-    await requirePermission('manage:items')
+    await requirePermission('view:items')
     try {
         const whereClause: any = {}
 

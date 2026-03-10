@@ -15,11 +15,15 @@ import Link from 'next/link'
 import { ChevronLeft, Package, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AddInventoryButton } from './AddInventoryButton'
+import { requirePermission } from '@/lib/permissions'
 
 export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
     const itemId = parseInt(id)
     if (isNaN(itemId)) notFound()
+
+    const { roles } = await requirePermission('view:items')
+    const isDean = roles.includes('DEAN')
 
     const item = await getItemDetails(itemId)
     if (!item) notFound()
@@ -44,6 +48,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
                     instanceId={item.instances[0]?.id ?? 0}
                     itemType={item.itemType}
                     itemName={item.name}
+                    isReadOnly={isDean}
                 />
             </div>
 

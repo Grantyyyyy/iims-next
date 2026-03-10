@@ -56,11 +56,12 @@ import { Textarea } from "@/components/ui/textarea"
 interface RecordManagerProps {
     type: 'BORROW' | 'DISTRIBUTION'
     records: any[]
+    isReadOnly?: boolean
 }
 
 const ITEMS_PER_PAGE = 15
 
-export function RecordManager({ type, records }: RecordManagerProps) {
+export function RecordManager({ type, records, isReadOnly = false }: RecordManagerProps) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -137,7 +138,7 @@ export function RecordManager({ type, records }: RecordManagerProps) {
     }, [records, pageParam])
 
     const exportToCSV = () => {
-        if (records.length === 0) return
+        if (!records || records.length === 0) return
 
         let csvContent = "data:text/csv;charset=utf-8,"
 
@@ -332,7 +333,7 @@ export function RecordManager({ type, records }: RecordManagerProps) {
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            {!record.returnRecord && (
+                                            {!isReadOnly && !record.returnRecord && (
                                                 <Sheet open={isReturnDialogOpen && selectedRecord?.id === record.id} onOpenChange={(open) => {
                                                     if (!open) setSelectedRecord(null)
                                                     setIsReturnDialogOpen(open)

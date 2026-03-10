@@ -35,11 +35,12 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface CategoryManagerProps {
     categories: any[]
+    isReadOnly?: boolean
 }
 
 const ITEMS_PER_PAGE = 10
 
-export function CategoryManager({ categories }: CategoryManagerProps) {
+export function CategoryManager({ categories, isReadOnly = false }: CategoryManagerProps) {
     const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [isSheetOpen, setIsSheetOpen] = useState(false)
@@ -95,75 +96,77 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
                         className="pl-10 h-11 rounded-xl bg-muted/30 focus-visible:ring-primary/20 transition-all border-muted-foreground/20"
                     />
                 </div>
-                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                    <SheetTrigger asChild>
-                        <Button className="h-11 px-6 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Category
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
-                        <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
-                            {/* Subtle Glow Effect */}
-                            <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
-                            <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
+                {!isReadOnly && (
+                    <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                        <SheetTrigger asChild>
+                            <Button className="h-11 px-6 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 border-none hover:shadow-lg transition-all active:scale-95 shadow-sm">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Category
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent className="sm:max-w-xl w-full flex flex-col p-0 border-l shadow-2xl">
+                            <SheetHeader className="px-6 pt-5 pb-3 border-b bg-gradient-to-b from-primary/5 to-transparent sticky top-0 z-50 bg-background/95 backdrop-blur-md overflow-hidden shrink-0">
+                                {/* Subtle Glow Effect */}
+                                <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                                <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
 
-                            <div className="relative z-10 text-left">
-                                <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                    Create New Category
-                                </SheetTitle>
-                                <SheetDescription className="text-sm font-medium mt-1">
-                                    Register a new category for inventory items.
-                                </SheetDescription>
-                            </div>
-                        </SheetHeader>
-
-                        <ScrollArea className="flex-1 px-6 py-8">
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                                        <Tag className="h-3 w-3 text-primary/70" />
-                                        Category Name
-                                    </label>
-                                    <Input
-                                        placeholder="e.g. Office Supplies"
-                                        value={newCatName}
-                                        onChange={(e) => setNewCatName(e.target.value)}
-                                        className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
-                                    />
+                                <div className="relative z-10 text-left">
+                                    <SheetTitle className="text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                        Create New Category
+                                    </SheetTitle>
+                                    <SheetDescription className="text-sm font-medium mt-1">
+                                        Register a new category for inventory items.
+                                    </SheetDescription>
                                 </div>
-                            </div>
-                        </ScrollArea>
+                            </SheetHeader>
 
-                        <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsSheetOpen(false)}
-                                className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
-                            >
-                                <X className="h-4 w-4" />
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleCreate}
-                                disabled={isPending || !newCatName}
-                                className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
-                            >
-                                {isPending ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Creating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check className="h-4 w-4" />
-                                        Create Category
-                                    </>
-                                )}
-                            </Button>
-                        </SheetFooter>
-                    </SheetContent>
-                </Sheet>
+                            <ScrollArea className="flex-1 px-6 py-8">
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
+                                            <Tag className="h-3 w-3 text-primary/70" />
+                                            Category Name
+                                        </label>
+                                        <Input
+                                            placeholder="e.g. Office Supplies"
+                                            value={newCatName}
+                                            onChange={(e) => setNewCatName(e.target.value)}
+                                            className="h-11 rounded-xl bg-muted/20 focus:bg-background border-border/50 transition-all duration-300"
+                                        />
+                                    </div>
+                                </div>
+                            </ScrollArea>
+
+                            <SheetFooter className="px-6 py-4 border-t flex-row justify-end gap-3 shrink-0 bg-muted/5">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsSheetOpen(false)}
+                                    className="flex items-center gap-2 h-11 px-6 rounded-xl hover:bg-muted/30 transition-all font-medium"
+                                >
+                                    <X className="h-4 w-4" />
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleCreate}
+                                    disabled={isPending || !newCatName}
+                                    className="flex items-center gap-2 px-8 h-11 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95 bg-gradient-to-r from-primary to-primary/80 border-none group min-w-[140px]"
+                                >
+                                    {isPending ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check className="h-4 w-4" />
+                                            Create Category
+                                        </>
+                                    )}
+                                </Button>
+                            </SheetFooter>
+                        </SheetContent>
+                    </Sheet>
+                )}
             </div>
 
             <div className="rounded-md border">
@@ -172,7 +175,7 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
                         <TableRow>
                             <TableHead>Category Name</TableHead>
                             <TableHead>Item Count</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            {!isReadOnly && <TableHead className="text-right">Actions</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -180,30 +183,32 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
                             <TableRow key={cat.id}>
                                 <TableCell className="font-medium">{cat.name}</TableCell>
                                 <TableCell>{cat._count.items}</TableCell>
-                                <TableCell className="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem className="cursor-pointer">
-                                                <Pencil className="mr-2 h-4 w-4" /> Edit Category
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete Category
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
+                                {!isReadOnly && (
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem className="cursor-pointer">
+                                                    <Pencil className="mr-2 h-4 w-4" /> Edit Category
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Category
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                )}
                             </TableRow>
                         ))}
                         {paginatedCategories.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={2} className="text-center py-4 text-muted-foreground">
+                                <TableCell colSpan={isReadOnly ? 2 : 3} className="text-center py-4 text-muted-foreground">
                                     No categories found.
                                 </TableCell>
                             </TableRow>

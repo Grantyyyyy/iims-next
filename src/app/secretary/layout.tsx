@@ -23,7 +23,8 @@ export default async function SecretaryLayout({
 }: {
     children: React.ReactNode
 }) {
-    const { user, roles } = await requirePermission('manage:items')
+    const { user, roles } = await requirePermission('view:items')
+    const isDean = roles.includes('DEAN')
     const sidebarUser = {
         name: user.username,
         email: user.email,
@@ -55,19 +56,21 @@ export default async function SecretaryLayout({
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
-                    <div className="ml-auto px-4 flex items-center gap-2">
-                        <Button asChild variant="outline" size="sm" className="hidden sm:flex border-primary/20 hover:border-primary/50 gap-2">
-                            <Link href="/secretary/distribute">
-                                <Plus className="h-4 w-4" />
-                                <span>Distribute Items</span>
-                            </Link>
-                        </Button>
-                        <Button asChild size="icon" variant="ghost" className="sm:hidden">
-                            <Link href="/secretary/distribute">
-                                <ShoppingCart className="h-5 w-5" />
-                            </Link>
-                        </Button>
-                    </div>
+                    {!isDean && (
+                        <div className="ml-auto px-4 flex items-center gap-2">
+                            <Button asChild variant="outline" size="sm" className="hidden sm:flex border-primary/20 hover:border-primary/50 gap-2">
+                                <Link href="/secretary/distribute">
+                                    <Plus className="h-4 w-4" />
+                                    <span>Distribute Items</span>
+                                </Link>
+                            </Button>
+                            <Button asChild size="icon" variant="ghost" className="sm:hidden">
+                                <Link href="/secretary/distribute">
+                                    <ShoppingCart className="h-5 w-5" />
+                                </Link>
+                            </Button>
+                        </div>
+                    )}
                 </header>
                 <div className="flex flex-1 flex-col gap-4 p-4">
                     {children}
