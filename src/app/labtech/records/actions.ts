@@ -47,7 +47,14 @@ export async function getLabBorrowRecords(filters?: {
                     apparatus: true
                 }
             },
-            borrower: true,
+            borrower: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    username: true
+                }
+            },
             room: true,
             returnRecord: true
         },
@@ -141,7 +148,8 @@ export async function createLabBorrowRecord(data: {
         revalidatePath('/labtech/records')
         return { success: true }
     } catch (error: any) {
-        return { success: false, error: error.message || 'Failed to create borrow record' }
+        console.error('Create borrow record error:', error)
+        return { success: false, error: 'Failed to create borrow record' }
     }
 }
 
@@ -207,7 +215,8 @@ export async function processLabReturn(borrowRecordId: number, data: {
         revalidatePath('/labtech/apparatus')
         return { success: true }
     } catch (error: any) {
-        return { success: false, error: error.message || 'Failed to process return' }
+        console.error('Process return error:', error)
+        return { success: false, error: 'Failed to process return' }
     }
 }
 
@@ -235,10 +244,24 @@ export async function getChemicalUsageRecords(filters?: {
                     chemical: true
                 }
             },
-            usedBy: true,
+            usedBy: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    username: true
+                }
+            },
             subject: true,
             room: true,
-            recordedBy: true
+            recordedBy: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    username: true
+                }
+            }
         },
         orderBy: { dateUsed: 'desc' }
     })
@@ -277,10 +300,24 @@ export async function getDistributionRecords(filters?: {
                     chemical: true
                 }
             },
-            recipient: true,
+            recipient: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    username: true
+                }
+            },
             subject: true,
             room: true,
-            recordedBy: true
+            recordedBy: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    username: true
+                }
+            }
         },
         orderBy: { dateUsed: 'desc' }
     })

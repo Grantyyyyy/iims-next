@@ -93,8 +93,8 @@ export async function getReportSummary() {
             }
         })
         const consumables = await prisma.item.findMany({
-             where: { itemType: 'Consumables' },
-             include: { instances: true }
+            where: { itemType: 'Consumables' },
+            include: { instances: true }
         })
         const lowConsumables = consumables.filter(c => {
             const total = c.instances.reduce((sum, i) => sum + i.quantity, 0)
@@ -180,7 +180,17 @@ export async function getDamagedItems(filters: {
                     borrowRecords: {
                         orderBy: { borrowDate: 'desc' },
                         take: 1,
-                        include: { borrower: true, room: true }
+                        include: {
+                            borrower: {
+                                select: {
+                                    id: true,
+                                    firstName: true,
+                                    lastName: true,
+                                    username: true
+                                }
+                            },
+                            room: true
+                        }
                     }
                 },
                 orderBy: { purchaseDate: 'desc' },
@@ -322,7 +332,7 @@ export async function getBorrowTrends(period: '30d' | '3m' | '6m' | '1y') {
 
 export async function getItemsNearingEndOfLife() {
     await requirePermission('view:reports')
-    
+
     const now = new Date()
     const oneYearFromNow = new Date()
     oneYearFromNow.setFullYear(now.getFullYear() + 1)

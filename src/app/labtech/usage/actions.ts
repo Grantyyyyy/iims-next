@@ -135,16 +135,59 @@ export async function getUsageRecords(filters?: {
   const [records, totalCount] = await Promise.all([
     prisma.chemicalUsageRecord.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        chemicalBatchId: true,
+        usedById: true,
+        subjectId: true,
+        roomId: true,
+        quantityUsed: true,
+        quantityRequested: true,
+        unit: true,
+        purpose: true,
+        dateUsed: true,
+        recordedById: true,
         chemicalBatch: {
-          include: {
-            chemical: true
+          select: {
+            id: true,
+            batchNumber: true,
+            chemical: {
+              select: {
+                id: true,
+                name: true,
+                unit: true
+              }
+            }
           }
         },
-        usedBy: true,
-        subject: true,
-        room: true,
-        recordedBy: true
+        usedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        subject: {
+          select: {
+            id: true,
+            code: true,
+            name: true
+          }
+        },
+        room: {
+          select: {
+            id: true,
+            name: true,
+            location: true
+          }
+        },
+        recordedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
       },
       orderBy: { dateUsed: 'desc' },
       skip: (page - 1) * pageSize,
@@ -386,7 +429,7 @@ export async function generateBatchPreview(
   chemicalId: number,
   quantityRequested: number
 ): Promise<{
-  batches: any[]
+  batches: BatchDeduction[]
   totalDeducted: number
   isValid: boolean
   error?: string
@@ -536,8 +579,9 @@ export async function recordChemicalUsage(data: {
     revalidatePath('/labtech/records')
 
     return { success: true, ...warningInfo }
-  } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to record usage' }
+  } catch (error: unknown) {
+    console.error('Usage recording error:', error)
+    return { success: false, error: 'Failed to record usage due to a server error.' }
   }
 }
 
@@ -680,15 +724,38 @@ export async function exportUsageToCSV(filters?: {
 
     const records = await prisma.chemicalUsageRecord.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        quantityUsed: true,
+        unit: true,
+        dateUsed: true,
+        purpose: true,
         chemicalBatch: {
-          include: {
-            chemical: true
+          select: {
+            batchNumber: true,
+            chemical: {
+              select: {
+                name: true
+              }
+            }
           }
         },
-        usedBy: true,
-        subject: true,
-        room: true
+        usedBy: {
+          select: {
+            firstName: true,
+            lastName: true
+          }
+        },
+        subject: {
+          select: {
+            code: true
+          }
+        },
+        room: {
+          select: {
+            name: true
+          }
+        }
       },
       orderBy: { dateUsed: 'desc' }
     })
@@ -749,10 +816,11 @@ export async function exportUsageToCSV(filters?: {
       csvData,
       filename
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    console.error('CSV export error:', error)
     return {
       success: false,
-      error: error.message || 'Failed to export CSV'
+      error: 'Failed to export CSV due to a server error.'
     }
   }
 }
@@ -773,16 +841,52 @@ export async function getChemicalUsageHistory(
         chemicalId
       }
     },
-    include: {
+    select: {
+      id: true,
+      quantityUsed: true,
+      unit: true,
+      dateUsed: true,
+      purpose: true,
       chemicalBatch: {
-        include: {
-          chemical: true
+        select: {
+          id: true,
+          batchNumber: true,
+          chemical: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
         }
       },
-      usedBy: true,
-      subject: true,
-      room: true,
-      recordedBy: true
+      usedBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true
+        }
+      },
+      subject: {
+        select: {
+          id: true,
+          code: true,
+          name: true
+        }
+      },
+      room: {
+        select: {
+          id: true,
+          name: true,
+          location: true
+        }
+      },
+      recordedBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true
+        }
+      }
     },
     orderBy: { dateUsed: 'desc' },
     take: limit

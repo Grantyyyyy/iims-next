@@ -8,13 +8,21 @@ export async function getUsers() {
     await requirePermission('view:users')
     try {
         return await prisma.user.findMany({
-            include: {
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                username: true,
+                profilePicUrl: true,
+                isActive: true,
+                createdAt: true,
+                department: true,
                 roles: {
-                    include: {
+                    select: {
                         role: true
                     }
-                },
-                department: true
+                }
             },
             orderBy: {
                 createdAt: 'desc'

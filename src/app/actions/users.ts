@@ -5,6 +5,7 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/permissions'
+import { Prisma } from '@prisma/client'
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -44,10 +45,24 @@ export async function getUsers() {
     await requirePermission('view:users')
 
     return await prisma.user.findMany({
-        include: {
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            username: true,
+            contactNumber: true,
+            profilePicUrl: true,
+            barcodeValue: true,
+            customId: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true,
+            departmentId: true,
             department: true,
             roles: {
-                include: {
+                select: {
+                    roleId: true,
                     role: true
                 }
             }
@@ -61,12 +76,26 @@ export async function getUsers() {
 export async function getUserById(id: number) {
     await requirePermission('view:users')
 
-    return await (prisma.user as any).findUnique({
+    return await prisma.user.findUnique({
         where: { id },
-        include: {
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            username: true,
+            contactNumber: true,
+            profilePicUrl: true,
+            barcodeValue: true,
+            customId: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true,
+            departmentId: true,
             department: true,
             roles: {
-                include: {
+                select: {
+                    roleId: true,
                     role: true
                 }
             }
@@ -88,10 +117,10 @@ export async function createUser(formData: FormData) {
         return { error: validated.error.flatten().fieldErrors }
     }
 
-    const { password, confirmPassword, role, ...data } = validated.data
+    const { password, role, ...data } = validated.data
 
     // Check uniqueness
-    const existingUser = await (prisma.user as any).findFirst({
+    const existingUser = await prisma.user.findFirst({
         where: {
             OR: [
                 { email: data.email },
@@ -110,7 +139,7 @@ export async function createUser(formData: FormData) {
     const passwordHash = await bcrypt.hash(password, 10)
 
     // Auto-generate customId
-    const lastUser = await (prisma.user as any).findFirst({
+    const lastUser = await prisma.user.findFirst({
         where: { NOT: { customId: null } },
         orderBy: { customId: 'desc' }
     })
@@ -127,7 +156,7 @@ export async function createUser(formData: FormData) {
             return { error: { role: ['Role not found'] } }
         }
 
-        await (prisma.user as any).create({
+        await prisma.user.create({
             data: {
                 ...data,
                 passwordHash,
@@ -171,19 +200,25 @@ export async function updateUser(id: number, formData: FormData) {
     if (id === currentUser.id && role !== 'ADMIN') {
         // We should check if current user is indeed having ADMIN role in form
         // Let's check current roles in DB
-        const existingUser = await (prisma.user as any).findUnique({
+        const existingUser = await prisma.user.findUnique({
             where: { id },
-            include: { roles: { include: { role: true } } }
+            select: {
+                roles: {
+                    select: {
+                        role: { select: { name: true } }
+                    }
+                }
+            }
         })
 
-        const currentRoles = (existingUser?.roles as any[])?.map((r: any) => r.role.name) || []
+        const currentRoles = existingUser?.roles.map((r) => r.role.name) || []
         if (currentRoles.includes('ADMIN')) {
             return { error: { role: ['You cannot change your own ADMIN role'] } }
         }
     }
 
     // Check uniqueness for email/username if changed
-    const existingUser = await (prisma.user as any).findFirst({
+    const existingUser = await prisma.user.findFirst({
         where: {
             OR: [
                 { email: data.email },
@@ -200,7 +235,7 @@ export async function updateUser(id: number, formData: FormData) {
         return { error: { username: ['Username already exists'] } }
     }
 
-    const updateData: any = { ...data }
+    const updateData: Prisma.UserUpdateInput = { ...data }
 
     if (password && password.length >= 8) {
         updateData.passwordHash = await bcrypt.hash(password, 10)
@@ -220,7 +255,7 @@ export async function updateUser(id: number, formData: FormData) {
         // but the UI only allows one. We'll stick to one.
         await prisma.$transaction([
             prisma.userRole.deleteMany({ where: { userId: id } }),
-            (prisma.user as any).update({
+            prisma.user.update({
                 where: { id },
                 data: {
                     ...updateData,

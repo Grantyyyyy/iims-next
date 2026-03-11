@@ -22,7 +22,11 @@ export async function searchStaffUsers(query: string) {
                 { username: { contains: query } }
             ]
         },
-        include: {
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            username: true,
             department: true
         },
         take: 10

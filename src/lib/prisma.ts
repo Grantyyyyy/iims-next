@@ -1,13 +1,11 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSql } from '@prisma/adapter-libsql'
 // Triggering re-check after prisma generate
-import { createClient } from '@libsql/client'
 
 const prismaClientSingleton = () => {
-    const config = {
+    const adapter = new PrismaLibSql({
         url: process.env.DATABASE_URL as string,
-    }
-    const adapter = new PrismaLibSql(config)
+    })
     return new PrismaClient({ adapter })
 }
 

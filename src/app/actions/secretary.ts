@@ -47,7 +47,14 @@ export async function getUsers() {
     return await prisma.user.findMany({
         orderBy: { firstName: 'asc' },
         where: { isActive: true },
-        include: { department: true }
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            username: true,
+            department: true
+        }
     })
 }
 
@@ -104,7 +111,17 @@ export async function getItemDetails(itemId: number) {
                         consumableBatches: {
                             include: {
                                 distributionRecords: {
-                                    include: { recipient: true },
+                                    select: {
+                                        distributedAt: true,
+                                        recipient: {
+                                            select: {
+                                                id: true,
+                                                firstName: true,
+                                                lastName: true,
+                                                username: true
+                                            }
+                                        }
+                                    },
                                     orderBy: { distributedAt: 'desc' },
                                     take: 1
                                 }
@@ -112,12 +129,29 @@ export async function getItemDetails(itemId: number) {
                             orderBy: { addedAt: 'asc' }
                         },
                         distributionRecords: {
-                            include: { recipient: true },
+                            select: {
+                                distributedAt: true,
+                                recipient: {
+                                    select: {
+                                        id: true,
+                                        firstName: true,
+                                        lastName: true,
+                                        username: true
+                                    }
+                                }
+                            },
                             orderBy: { distributedAt: 'desc' }
                         },
                         borrowRecords: {
                             include: {
-                                borrower: true,
+                                borrower: {
+                                    select: {
+                                        id: true,
+                                        firstName: true,
+                                        lastName: true,
+                                        username: true
+                                    }
+                                },
                                 returnRecord: true
                             },
                             orderBy: { borrowDate: 'desc' },
@@ -148,7 +182,13 @@ export async function searchStaffUsers(query: string) {
                 ]
             },
             take: 8,
-            include: { department: true }
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                username: true,
+                department: true
+            }
         })
     } catch (error) {
         console.error('Error searching staff users:', error)
@@ -378,9 +418,9 @@ export async function distributeItems(data: {
             borrowed: result.borrowed
         }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error(err)
-        return { error: err.message || 'Failed to process distribution' }
+        return { error: 'Failed to process distribution due to a server error.' }
     }
 }
 
@@ -444,8 +484,8 @@ export async function addConsumableStock(data: z.infer<typeof addConsumableStock
             success: true,
             message: `Batch added. Total stock: ${result.item.quantity} units`
         }
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error(err)
-        return { error: err.message || 'Failed to add consumable stock' }
+        return { error: 'Failed to add consumable stock due to a server error.' }
     }
 }

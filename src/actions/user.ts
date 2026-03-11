@@ -34,7 +34,7 @@ export async function getReceivedChemicals(limit: number = 10) {
     if (!session?.userId) return []
 
     try {
-        const distributions = await (prisma.chemicalUsageRecord as any).findMany({
+        const distributions = await prisma.chemicalUsageRecord.findMany({
             where: {
                 recipientId: session.userId,
                 isDistribution: true
@@ -52,7 +52,7 @@ export async function getReceivedChemicals(limit: number = 10) {
             }
         })
 
-        return distributions.map((dist: any) => ({
+        return distributions.map((dist) => ({
             id: dist.id,
             chemicalName: dist.chemicalBatch?.chemical?.name || 'Unknown',
             amount: dist.distributedAmount || dist.quantityUsed,

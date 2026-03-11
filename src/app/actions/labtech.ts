@@ -75,7 +75,11 @@ export async function searchStaffUsers(query: string) {
         ]
       },
       take: 8,
-      include: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        username: true,
         department: {
           select: {
             id: true,
@@ -182,10 +186,10 @@ export async function distributeChemical(data: {
     // Validate recipient has STAFF role
     const recipient = await prisma.user.findUnique({
       where: { id: recipientId },
-      include: {
+      select: {
         roles: {
-          include: {
-            role: true
+          select: {
+            role: { select: { name: true } }
           }
         }
       }
@@ -256,7 +260,7 @@ export async function distributeChemical(data: {
       const roomId = parseInt(room)
 
       // Create ChemicalUsageRecord with isDistribution=true
-      await (tx.chemicalUsageRecord as any).create({
+      await tx.chemicalUsageRecord.create({
         data: {
           chemicalBatchId: firstBatch.id,
           recipientId,
@@ -265,7 +269,7 @@ export async function distributeChemical(data: {
           distributedUnit: unit,
           quantityUsed: amountInBaseUnit,
           quantityRequested: amountInBaseUnit,
-          unit: (firstBatch as any).baseUnit,
+          unit: firstBatch.baseUnit, // Fixed from .unit as per schema
           subjectId: isNaN(subjectId) ? null : subjectId,
           roomId: isNaN(roomId) ? null : roomId,
           purpose,
@@ -323,16 +327,9 @@ export async function distributeChemical(data: {
     console.error('Distribution error:', error)
 
     // Return user-friendly error message
-    if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message
-      }
-    }
-
     return {
       success: false,
-      error: 'An error occurred while processing the distribution. Please try again.'
+      error: 'Failed to process distribution due to a server error.'
     }
   }
 }
@@ -382,10 +379,10 @@ export async function distributeMultipleChemicals(data: {
     // Validate recipient has STAFF role
     const recipient = await prisma.user.findUnique({
       where: { id: recipientId },
-      include: {
+      select: {
         roles: {
-          include: {
-            role: true
+          select: {
+            role: { select: { name: true } }
           }
         }
       }
@@ -440,7 +437,7 @@ export async function distributeMultipleChemicals(data: {
         }
 
         // 3. Create ChemicalUsageRecord with sessionId
-        await (tx.chemicalUsageRecord as any).create({
+        await tx.chemicalUsageRecord.create({
           data: {
             chemicalBatchId: firstBatch.id,
             recipientId,
@@ -449,7 +446,7 @@ export async function distributeMultipleChemicals(data: {
             distributedUnit: item.unit,
             quantityUsed: amountInBaseUnit,
             quantityRequested: amountInBaseUnit,
-            unit: (firstBatch as any).baseUnit,
+            unit: firstBatch.baseUnit, // Fixed from .unit as per schema
             subjectId: isNaN(subjectId) ? null : subjectId,
             roomId: isNaN(roomId) ? null : roomId,
             purpose,
@@ -496,7 +493,7 @@ export async function distributeMultipleChemicals(data: {
     console.error('Multi-distribution error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'An error occurred during multi-chemical distribution'
+      error: 'An error occurred during multi-chemical distribution'
     }
   }
 }
@@ -583,13 +580,6 @@ export async function previewDistribution(data: {
   } catch (error) {
     console.error('Preview distribution error:', error)
 
-    if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message
-      }
-    }
-
     return {
       success: false,
       error: 'An error occurred while calculating the preview. Please try again.'
@@ -629,7 +619,7 @@ export async function getRecentDistribution(data: {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
     // Query for recent distributions
-    const recentDistribution = await (prisma.chemicalUsageRecord as any).findFirst({
+    const recentDistribution = await prisma.chemicalUsageRecord.findFirst({
       where: {
         chemicalBatch: {
           chemicalId
@@ -679,7 +669,7 @@ export async function getRecentDistribution(data: {
 
     return {
       found: false,
-      error: error instanceof Error ? error.message : 'An error occurred while checking for recent distributions'
+      error: 'An error occurred while checking for recent distributions'
     }
   }
 }
@@ -698,7 +688,7 @@ export async function getChemicalDistributionHistory(chemicalId: number, limit: 
   await requirePermission('view:chemicals')
 
   try {
-    const distributions = await (prisma.chemicalUsageRecord as any).findMany({
+    const distributions = await prisma.chemicalUsageRecord.findMany({
       where: {
         chemicalBatch: {
           chemicalId
@@ -731,7 +721,7 @@ export async function getChemicalDistributionHistory(chemicalId: number, limit: 
       }
     })
 
-    return distributions.map((dist: any) => ({
+    return distributions.map((dist) => ({
       id: dist.id,
       recipientName: dist.recipient
         ? `${dist.recipient.firstName || ''} ${dist.recipient.lastName || ''}`.trim() || dist.recipient.username
