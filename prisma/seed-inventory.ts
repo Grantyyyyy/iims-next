@@ -1,16 +1,13 @@
 import 'dotenv/config'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
-import { PrismaLibSql } from '@prisma/adapter-libsql'
 
-const prismaClientSingleton = () => {
-    const prismaConfig = {
-        url: process.env.DATABASE_URL as string,
-    }
-    const adapter = new PrismaLibSql(prismaConfig)
-    return new PrismaClient({ adapter })
-}
+import { seedRooms } from './seed-rooms'
 
-const prisma = prismaClientSingleton()
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
 const CATEGORY_MAP: Record<string, { code: string; usefulLife: number; minCost: number; maxCost: number }> = {
     'Computers / Laptops': { code: 'COMP', usefulLife: 5, minCost: 35000, maxCost: 65000 },
@@ -69,10 +66,10 @@ async function main() {
         const catConfig = CATEGORY_MAP[item.category?.name || ''] || { code: 'ITEM', usefulLife: 3, minCost: 500, maxCost: 5000 }
         const catCode = catConfig.code
         if (!categoryCounters[catCode]) categoryCounters[catCode] = 0
-        
+
         if (item.itemType === 'Non-Consumables') {
             const instances = item.instances
-            
+
             // Ensure at least 3 instances for testing if none exist
             if (instances.length === 0) {
                 for (let i = 1; i <= 3; i++) {
@@ -81,7 +78,7 @@ async function main() {
                     const sn = `SN-${catCode}-${categoryCounters[catCode].toString().padStart(3, '0')}`
                     const pDate = randomDate(new Date(2021, 0, 1), new Date(2024, 11, 31))
                     const condition = pDate.getFullYear() < 2023 ? (Math.random() > 0.7 ? 'Fair' : 'Good') : 'Good'
-                    
+
                     await prisma.itemInstance.create({
                         data: {
                             itemId: item.id,
@@ -99,7 +96,7 @@ async function main() {
                 for (let idx = 0; idx < instances.length; idx++) {
                     const inst = instances[idx]
                     categoryCounters[catCode]++
-                    
+
                     // Skip if serial number is already in correct format or fixed
                     if (inst.serialNumber && inst.serialNumber.startsWith('SN-') && inst.usefulLife && inst.purchaseDate) {
                         // continue // Don't skip during fix run to ensure consistency
@@ -112,11 +109,11 @@ async function main() {
                     await prisma.itemInstance.update({
                         where: { id: inst.id },
                         data: {
-                            serialNumber: inst.serialNumber && inst.serialNumber !== 'N/A' && inst.serialNumber.startsWith('SN-') 
-                                ? inst.serialNumber 
+                            serialNumber: inst.serialNumber && inst.serialNumber !== 'N/A' && inst.serialNumber.startsWith('SN-')
+                                ? inst.serialNumber
                                 : `SN-${catCode}-${categoryCounters[catCode].toString().padStart(3, '0')}`,
                             inventoryNumber: inst.inventoryNumber && !inst.inventoryNumber.includes('ITEM')
-                                ? inst.inventoryNumber 
+                                ? inst.inventoryNumber
                                 : `${catCode}-${item.id}-${i.toString().padStart(3, '0')}`,
                             usefulLife: catConfig.usefulLife,
                             unitCost: inst.unitCost && inst.unitCost > 0 ? inst.unitCost : randomInt(catConfig.minCost, catConfig.maxCost),
@@ -134,7 +131,7 @@ async function main() {
                 if (inst.consumableBatches.length === 0) {
                     const numBatches = 3
                     const qtyConfig = CONSUMABLE_QTY_MAP[item.name] || { min: 10, max: 50 }
-                    
+
                     for (let i = 1; i <= numBatches; i++) {
                         const originalQty = randomInt(qtyConfig.min, qtyConfig.max)
                         await prisma.consumableBatch.create({

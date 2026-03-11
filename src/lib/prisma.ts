@@ -1,11 +1,10 @@
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
-import { PrismaLibSql } from '@prisma/adapter-libsql'
-// Triggering re-check after prisma generate
 
 const prismaClientSingleton = () => {
-    const adapter = new PrismaLibSql({
-        url: process.env.DATABASE_URL as string,
-    })
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+    const adapter = new PrismaPg(pool)
     return new PrismaClient({ adapter })
 }
 

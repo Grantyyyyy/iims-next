@@ -1,16 +1,12 @@
 import 'dotenv/config'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
-import { PrismaLibSql } from '@prisma/adapter-libsql'
 
-const prismaClientSingleton = () => {
-    const prismaConfig = {
-        url: process.env.DATABASE_URL as string,
-    }
-    const adapter = new PrismaLibSql(prismaConfig)
-    return new PrismaClient({ adapter })
-}
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
-const prisma = prismaClientSingleton()
 
 function randomDate(start: Date, end: Date) {
     return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()))
@@ -45,7 +41,7 @@ async function main() {
     const labtech = await prisma.user.findFirst({ where: { username: 'labtech' } })
     const staff = await prisma.user.findFirst({ where: { username: 'staffuser' } })
     const rooms = await prisma.room.findMany({ take: 3 })
-    
+
     if (!labtech) {
         console.error('LabTech user not found. Please run main seed first.')
         return
@@ -95,7 +91,7 @@ async function main() {
 
     // 4. Create sample usage records
     console.log('Creating sample usage records...')
-    
+
     const now = new Date()
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -327,7 +323,7 @@ async function main() {
 
     // 5. Create sample distribution records
     console.log('\nCreating sample distribution records...')
-    
+
     let distributionSuccessCount = 0
     let distributionSkipCount = 0
 

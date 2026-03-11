@@ -1,16 +1,12 @@
 import 'dotenv/config'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
-import { PrismaLibSql } from '@prisma/adapter-libsql'
 
-const prismaClientSingleton = () => {
-    const prismaConfig = {
-        url: process.env.DATABASE_URL as string,
-    }
-    const adapter = new PrismaLibSql(prismaConfig)
-    return new PrismaClient({ adapter })
-}
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
-const prisma = prismaClientSingleton()
 
 function randomDate(start: Date, end: Date) {
     return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()))
@@ -209,7 +205,7 @@ async function main() {
                     baseUnit: chem.baseUnit,
                     unitCost: 150 * i,
                     purchaseDate: new Date(2023, 5, 20),
-                    expiryDate: new Date(2025, 5, 20),
+                    expiryDate: new Date(2027, 5, 20),
                     addedById: labtech.id
                 }
             })

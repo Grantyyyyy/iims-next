@@ -1,14 +1,12 @@
-/**
- * Seed script: Add staff-dashboard-ready data for staffuser
- * Run: npx tsx prisma/seed-staff.ts
- */
 import 'dotenv/config'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
-import { PrismaLibSql } from '@prisma/adapter-libsql'
 
-const prisma = new PrismaClient({
-    adapter: new PrismaLibSql({ url: process.env.DATABASE_URL as string }),
-})
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
+
 
 async function main() {
     console.log('--- Staff Seed: Starting ---')

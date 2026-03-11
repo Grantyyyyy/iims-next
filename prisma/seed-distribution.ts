@@ -1,18 +1,14 @@
 import 'dotenv/config'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
-import { PrismaLibSql } from '@prisma/adapter-libsql'
 
 import { seedRooms } from './seed-rooms'
 
-const prismaClientSingleton = () => {
-    const prismaConfig = {
-        url: process.env.DATABASE_URL as string,
-    }
-    const adapter = new PrismaLibSql(prismaConfig)
-    return new PrismaClient({ adapter })
-}
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
-const prisma = prismaClientSingleton()
 
 async function main() {
     console.log('--- Starting Distribution Seeding ---')

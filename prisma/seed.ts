@@ -1,13 +1,12 @@
 import 'dotenv/config'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
-import { PrismaLibSql } from '@prisma/adapter-libsql'
 import bcrypt from 'bcryptjs'
 
 const prismaClientSingleton = () => {
-    const prismaConfig = {
-        url: process.env.DATABASE_URL as string,
-    }
-    const adapter = new PrismaLibSql(prismaConfig)
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+    const adapter = new PrismaPg(pool)
     return new PrismaClient({ adapter })
 }
 
