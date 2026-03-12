@@ -83,7 +83,7 @@ async function main() {
     })
 
     if (chemicals.length === 0) {
-        console.error('No chemicals with available batches found. Please run labtech seed first.')
+        console.error('No chemicals with available batches found. Please run lab technician seed first.')
         return
     }
 
