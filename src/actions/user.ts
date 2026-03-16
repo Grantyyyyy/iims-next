@@ -1,15 +1,14 @@
 'use server'
 
-import { verifySession } from '@/lib/session'
 import prisma from '@/lib/prisma'
+import { requireAuth } from '@/lib/permissions'
 
 export async function getCurrentUser() {
-    const session = await verifySession()
-    if (!session?.userId) return null
-
     try {
+        const { user: authUser } = await requireAuth()
+
         const user = await prisma.user.findUnique({
-            where: { id: session.userId },
+            where: { id: authUser.id },
             select: {
                 id: true,
                 username: true,
@@ -30,13 +29,12 @@ export async function getCurrentUser() {
 }
 
 export async function getReceivedChemicals(limit: number = 10) {
-    const session = await verifySession()
-    if (!session?.userId) return []
-
     try {
+        const { user } = await requireAuth()
+
         const distributions = await prisma.chemicalUsageRecord.findMany({
             where: {
-                recipientId: session.userId,
+                recipientId: user.id,
                 isDistribution: true
             },
             orderBy: {
