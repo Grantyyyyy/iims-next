@@ -28,12 +28,18 @@ const DEV_ACCOUNTS = [
 
 export function LoginForm({
   className,
+  serverError,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { serverError?: string | null }) {
   const [state, formAction, isPending] = useActionState(loginAction, null)
   const [showPassword, setShowPassword] = useState(false)
 
   const isDev = process.env.NODE_ENV === 'development'
+
+  const displayError = state?.error || (serverError === 'account_deactivated'
+    ? 'Your account has been deactivated. Please contact an administrator.'
+    : serverError ? 'An error occurred. Please try again.'
+      : null)
 
   const { register, setValue } = useForm({
     defaultValues: {
@@ -93,10 +99,10 @@ export function LoginForm({
                   </button>
                 </div>
               </Field>
-              {state?.error && (
+              {displayError && (
                 <div className="text-xs font-medium text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 select-none flex items-center gap-2 mt-1">
                   <span className="w-1 h-1 rounded-full bg-red-600 animate-pulse" />
-                  {state.error}
+                  {displayError}
                 </div>
               )}
               <Field className="pt-2">

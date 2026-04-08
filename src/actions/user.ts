@@ -4,9 +4,9 @@ import prisma from '@/lib/prisma'
 import { requireAuth } from '@/lib/permissions'
 
 export async function getCurrentUser() {
-    try {
-        const { user: authUser } = await requireAuth()
+    const { user: authUser, roles } = await requireAuth()
 
+    try {
         const user = await prisma.user.findUnique({
             where: { id: authUser.id },
             select: {
@@ -29,9 +29,9 @@ export async function getCurrentUser() {
 }
 
 export async function getReceivedChemicals(limit: number = 10) {
-    try {
-        const { user } = await requireAuth()
+    const { user } = await requireAuth()
 
+    try {
         const distributions = await prisma.chemicalUsageRecord.findMany({
             where: {
                 recipientId: user.id,
@@ -53,8 +53,8 @@ export async function getReceivedChemicals(limit: number = 10) {
         return distributions.map((dist) => ({
             id: dist.id,
             chemicalName: dist.chemicalBatch?.chemical?.name || 'Unknown',
-            amount: dist.distributedAmount || dist.quantityUsed,
-            unit: dist.distributedUnit || dist.unit || 'ML',
+            amount: dist.distributedAmount ?? dist.quantityUsed,
+            unit: dist.distributedUnit ?? dist.unit ?? 'ML',
             date: dist.dateUsed,
             purpose: dist.purpose || 'N/A'
         }))
