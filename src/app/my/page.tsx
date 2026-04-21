@@ -32,7 +32,7 @@ export default async function StaffOverviewPage() {
             icon: Package,
             color: "text-blue-500",
             bg: "bg-blue-50 dark:bg-blue-950/30",
-            href: "/dashboard/staff/borrows",
+            href: "/my/borrows",
         },
         {
             label: "Active Lab Borrows",
@@ -40,7 +40,7 @@ export default async function StaffOverviewPage() {
             icon: Microscope,
             color: "text-green-500",
             bg: "bg-green-50 dark:bg-green-950/30",
-            href: "/dashboard/staff/lab-borrows",
+            href: "/my/lab-borrows",
         },
         {
             label: "Chemicals Received",
@@ -48,7 +48,7 @@ export default async function StaffOverviewPage() {
             icon: FlaskConical,
             color: "text-purple-500",
             bg: "bg-purple-50 dark:bg-purple-950/30",
-            href: "/dashboard/staff/chemicals",
+            href: "/my/chemicals",
         },
         {
             label: "Overdue Items",
@@ -56,7 +56,7 @@ export default async function StaffOverviewPage() {
             icon: AlertCircle,
             color: "text-red-500",
             bg: "bg-red-50 dark:bg-red-950/30",
-            href: "/dashboard/staff/borrows?status=overdue",
+            href: "/my/borrows?status=overdue",
             alwaysRed: true,
         },
     ]

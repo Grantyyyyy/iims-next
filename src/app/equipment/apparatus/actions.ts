@@ -84,7 +84,7 @@ export async function createApparatus(data: {
                 categoryId: data.categoryId
             }
         })
-        revalidatePath('/labtech/apparatus')
+        revalidatePath('/equipment/apparatus')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to create apparatus' }
@@ -108,7 +108,7 @@ export async function updateApparatus(id: number, data: {
             where: { id },
             data
         })
-        revalidatePath('/labtech/apparatus')
+        revalidatePath('/equipment/apparatus')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to update apparatus' }
@@ -127,7 +127,7 @@ export async function deleteApparatus(id: number) {
             where: { id },
             data: { deletedAt: new Date() }
         })
-        revalidatePath('/labtech/apparatus')
+        revalidatePath('/equipment/apparatus')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to delete apparatus' }
@@ -168,7 +168,7 @@ export async function addApparatusInstance(data: {
             })
         })
 
-        revalidatePath('/labtech/apparatus')
+        revalidatePath('/equipment/apparatus')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to add instance' }
@@ -216,7 +216,7 @@ export async function addApparatusBatch(data: {
             })
         })
 
-        revalidatePath('/labtech/apparatus')
+        revalidatePath('/equipment/apparatus')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to add batch' }
@@ -252,7 +252,7 @@ export async function restoreApparatus(id: number) {
             where: { id },
             data: { deletedAt: null }
         })
-        revalidatePath('/labtech/apparatus')
+        revalidatePath('/equipment/apparatus')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to restore apparatus' }
@@ -279,7 +279,7 @@ export async function permanentlyDeleteApparatus(id: number) {
                 where: { id }
             })
         })
-        revalidatePath('/labtech/apparatus')
+        revalidatePath('/equipment/apparatus')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to permanently delete apparatus. It may have related records.' }

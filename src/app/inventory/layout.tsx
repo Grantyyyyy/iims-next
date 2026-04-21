@@ -18,7 +18,7 @@ import { ShoppingCart, Plus } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
-export default async function SecretaryLayout({
+export default async function InventoryLayout({
     children,
 }: {
     children: React.ReactNode
@@ -51,7 +51,7 @@ export default async function SecretaryLayout({
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator />
                                 <BreadcrumbItem>
-                                    <BreadcrumbPage>Secretary Module</BreadcrumbPage>
+                                    <BreadcrumbPage>Inventory</BreadcrumbPage>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
@@ -59,13 +59,13 @@ export default async function SecretaryLayout({
                     {!isDean && (
                         <div className="ml-auto px-4 flex items-center gap-2">
                             <Button asChild variant="outline" size="sm" className="hidden sm:flex border-primary/20 hover:border-primary/50 gap-2">
-                                <Link href="/secretary/distribute">
+                                <Link href="/inventory/distribute">
                                     <Plus className="h-4 w-4" />
                                     <span>Distribute Items</span>
                                 </Link>
                             </Button>
                             <Button asChild size="icon" variant="ghost" className="sm:hidden">
-                                <Link href="/secretary/distribute">
+                                <Link href="/inventory/distribute">
                                     <ShoppingCart className="h-5 w-5" />
                                 </Link>
                             </Button>

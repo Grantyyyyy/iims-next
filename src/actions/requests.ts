@@ -39,8 +39,8 @@ export async function createTransferRequest(data: {
                 status: 'AWAITING_ASSIGNEE_CONFIRMATION'
             }
         })
-        revalidatePath('/staff')
-        revalidatePath('/staff/requests')
+        revalidatePath('/requests')
+        revalidatePath('/requests/approvals')
         return { success: true }
     } catch (error) {
         console.error('Error creating transfer request:', error)
@@ -74,8 +74,8 @@ export async function respondToTransfer(id: number, accepted: boolean) {
             }
         })
 
-        revalidatePath('/staff')
-        revalidatePath('/staff/requests')
+        revalidatePath('/requests')
+        revalidatePath('/requests/approvals')
         return { success: true }
     } catch (error) {
         console.error('Error responding to transfer:', error)
@@ -116,8 +116,8 @@ export async function createReplaceRequest(data: {
                 status: 'PENDING'
             }
         })
-        revalidatePath('/staff')
-        revalidatePath('/staff/requests')
+        revalidatePath('/requests')
+        revalidatePath('/requests/approvals')
         return { success: true }
     } catch (error) {
         console.error('Error creating replace request:', error)
@@ -156,8 +156,8 @@ export async function createDisposeRequest(data: {
                 status: 'PENDING'
             }
         })
-        revalidatePath('/staff')
-        revalidatePath('/staff/requests')
+        revalidatePath('/requests')
+        revalidatePath('/requests/approvals')
         return { success: true }
     } catch (error) {
         console.error('Error creating dispose request:', error)
@@ -188,8 +188,8 @@ export async function processRequest(type: 'transfer' | 'replace' | 'dispose', i
             })
         }
 
-        revalidatePath('/staff')
-        revalidatePath('/staff/requests')
+        revalidatePath('/requests')
+        revalidatePath('/requests/approvals')
         return { success: true }
     } catch (error) {
         console.error(`Error processing ${type} request:`, error)

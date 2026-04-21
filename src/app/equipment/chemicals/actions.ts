@@ -98,7 +98,7 @@ export async function createChemical(data: {
                 reorderLevel: data.reorderLevel
             }
         })
-        revalidatePath('/labtech/chemicals')
+        revalidatePath('/equipment/chemicals')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to create chemical' }
@@ -122,7 +122,7 @@ export async function updateChemical(id: number, data: {
             where: { id },
             data
         })
-        revalidatePath('/labtech/chemicals')
+        revalidatePath('/equipment/chemicals')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to update chemical' }
@@ -141,8 +141,8 @@ export async function deleteChemical(id: number) {
             where: { id },
             data: { deletedAt: new Date() }
         })
-        revalidatePath('/labtech/chemicals')
-        revalidatePath('/labtech/bin')
+        revalidatePath('/equipment/chemicals')
+        revalidatePath('/equipment/bin')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to delete chemical' }
@@ -161,8 +161,8 @@ export async function restoreChemical(id: number) {
             where: { id },
             data: { deletedAt: null }
         })
-        revalidatePath('/labtech/chemicals')
-        revalidatePath('/labtech/bin')
+        revalidatePath('/equipment/chemicals')
+        revalidatePath('/equipment/bin')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to restore chemical' }
@@ -186,8 +186,8 @@ export async function permanentlyDeleteChemical(id: number) {
             where: { id }
         })
 
-        revalidatePath('/labtech/chemicals')
-        revalidatePath('/labtech/bin')
+        revalidatePath('/equipment/chemicals')
+        revalidatePath('/equipment/bin')
         return { success: true }
     } catch (error) {
         console.error('Permanent delete error:', error)
@@ -286,7 +286,7 @@ export async function addChemicalBatch(data: {
             })
         })
 
-        revalidatePath('/labtech/chemicals')
+        revalidatePath('/equipment/chemicals')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to add batch' }
@@ -381,7 +381,7 @@ export async function recordChemicalUsage(data: {
             })
         })
 
-        revalidatePath('/labtech/chemicals')
+        revalidatePath('/equipment/chemicals')
         return { success: true }
     } catch (error: any) {
         return { success: false, error: error.message || 'Failed to record usage' }

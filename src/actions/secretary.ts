@@ -28,7 +28,7 @@ export async function createCategory(name: string, imageUrl?: string) {
         await prisma.category.create({
             data: { name, imageUrl }
         })
-        revalidatePath('/secretary/categories')
+        revalidatePath('/inventory/categories')
         return { success: true }
     } catch (error) {
         console.error('Error creating category:', error)
@@ -90,7 +90,7 @@ export async function createItem(data: {
     await requirePermission('manage:items')
     try {
         await prisma.item.create({ data })
-        revalidatePath('/secretary/items')
+        revalidatePath('/inventory/items')
         return { success: true }
     } catch (error) {
         console.error('Error creating item:', error)
@@ -108,8 +108,8 @@ export async function updateItem(id: number, data: {
     await requirePermission('manage:items')
     try {
         await prisma.item.update({ where: { id }, data })
-        revalidatePath('/secretary/items')
-        revalidatePath(`/secretary/items/${id}`)
+        revalidatePath('/inventory/items')
+        revalidatePath(`/inventory/items/${id}`)
         return { success: true }
     } catch (error) {
         console.error('Error updating item:', error)
@@ -124,7 +124,7 @@ export async function deleteItem(id: number) {
             where: { id },
             data: { deletedAt: new Date() }
         })
-        revalidatePath('/secretary/items')
+        revalidatePath('/inventory/items')
         return { success: true }
     } catch (error) {
         console.error('Error soft-deleting item:', error)
@@ -158,7 +158,7 @@ export async function restoreItem(id: number) {
             where: { id },
             data: { deletedAt: null }
         })
-        revalidatePath('/secretary/items')
+        revalidatePath('/inventory/items')
         return { success: true }
     } catch (error) {
         console.error('Error restoring item:', error)
@@ -178,7 +178,7 @@ export async function permanentlyDeleteItem(id: number) {
                 where: { id }
             })
         })
-        revalidatePath('/secretary/items')
+        revalidatePath('/inventory/items')
         return { success: true }
     } catch (error) {
         console.error('Error permanently deleting item:', error)
@@ -211,7 +211,7 @@ export async function addItemInstance(data: {
                 }
             }
         })
-        revalidatePath('/secretary/items')
+        revalidatePath('/inventory/items')
         return { success: true }
     } catch (error) {
         console.error('Error adding item instance:', error)
@@ -313,8 +313,8 @@ export async function returnItem(borrowRecordId: number, conditionOnReturn: stri
             })
         }
 
-        revalidatePath('/secretary/records')
-        revalidatePath('/secretary/instances')
+        revalidatePath('/inventory/records')
+        revalidatePath('/inventory/instances')
         return { success: true }
     } catch (error) {
         console.error('Error returning item:', error)

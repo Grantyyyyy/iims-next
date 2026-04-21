@@ -304,10 +304,10 @@ export async function distributeChemical(data: {
     })
 
     // Revalidate paths
-    revalidatePath('/labtech/chemicals')
-    revalidatePath(`/labtech/chemicals/${chemicalId}`)
-    revalidatePath('/labtech/usage')
-    revalidatePath('/labtech/records')
+    revalidatePath('/equipment/chemicals')
+    revalidatePath(`/equipment/chemicals/${chemicalId}`)
+    revalidatePath('/equipment/usage')
+    revalidatePath('/equipment/records')
 
     // Generate stock warnings
     let warning: string | undefined
@@ -480,9 +480,9 @@ export async function distributeMultipleChemicals(data: {
     })
 
     // Revalidate paths
-    revalidatePath('/labtech/chemicals')
-    revalidatePath('/labtech/records')
-    revalidatePath('/labtech/usage')
+    revalidatePath('/equipment/chemicals')
+    revalidatePath('/equipment/records')
+    revalidatePath('/equipment/usage')
 
     return {
       success: true,

@@ -23,7 +23,7 @@ export async function createLabCategory(name: string) {
         await prisma.labCategory.create({
             data: { name }
         })
-        revalidatePath('/labtech/categories')
+        revalidatePath('/equipment/categories')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to create category' }
@@ -42,7 +42,7 @@ export async function updateLabCategory(id: number, name: string) {
             where: { id },
             data: { name }
         })
-        revalidatePath('/labtech/categories')
+        revalidatePath('/equipment/categories')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to update category' }
@@ -60,7 +60,7 @@ export async function deleteLabCategory(id: number) {
         await prisma.labCategory.delete({
             where: { id }
         })
-        revalidatePath('/labtech/categories')
+        revalidatePath('/equipment/categories')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to delete category' }

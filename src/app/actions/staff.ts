@@ -495,7 +495,7 @@ export async function updateStaffProfile(data: {
                 email: data.email,
             },
         })
-        revalidatePath('/dashboard/staff/profile')
+        revalidatePath('/my/profile')
         return { success: true }
     } catch (err) {
         console.error('updateStaffProfile error:', err)

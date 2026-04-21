@@ -13,22 +13,15 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { requireAuth, hasPermission } from "@/lib/permissions"
+import { requirePermission } from "@/lib/permissions"
 import Link from "next/link"
 
-export default async function StaffLayout({
+export default async function EquipmentLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const { user, roles } = await requireAuth()
-
-    // Staff pages accessible by STAFF (view:own-borrows) or ADMIN (approve:requests)
-    if (!hasPermission(roles, 'view:own-borrows') && !hasPermission(roles, 'approve:requests')) {
-        const { redirect } = await import('next/navigation')
-        redirect('/dashboard')
-    }
-
+    const { user, roles } = await requirePermission('view:equipment')
     const sidebarUser = {
         name: user.username,
         email: user.email,
@@ -55,7 +48,7 @@ export default async function StaffLayout({
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator />
                                 <BreadcrumbItem>
-                                    <BreadcrumbPage>Staff Requests</BreadcrumbPage>
+                                    <BreadcrumbPage>Equipment</BreadcrumbPage>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>

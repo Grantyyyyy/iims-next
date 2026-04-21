@@ -409,8 +409,8 @@ export async function distributeItems(data: {
             return { distributed, borrowed }
         })
 
-        revalidatePath('/secretary/distribute')
-        revalidatePath('/secretary/records')
+        revalidatePath('/inventory/distribute')
+        revalidatePath('/inventory/records')
 
         return {
             success: true,
@@ -477,8 +477,8 @@ export async function addConsumableStock(data: z.infer<typeof addConsumableStock
             return { item, batch }
         })
 
-        revalidatePath('/secretary/inventory')
-        revalidatePath(`/secretary/inventory/${payload.itemId}`)
+        revalidatePath('/inventory/inventory')
+        revalidatePath(`/inventory/inventory/${payload.itemId}`)
 
         return {
             success: true,

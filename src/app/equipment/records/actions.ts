@@ -144,8 +144,8 @@ export async function createLabBorrowRecord(data: {
             })
         })
 
-        revalidatePath('/labtech/borrow')
-        revalidatePath('/labtech/records')
+        revalidatePath('/equipment/borrow')
+        revalidatePath('/equipment/records')
         return { success: true }
     } catch (error: any) {
         console.error('Create borrow record error:', error)
@@ -210,9 +210,9 @@ export async function processLabReturn(borrowRecordId: number, data: {
             }
         })
 
-        revalidatePath('/labtech/records')
-        revalidatePath('/labtech/equipment')
-        revalidatePath('/labtech/apparatus')
+        revalidatePath('/equipment/records')
+        revalidatePath('/equipment/equipment')
+        revalidatePath('/equipment/apparatus')
         return { success: true }
     } catch (error: any) {
         console.error('Process return error:', error)

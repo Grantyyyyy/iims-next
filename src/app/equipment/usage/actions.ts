@@ -573,10 +573,10 @@ export async function recordChemicalUsage(data: {
       }
     })
 
-    revalidatePath('/labtech/usage')
-    revalidatePath('/labtech/chemicals')
-    revalidatePath('/labtech/chemicals/[id]')
-    revalidatePath('/labtech/records')
+    revalidatePath('/equipment/usage')
+    revalidatePath('/equipment/chemicals')
+    revalidatePath('/equipment/chemicals/[id]')
+    revalidatePath('/equipment/records')
 
     return { success: true, ...warningInfo }
   } catch (error: unknown) {

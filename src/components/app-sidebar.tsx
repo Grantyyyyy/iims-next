@@ -88,101 +88,99 @@ const navGroups: NavGroup[] = [
           },
         ],
       },
+{
+    title: "Approvals",
+    url: "/requests/approvals",
+    icon: ShoppingCart,
+    permission: "approve:requests",
+    items: [
       {
-        title: "Approvals",
-        url: "/staff",
-        icon: ShoppingCart,
-        permission: "approve:requests",
+        title: "Requests",
+        url: "/requests/approvals",
         items: [
-          {
-            title: "Requests",
-            url: "/staff",
-            items: [
-              { title: "Transfer", url: "/staff" },
-              { title: "Replace", url: "/staff" },
-              { title: "Dispose", url: "/staff" },
-            ],
-          },
+          { title: "Transfer", url: "/requests/approvals" },
+          { title: "Replace", url: "/requests/approvals" },
+          { title: "Dispose", url: "/requests/approvals" },
         ],
       },
-    ]
+]
   },
   {
-    title: "Secretary",
+    title: "Inventory",
     permission: "view:items",
     items: [
       {
-        title: "Inventory",
-        url: "/secretary/items",
+        title: "Items",
+        url: "/inventory/items",
         icon: Package,
         items: [
-          { title: "Items", url: "/secretary/items" },
-          { title: "All Instances", url: "/secretary/instances" },
-          { title: "Categories", url: "/secretary/categories" },
+          { title: "Items", url: "/inventory/items" },
+          { title: "All Instances", url: "/inventory/instances" },
+          { title: "Categories", url: "/inventory/categories" },
         ],
       },
       {
         title: "Activities",
-        url: "/secretary/distribute",
+        url: "/inventory/distribute",
         icon: ClipboardList,
         items: [
-          { title: "Distribute", url: "/secretary/distribute", permission: "manage:items" },
-          { title: "Records", url: "/secretary/records" },
-          { title: "Bin", url: "/secretary/bin", permission: "manage:items" },
+          { title: "Distribute", url: "/inventory/distribute", permission: "manage:items" },
+          { title: "Records", url: "/inventory/records" },
+          { title: "Bin", url: "/inventory/bin", permission: "manage:items" },
         ],
       },
     ],
   },
   {
-    title: "Lab Technician",
+    title: "Equipment",
     permission: "view:equipment",
     items: [
       {
-        title: "Inventory",
-        url: "/labtech/equipment",
+        title: "Items",
+        url: "/equipment",
         icon: Beaker,
         items: [
-          { title: "All Instances", url: "/labtech/instances" },
-          { title: "Equipment", url: "/labtech/equipment" },
-          { title: "Apparatus", url: "/labtech/apparatus" },
-          { title: "Chemicals", url: "/labtech/chemicals" },
-          { title: "Categories", url: "/labtech/categories" },
+          { title: "All Instances", url: "/equipment/instances" },
+          { title: "Equipment", url: "/equipment" },
+          { title: "Apparatus", url: "/equipment/apparatus" },
+          { title: "Chemicals", url: "/equipment/chemicals" },
+          { title: "Categories", url: "/equipment/categories" },
         ],
       },
       {
         title: "Activities",
-        url: "/labtech/borrow",
+        url: "/equipment/borrow",
         icon: ClipboardList,
         items: [
-          { title: "Usage Tracking", url: "/labtech/usage" },
-          { title: "Borrow Items", url: "/labtech/borrow", permission: "manage:equipment" },
-          { title: "Records", url: "/labtech/records" },
-          { title: "Bin", url: "/labtech/bin", permission: "manage:equipment" },
+          { title: "Usage Tracking", url: "/equipment/usage" },
+          { title: "Borrow Items", url: "/equipment/borrow", permission: "borrow:equipment" },
+          { title: "Records", url: "/equipment/records" },
+          { title: "Bin", url: "/equipment/bin", permission: "manage:equipment" },
         ],
       },
     ],
   },
 ]
 
-const staffNavItems: NavItem[] = [
+const myNavItems: NavItem[] = [
   {
     title: "My Items",
-    url: "/dashboard/staff",
+    url: "/my",
     icon: Package,
     items: [
       {
         title: "My Borrows",
-        url: "/dashboard/staff/borrows",
+        url: "/my/borrows",
         permission: "view:own-borrows",
       },
       {
         title: "My Lab Borrows",
-        url: "/dashboard/staff/lab-borrows",
+        url: "/my/lab-borrows",
         permission: "view:own-borrows",
       },
       {
         title: "My Chemicals",
-        url: "/dashboard/staff/chemicals",
+        url: "/my/chemicals",
         permission: "view:own-chemicals",
       },
     ],
@@ -284,7 +282,7 @@ export function AppSidebar({ user, userRoles = [], ...props }: AppSidebarProps) 
     return { ...group, items: filteredItems }
   }).filter(Boolean) as NavGroup[]
 
-  const staffFiltered = staffNavItems.map((item) => {
+  const myFiltered = myNavItems.map((item) => {
     const filteredSubs = item.items?.filter((sub) => {
       if (!sub.permission) return true
       if (isStaffOnly || hasPermissionClient(userRoles, sub.permission)) return true
@@ -295,12 +293,12 @@ export function AppSidebar({ user, userRoles = [], ...props }: AppSidebarProps) 
     return { ...item, items: filteredSubs }
   }).filter(Boolean) as NavItem[]
 
-  // Append staff items into a "Personal" group if applicable
-  const showStaffSection = isStaffOnly || primaryRole === "ADMIN"
-  if (showStaffSection && staffFiltered.length > 0) {
+  // Append my items into a "My" group if applicable
+  const showMySection = isStaffOnly || primaryRole === "ADMIN"
+  if (showMySection && myFiltered.length > 0) {
     filteredGroups.push({
-      title: "Personal",
-      items: staffFiltered
+      title: "My",
+      items: myFiltered
     })
   }
 
@@ -332,7 +330,7 @@ export function AppSidebar({ user, userRoles = [], ...props }: AppSidebarProps) 
         <NavUser
           user={displayUser}
           role={primaryRole}
-          profileUrl={primaryRole === "STAFF" ? "/dashboard/staff/profile" : "/dashboard/profile"}
+          profileUrl={primaryRole === "STAFF" ? "/my/profile" : "/dashboard/profile"}
         />
       </SidebarFooter>
     </Sidebar>

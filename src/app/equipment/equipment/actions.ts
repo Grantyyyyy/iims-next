@@ -77,7 +77,7 @@ export async function createEquipment(data: {
                 categoryId: data.categoryId
             }
         })
-        revalidatePath('/labtech/equipment')
+        revalidatePath('/equipment/equipment')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to create equipment' }
@@ -102,7 +102,7 @@ export async function updateEquipment(id: number, data: {
             where: { id },
             data
         })
-        revalidatePath('/labtech/equipment')
+        revalidatePath('/equipment/equipment')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to update equipment' }
@@ -122,7 +122,7 @@ export async function deleteEquipment(id: number) {
             where: { id },
             data: { deletedAt: new Date() }
         })
-        revalidatePath('/labtech/equipment')
+        revalidatePath('/equipment/equipment')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to delete equipment' }
@@ -163,7 +163,7 @@ export async function addEquipmentInstance(data: {
             })
         })
 
-        revalidatePath('/labtech/equipment')
+        revalidatePath('/equipment/equipment')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to add instance' }
@@ -198,7 +198,7 @@ export async function restoreEquipment(id: number) {
             where: { id },
             data: { deletedAt: null }
         })
-        revalidatePath('/labtech/equipment')
+        revalidatePath('/equipment/equipment')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to restore equipment' }
@@ -223,7 +223,7 @@ export async function permanentlyDeleteEquipment(id: number) {
                 where: { id }
             })
         })
-        revalidatePath('/labtech/equipment')
+        revalidatePath('/equipment/equipment')
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to permanently delete equipment. It may have related records.' }

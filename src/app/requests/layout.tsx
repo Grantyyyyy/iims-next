@@ -13,15 +13,22 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { requirePermission } from "@/lib/permissions"
+import { requireAuth, hasPermission } from "@/lib/permissions"
 import Link from "next/link"
 
-export default async function LabtechLayout({
+export default async function RequestsLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const { user, roles } = await requirePermission('view:equipment')
+    const { user, roles } = await requireAuth()
+
+    // Staff pages accessible by STAFF (view:own-borrows) or ADMIN (approve:requests)
+    if (!hasPermission(roles, 'view:own-borrows') && !hasPermission(roles, 'approve:requests')) {
+        const { redirect } = await import('next/navigation')
+        redirect('/dashboard')
+    }
+
     const sidebarUser = {
         name: user.username,
         email: user.email,
@@ -48,7 +55,7 @@ export default async function LabtechLayout({
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator />
                                 <BreadcrumbItem>
-                                    <BreadcrumbPage>Labtech Module</BreadcrumbPage>
+                                    <BreadcrumbPage>Requests</BreadcrumbPage>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
